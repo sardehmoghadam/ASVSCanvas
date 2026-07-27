@@ -1,0 +1,47 @@
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Category, Control } from "@/types/content";
+
+export function CategoryCard({ category, count }: { category: Category; count: number }) {
+  return (
+    <Link href={`/categories/${category.slug}/`}>
+      <Card className="h-full transition hover:-translate-y-0.5 hover:shadow-lg">
+        <CardHeader>
+          <Badge variant="outline">{category.id}</Badge>
+          <CardTitle className="text-xl">{category.title}</CardTitle>
+          <CardDescription>{category.description}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>{count} controls</span>
+          <span>Explore section</span>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+export function ControlCard({ control }: { control: Control }) {
+  return (
+    <Link href={`/controls/${control.slug}/`}>
+      <Card className="h-full transition hover:-translate-y-0.5 hover:shadow-lg">
+        <CardHeader>
+          <div className="flex flex-wrap gap-2">
+            <Badge>{control.controlId}</Badge>
+            <Badge variant="outline">{control.difficulty}</Badge>
+            <Badge variant="secondary">{control.reviewStatus}</Badge>
+          </div>
+          <CardTitle className="text-lg">{control.title}</CardTitle>
+          <CardDescription>{control.summary}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          {control.tags.map((tag) => (
+            <Badge key={tag} variant="outline">
+              {tag}
+            </Badge>
+          ))}
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
