@@ -25,6 +25,10 @@ Thumbs.db
 .vscode/
 .idea/
 
+# continue configuration
+.continue/
+
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
