@@ -3,19 +3,28 @@ import { Shield } from "lucide-react";
 import { SearchBox } from "@/components/search-box";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+const navItems = [
+  { href: "/categories/authentication/", label: "Controls" },
+  { href: "/authoring/", label: "Authoring" },
+];
+
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-3 rounded-xl px-1 py-1 font-semibold tracking-tight transition hover:text-primary focus-visible:ring-2 focus-visible:ring-ring">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/15">
             <Shield className="h-5 w-5" />
           </span>
-          <span>ASVS Academy</span>
+          <span className="hidden sm:inline">ASVS Academy</span>
+          <span className="sm:hidden">ASVS</span>
         </Link>
-        <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-          <Link className="hover:text-foreground" href="/categories/authentication/">Controls</Link>
-          <Link className="hover:text-foreground" href="/authoring/">Authoring</Link>
+        <nav aria-label="Primary" className="hidden items-center gap-2 text-sm md:flex">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className="rounded-full px-3 py-2 text-muted-foreground transition hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+              {item.label}
+            </Link>
+          ))}
         </nav>
         <div className="ml-auto hidden w-full max-w-sm md:block">
           <SearchBox compact />
