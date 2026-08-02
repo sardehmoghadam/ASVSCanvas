@@ -1,5 +1,6 @@
 export type Difficulty = "foundational" | "intermediate" | "advanced";
 export type ReviewStatus = "draft" | "reviewed" | "needs-update";
+export type AsvsVersion = "4.0.3" | "5.0.0";
 
 export type CodeExample = {
   language: string;
@@ -47,4 +48,7 @@ export type Category = {
   description: string;
   icon: string;
   color: string;
+  asvsVersion: AsvsVersion;
+  isLegacy?: boolean;
+  migrationNote?: string;
 };

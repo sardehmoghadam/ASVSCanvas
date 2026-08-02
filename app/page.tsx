@@ -23,7 +23,7 @@ export default function Home() {
               A static documentation portal for explanations, implementation patterns, testing notes, references, and multilingual code examples.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/categories/authentication/"><Button size="lg">Explore controls <ArrowRight className="h-4 w-4" /></Button></Link>
+              <Link href="/categories/v5-encoding-sanitization/"><Button size="lg">Explore ASVS 5.0.0 <ArrowRight className="h-4 w-4" /></Button></Link>
               <Link href="/authoring/"><Button size="lg" variant="outline">Authoring guide</Button></Link>
             </div>
             <div className="mt-8 max-w-xl"><SearchBox /></div>
@@ -39,7 +39,7 @@ export default function Home() {
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div className="rounded-2xl border border-border p-5"><ShieldCheck className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">4</p><p className="text-sm text-muted-foreground">sample controls</p></div>
-              <div className="rounded-2xl border border-border p-5"><LockKeyhole className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">4.0.3</p><p className="text-sm text-muted-foreground">ASVS version</p></div>
+              <div className="rounded-2xl border border-border p-5"><LockKeyhole className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">5.0.0</p><p className="text-sm text-muted-foreground">current ASVS version</p></div>
             </div>
           </div>
         </div>
@@ -47,12 +47,12 @@ export default function Home() {
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Training Sections</h2>
-            <p className="mt-2 text-muted-foreground">Start with categories, then drill into individual controls.</p>
+            <h2 className="text-3xl font-bold tracking-tight">ASVS 5.0.0 Chapters</h2>
+            <p className="mt-2 text-muted-foreground">Browse the official V1–V12 chapter structure. Existing 4.0.3 guidance remains explicitly labeled as legacy.</p>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category) => <CategoryCard key={category.id} category={category} count={getControlsByCategory(category.id).length} />)}
+          {categories.map((category) => <CategoryCard key={category.id} category={category} count={getControlsByCategory(category.id, category.asvsVersion).length} />)}
         </div>
       </section>
     </div>

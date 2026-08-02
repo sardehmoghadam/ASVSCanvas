@@ -56,6 +56,9 @@ export const CategorySchema: z.ZodType<Category> = z.object({
   description: nonEmptyString,
   icon: nonEmptyString,
   color: nonEmptyString,
+  asvsVersion: z.enum(["4.0.3", "5.0.0"]),
+  isLegacy: z.boolean().optional(),
+  migrationNote: nonEmptyString.optional(),
 });
 
 const controlIdSchema = z.string().regex(/^V\d+\.\d+\.\d+$/, "Expected an ASVS control ID such as V5.2.2");

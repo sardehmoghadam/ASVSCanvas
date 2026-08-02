@@ -170,8 +170,10 @@ export function getControlBySlug(slug: string) {
   return controls.find((control) => control.slug === slug);
 }
 
-export function getControlsByCategory(categoryId: string) {
-  return controls.filter((control) => control.categoryId === categoryId);
+export function getControlsByCategory(categoryId: string, asvsVersion?: string) {
+  return controls.filter(
+    (control) => control.categoryId === categoryId && (!asvsVersion || control.asvsVersion === asvsVersion),
+  );
 }
 
 export function getAllTags() {

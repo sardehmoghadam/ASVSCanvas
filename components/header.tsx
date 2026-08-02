@@ -4,7 +4,7 @@ import { SearchBox } from "@/components/search-box";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
-  { href: "/categories/authentication/", label: "Controls" },
+  { href: "/categories/v5-encoding-sanitization/", label: "ASVS 5.0.0" },
   { href: "/authoring/", label: "Authoring" },
 ];
 

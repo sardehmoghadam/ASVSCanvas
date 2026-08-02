@@ -11,7 +11,8 @@ export function Footer() {
         <div>
           <p className="font-semibold text-foreground">Learn</p>
           <div className="mt-3 flex flex-col gap-2">
-            <Link className="transition hover:text-foreground" href="/categories/authentication/">ASVS Categories</Link>
+            <Link className="transition hover:text-foreground" href="/categories/v5-encoding-sanitization/">ASVS 5.0.0 Chapters</Link>
+            <Link className="transition hover:text-foreground" href="/categories/authentication/">ASVS 4.0.3 Legacy</Link>
             <Link className="transition hover:text-foreground" href="/controls/password-storage/">Control Template</Link>
           </div>
         </div>
