@@ -6,19 +6,18 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 text-sm text-muted-foreground sm:px-6 md:grid-cols-3 lg:px-8">
         <div>
           <p className="font-semibold text-foreground">ASVS Academy</p>
-          <p className="mt-2 max-w-sm leading-6">Static-first training portal for secure coding teams, reviewers, and application security programs.</p>
+          <p className="mt-2 max-w-sm leading-6">Practical training for developers and reviewers who want to understand, implement, and verify secure software.</p>
         </div>
         <div>
           <p className="font-semibold text-foreground">Learn</p>
           <div className="mt-3 flex flex-col gap-2">
             <Link className="transition hover:text-foreground" href="/categories/v5-encoding-sanitization/">ASVS 5.0.0 Chapters</Link>
-            <Link className="transition hover:text-foreground" href="/categories/authentication/">ASVS 4.0.3 Legacy</Link>
-            <Link className="transition hover:text-foreground" href="/controls/password-storage/">Control Template</Link>
+            <Link className="transition hover:text-foreground" href="/controls/contextual-output-encoding/">Example Lesson</Link>
           </div>
         </div>
         <div>
-          <p className="font-semibold text-foreground">Content</p>
-          <p className="mt-3 leading-6">Structured TypeScript content files keep training material separate from presentation.</p>
+          <p className="font-semibold text-foreground">Training approach</p>
+          <p className="mt-3 leading-6">Learn with explanations, implementation patterns, code examples, testing notes, references, and related controls.</p>
         </div>
       </div>
     </footer>

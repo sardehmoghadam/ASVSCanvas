@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { categories, legacyCategories } from "@/content/categories";
+import { categories } from "@/content/categories";
 import { cn } from "@/lib/utils";
 
 const linkStyles = cn(
@@ -39,19 +39,6 @@ export function DocsSidebar() {
           <ChapterLinks />
         </div>
 
-        <details id="legacy-asvs" className="mt-4 border-t border-border/70 pt-4 lg:mt-6">
-          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            ASVS 4.0.3 legacy
-          </summary>
-          <nav className="mt-3 flex flex-col gap-1 text-sm" aria-label="Legacy ASVS 4.0.3 categories">
-            {legacyCategories.map((category) => (
-              <Link key={`${category.asvsVersion}-${category.id}`} className={linkStyles} href={`/categories/${category.slug}/`}>
-                <span className="font-medium text-foreground/80">{category.id}</span> {category.title}
-                <span className="ml-1 text-xs">(legacy)</span>
-              </Link>
-            ))}
-          </nav>
-        </details>
       </div>
     </aside>
   );

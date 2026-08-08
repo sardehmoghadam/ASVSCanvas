@@ -2,9 +2,9 @@ import type { Control } from "@/types/content";
 
 export const controls: Control[] = [
   {
-    asvsVersion: "4.0.3",
-    categoryId: "V2",
-    controlId: "V2.1.1",
+    asvsVersion: "5.0.0",
+    categoryId: "V6",
+    controlId: "V6.1.1",
     slug: "password-storage",
     title: "Use approved password storage algorithms",
     summary: "Store passwords with a modern adaptive one-way function and per-password salts.",
@@ -35,20 +35,20 @@ export const controls: Control[] = [
     ],
     references: [
       { label: "OWASP Password Storage Cheat Sheet", url: "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html" },
-      { label: "OWASP ASVS 4.0.3", url: "https://owasp.org/www-project-application-security-verification-standard/" },
+      { label: "OWASP ASVS 5.0.0", url: "https://owasp.org/www-project-application-security-verification-standard/" },
     ],
     tags: ["authentication", "passwords", "cryptography"],
     difficulty: "foundational",
     reviewStatus: "draft",
     relatedControls: [
-      { id: "V2.1.7", title: "Password change and reset", href: "/controls/password-reset" },
-      { id: "V2.2.1", title: "Anti-automation controls", href: "/controls/anti-automation" },
+      { id: "V6.1.7", title: "Password change and reset", href: "/controls/password-reset" },
+      { id: "V6.2.1", title: "Anti-automation controls", href: "/controls/anti-automation" },
     ],
   },
   {
-    asvsVersion: "4.0.3",
-    categoryId: "V3",
-    controlId: "V3.4.1",
+    asvsVersion: "5.0.0",
+    categoryId: "V7",
+    controlId: "V7.2.1",
     slug: "secure-session-cookies",
     title: "Set secure attributes on session cookies",
     summary: "Protect session cookies with Secure, HttpOnly, SameSite, path, and expiration attributes.",

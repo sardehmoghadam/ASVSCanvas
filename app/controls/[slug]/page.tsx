@@ -7,7 +7,7 @@ import { ReferencesList } from "@/components/references-list";
 import { RelatedControls } from "@/components/related-controls";
 import { TableOfContents } from "@/components/table-of-contents";
 import { Badge } from "@/components/ui/badge";
-import { allCategories } from "@/content/categories";
+import { categories } from "@/content/categories";
 import { controls, getControlBySlug } from "@/content/controls";
 
 const toc = ["Explanation", "Why It Matters", "Examples", "Testing Notes", "References", "Related Controls"];
@@ -24,7 +24,7 @@ export default async function ControlPage({ params }: { params: Promise<{ slug: 
     notFound();
   }
 
-  const category = allCategories.find(
+    const category = categories.find(
     (item) => item.id === control.categoryId && item.asvsVersion === control.asvsVersion,
   );
   const related = controls
@@ -53,8 +53,7 @@ export default async function ControlPage({ params }: { params: Promise<{ slug: 
           <header className="mt-8 border-b border-border/70 pb-8">
             <div className="flex flex-wrap gap-2">
               <Badge>{control.controlId}</Badge>
-              <Badge variant="outline">ASVS {control.asvsVersion}</Badge>
-              {category?.isLegacy ? <Badge variant="secondary">Legacy content</Badge> : null}
+                            <Badge variant="outline">ASVS {control.asvsVersion}</Badge>
               <Badge variant="secondary">{control.difficulty}</Badge>
             </div>
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance">{control.title}</h1>

@@ -1,6 +1,5 @@
-import type { AsvsVersion, Category } from "@/types/content";
+import type { Category } from "@/types/content";
 
-/** Official chapter metadata for OWASP ASVS 5.0.0. */
 export const categories: Category[] = [
   {
     id: "V1",
@@ -112,63 +111,10 @@ export const categories: Category[] = [
   },
 ];
 
-/**
- * Existing Academy content authored against ASVS 4.0.3.
- * These routes remain available, but are intentionally not remapped to v5 IDs.
- */
-export const legacyCategories: Category[] = [
-  {
-    id: "V2",
-    slug: "authentication",
-    title: "Authentication",
-    description: "Legacy identity proofing, credential handling, and authentication lifecycle guidance.",
-    icon: "Fingerprint",
-    color: "teal",
-    asvsVersion: "4.0.3",
-    isLegacy: true,
-    migrationNote: "This URL contains ASVS 4.0.3 V2 content. In ASVS 5.0.0, Authentication is V6; review the new V6 chapter rather than treating this content as automatically migrated.",
-  },
-  {
-    id: "V3",
-    slug: "session-management",
-    title: "Session Management",
-    description: "Legacy session token generation, rotation, storage, invalidation, and browser security guidance.",
-    icon: "KeyRound",
-    color: "cyan",
-    asvsVersion: "4.0.3",
-    isLegacy: true,
-    migrationNote: "This URL contains ASVS 4.0.3 V3 content. In ASVS 5.0.0, Session Management is V7; review the new V7 chapter rather than treating this content as automatically migrated.",
-  },
-  {
-    id: "V5",
-    slug: "validation-sanitization-encoding",
-    title: "Validation, Sanitization and Encoding",
-    description: "Legacy data validation, output encoding, injection resistance, and safe parsing guidance.",
-    icon: "ShieldCheck",
-    color: "emerald",
-    asvsVersion: "4.0.3",
-    isLegacy: true,
-    migrationNote: "This URL contains ASVS 4.0.3 V5 content. ASVS 5.0.0 V5 is File Handling; encoding and sanitization moved to V1, while validation and business logic are covered by V2.",
-  },
-  {
-    id: "V7",
-    slug: "error-logging",
-    title: "Error Handling and Logging",
-    description: "Legacy safe error handling, monitoring signals, audit trails, and actionable logging guidance.",
-    icon: "FileWarning",
-    color: "amber",
-    asvsVersion: "4.0.3",
-    isLegacy: true,
-    migrationNote: "This URL contains ASVS 4.0.3 V7 content. It has no direct chapter-number mapping in ASVS 5.0.0 and must be reviewed before migration.",
-  },
-];
-
-export const allCategories: Category[] = [...categories, ...legacyCategories];
-
 export function getCategoryBySlug(slug: string) {
-  return allCategories.find((category) => category.slug === slug);
+  return categories.find((category) => category.slug === slug);
 }
 
-export function getCategoryById(id: string, asvsVersion: AsvsVersion = "5.0.0") {
-  return allCategories.find((category) => category.id === id && category.asvsVersion === asvsVersion);
+export function getCategoryById(id: string) {
+  return categories.find((category) => category.id === id);
 }
