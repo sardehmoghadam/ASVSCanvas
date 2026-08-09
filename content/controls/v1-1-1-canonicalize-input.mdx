@@ -1,0 +1,460 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.1.1
+canonicalId: v5.0.0-1.1.1
+slug: v1-1-1-canonicalize-input
+title: Canonicalize input before validation
+summary: Decode input once, only when expected, before validation and sanitization.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.1
+  title: Encoding and Sanitization Architecture
+level: 1
+tags:
+  - canonicalization
+  - input-validation
+  - decoding
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+  - label: OWASP Input Validation Cheat Sheet
+    url: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+relatedControls:
+  - id: V1.1.2
+    title: Encoding and sanitization architecture
+    href: /controls/v1-1-2-encoding-architecture/
+---
+
+## What This Control Means
+
+This control is about **canonicalization**.
+
+Canonicalization means converting input into a single, standard, expected form before the application uses it.
+
+Many inputs can be represented in multiple encoded forms. For example:
+
+```text
+hello world
+hello%20world
+hello+world
+%68%65%6c%6c%6f%20%77%6f%72%6c%64
+```
+
+All may represent similar data, depending on the context.
+
+The problem is that attackers can abuse encoding to bypass validation or sanitization logic.
+
+## Why This Matters
+
+Security checks are often performed on input. For example:
+
+```text
+Reject "../"
+Reject "<script>"
+Reject "admin"
+Reject SQL keywords
+Reject path traversal sequences
+```
+
+But if the attacker encodes malicious input, validation may not detect it.
+
+Example:
+
+```text
+%2e%2e%2f
+```
+
+After URL decoding, this becomes:
+
+```text
+../
+```
+
+If your application validates the raw encoded value first, it may miss the attack.
+
+## Main Security Requirement
+
+The application should:
+
+- Decode input only when decoding is expected
+- Decode input only once
+- Decode input before validation or sanitization
+- Validate and sanitize the canonical form
+- Avoid decoding again later
+
+Correct order:
+
+```text
+Receive input
+   ↓
+Decode once, if expected
+   ↓
+Validate canonical input
+   ↓
+Sanitize or encode for output/context
+   ↓
+Process input
+```
+
+Incorrect order:
+
+```text
+Receive input
+   ↓
+Validate raw encoded input
+   ↓
+Decode later
+   ↓
+Process dangerous value
+```
+
+## Example Attack: Path Traversal
+
+Suppose an application blocks `../` to prevent reading files outside an allowed directory.
+
+Attacker sends:
+
+```text
+%2e%2e%2fetc%2fpasswd
+```
+
+If validation checks the encoded input, it does not see:
+
+```text
+../etc/passwd
+```
+
+But after decoding, the payload becomes dangerous.
+
+## Bad Example — Validation Before Decoding
+
+Node.js / Express — Vulnerable
+
+```javascript
+app.get("/download", (req, res) => {
+  const file = req.query.file;
+
+  // Bad: validating before decoding
+  if (file.includes("../")) {
+    return res.status(400).send("Invalid file path");
+  }
+
+  // Dangerous: decoding after validation
+  const decodedFile = decodeURIComponent(file);
+
+  res.sendFile(`/app/files/${decodedFile}`);
+});
+```
+
+Attack request:
+
+```http
+GET /download?file=%2e%2e%2fsecret.txt
+```
+
+The validation checks `%2e%2e%2fsecret.txt`, does not find `../`, then the application decodes it into `../secret.txt`. Result: path traversal may occur.
+
+## Good Example — Decode Once, Then Validate
+
+Node.js / Express — Safer
+
+```javascript
+const path = require("path");
+
+app.get("/download", (req, res) => {
+  let file;
+
+  try {
+    // Decode once
+    file = decodeURIComponent(req.query.file);
+  } catch {
+    return res.status(400).send("Invalid encoding");
+  }
+
+  // Validate canonical form
+  if (file.includes("../") || file.includes("..\\")) {
+    return res.status(400).send("Invalid file path");
+  }
+
+  const baseDir = path.resolve("/app/files");
+  const requestedPath = path.resolve(baseDir, file);
+
+  // Stronger path validation
+  if (!requestedPath.startsWith(baseDir + path.sep)) {
+    return res.status(400).send("Invalid file path");
+  }
+
+  res.sendFile(requestedPath);
+});
+```
+
+The application decodes once, rejects invalid encoding, validates the decoded value, and prevents path traversal using filesystem path normalization.
+
+## Double Decoding Problem
+
+Another common issue is decoding input more than once.
+
+```text
+%252e%252e%252f
+```
+
+First decode: `%2e%2e%2f`
+
+Second decode: `../`
+
+If your application or framework decodes once, and your own code decodes again, attackers may bypass filters.
+
+## Bad Example — Double Decoding (Java)
+
+```java
+String input = request.getParameter("file");
+
+// Bad: servlet container may have already decoded this
+String decodedOnce = URLDecoder.decode(input, StandardCharsets.UTF_8);
+String decodedTwice = URLDecoder.decode(decodedOnce, StandardCharsets.UTF_8);
+
+if (decodedTwice.contains("../")) {
+    throw new IllegalArgumentException("Invalid path");
+}
+```
+
+Many frameworks already decode URL parameters. Decoding again may transform harmless-looking input into dangerous input. For example, `%252e%252e%252f` can become `../` after two decoding passes.
+
+## Good Example — Decode Only at a Defined Boundary (Java / Servlet)
+
+```java
+String file = request.getParameter("file");
+
+// Do not decode again unless you are certain it is still encoded data
+
+if (file == null || file.isBlank()) {
+    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing file");
+    return;
+}
+
+// Validate canonical input
+if (file.contains("../") || file.contains("..\\")) {
+    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid path");
+    return;
+}
+
+Path baseDir = Paths.get("/app/files").toRealPath();
+Path requestedPath = baseDir.resolve(file).normalize();
+
+if (!requestedPath.startsWith(baseDir)) {
+    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid path");
+    return;
+}
+
+response.setContentType("application/octet-stream");
+Files.copy(requestedPath, response.getOutputStream());
+```
+
+`request.getParameter()` usually returns decoded parameters, so do not decode them again unless your framework documentation says otherwise.
+
+## HTML Escaping / Unescaping Example
+
+This control is not only about URL decoding. It also applies to HTML escaping and unescaping.
+
+An attacker may send:
+
+```text
+&lt;script&gt;alert(1)&lt;/script&gt;
+```
+
+If the application validates before HTML-unescaping, it may not detect the script tag.
+
+Bad Example — HTML Unescape After Validation (Python)
+
+```python
+import html
+
+def process_comment(comment):
+    # Bad: validation before unescaping
+    if "<script>" in comment.lower():
+        raise ValueError("Script tag is not allowed")
+
+    # Dangerous: unescaping after validation
+    comment = html.unescape(comment)
+
+    save_comment(comment)
+```
+
+Better Example — Canonicalize Then Validate (Python)
+
+```python
+import html
+
+def process_comment(comment):
+    if comment is None:
+        raise ValueError("Comment is required")
+
+    # Only unescape if your application expects HTML-encoded input
+    canonical_comment = html.unescape(comment)
+
+    # Validate canonical form
+    if "<script" in canonical_comment.lower():
+        raise ValueError("Script tag is not allowed")
+
+    save_comment(canonical_comment)
+```
+
+However, for XSS prevention, blocking `<script>` is not enough. The real protection should be contextual output encoding.
+
+## SQL Injection Example
+
+Encoding tricks can also affect SQL injection filters.
+
+Bad validation:
+
+```javascript
+function isSafeUsername(username) {
+  return !username.includes("'") && !username.includes("--");
+}
+
+app.get("/user", (req, res) => {
+  const username = req.query.username;
+
+  // Bad: validation before decoding
+  if (!isSafeUsername(username)) {
+    return res.status(400).send("Invalid username");
+  }
+
+  const decodedUsername = decodeURIComponent(username);
+
+  const sql = `SELECT * FROM users WHERE username = '${decodedUsername}'`;
+
+  db.query(sql, (err, rows) => {
+    res.json(rows);
+  });
+});
+```
+
+Attack: `admin%27--` decodes to `admin'--`.
+
+Better approach:
+
+```javascript
+app.get("/user", (req, res) => {
+  let username;
+
+  try {
+    username = decodeURIComponent(req.query.username);
+  } catch {
+    return res.status(400).send("Invalid encoding");
+  }
+
+  // Allowlist validation
+  if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+    return res.status(400).send("Invalid username");
+  }
+
+  // Parameterized query
+  db.query(
+    "SELECT * FROM users WHERE username = ?",
+    [username],
+    (err, rows) => {
+      if (err) return res.status(500).send("Database error");
+      res.json(rows);
+    }
+  );
+});
+```
+
+Best practice: decode once, validate with an allowlist, use parameterized queries, and do not rely on blacklist filtering.
+
+## Canonicalization Utility Example
+
+In larger applications, canonicalization should happen in a clear, centralized place.
+
+Python Example
+
+```python
+from urllib.parse import unquote
+
+class InvalidInputEncoding(Exception):
+    pass
+
+def canonicalize_url_input(value: str) -> str:
+    if value is None:
+        raise InvalidInputEncoding("Input is required")
+
+    try:
+        decoded = unquote(value, errors="strict")
+    except Exception:
+        raise InvalidInputEncoding("Invalid URL encoding")
+
+    # Detect suspicious remaining percent-encoding.
+    # This can help prevent double-encoding attacks.
+    if "%" in decoded:
+        raise InvalidInputEncoding("Nested encoding is not allowed")
+
+    return decoded
+```
+
+Safer JavaScript Canonicalization Helper
+
+```javascript
+function canonicalizeUrlComponent(input) {
+  if (typeof input !== "string") {
+    throw new Error("Input must be a string");
+  }
+
+  let decoded;
+  try {
+    decoded = decodeURIComponent(input);
+  } catch {
+    throw new Error("Invalid URL encoding");
+  }
+
+  // Optional strict policy: reject remaining encoded sequences
+  if (/%[0-9a-fA-F]{2}/.test(decoded)) {
+    throw new Error("Nested or double encoding is not allowed");
+  }
+
+  return decoded;
+}
+```
+
+## Important Design Rules
+
+**Rule 1: Decode Only When Expected.** Only decode URL-encoded data in places where URL encoding is expected, such as URL query parameters, path parameters, form fields with URL encoding, and specific API fields documented as encoded. Do not decode arbitrary JSON fields unless the API contract says they are encoded.
+
+**Rule 2: Decode Once.** Avoid `decodeURIComponent(decodeURIComponent(input))`. Double decoding can turn hidden payloads into dangerous values.
+
+**Rule 3: Canonicalize Before Validation.** Correct order is decode, validate, process. Incorrect is validate, decode, process.
+
+**Rule 4: Know What Your Framework Already Does.** Many frameworks automatically decode input. Express often parses query strings for you, Java Servlet containers decode request parameters, Django and Flask provide decoded query parameters, and Spring MVC often provides decoded request parameters.
+
+## Recommended Implementation Pattern
+
+A secure input-handling pipeline should look like this:
+
+```text
+1. Identify input source and expected encoding
+2. Decode exactly once if needed
+3. Reject invalid encoding
+4. Reject nested or unexpected encoding where appropriate
+5. Normalize/canonicalize the input
+6. Validate using allowlists
+7. Sanitize only for the correct context
+8. Encode output for the target context
+```
+
+## Checklist for Code Review
+
+- Is decoding performed only when encoded input is expected?
+- Is input decoded before validation?
+- Is decoding performed only once?
+- Does the code avoid double decoding?
+- Does the framework already decode the input?
+- Are invalid encodings rejected?
+- Are nested encodings handled or rejected?
+- Is canonical input used for validation?
+- Are path values normalized before filesystem access?
+- Is output encoded according to its context?
