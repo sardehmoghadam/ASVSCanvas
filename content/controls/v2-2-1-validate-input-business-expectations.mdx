@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V2.2.1
+canonicalId: v5.0.0-2.2.1
+slug: v2-2-1-validate-input-business-expectations
+title: "Validate input against business expectations"
+summary: "Use positive validation with allow lists, expected structures, and logical limits. L1 focuses on security/business decisions; L2+ applies to all input."
+chapter:
+  id: V2
+  title: Validation and Business Logic
+section:
+  id: V2.2
+  title: Input Validation
+level: 1
+tags:
+  - input-validation  - allowlist  - business-logic
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that input is validated to enforce business or functional expectations for that input. This should either use positive validation against an allow list of values, patterns, and ranges, or be based on comparing the input to an expected structure and logical limits according to predefined rules. For L1, this can focus on input which is used to make specific business or security decisions. For L2 and up, this should apply to all input.

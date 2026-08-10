@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V2.3.5
+canonicalId: v5.0.0-2.3.5
+slug: v2-3-5-multi-user-approval
+title: "Require multi-user approval for high-value flows"
+summary: "Require multi-user approval for high-value actions such as large monetary transfers, contract approvals, or access to classified information."
+chapter:
+  id: V2
+  title: Validation and Business Logic
+section:
+  id: V2.3
+  title: Business Logic Security
+level: 1
+tags:
+  - business-logic  - approval  - authorization  - segregation-of-duties
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that high-value business logic flows require multi-user approval to prevent unauthorized or accidental actions. This could include but is not limited to large monetary transfers, contract approvals, access to classified information, or safety overrides in manufacturing.

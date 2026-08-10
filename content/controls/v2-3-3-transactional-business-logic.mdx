@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V2.3.3
+canonicalId: v5.0.0-2.3.3
+slug: v2-3-3-transactional-business-logic
+title: "Use transactions for business logic operations"
+summary: "Use transactions so that a business logic operation either succeeds in its entirety or rolls back to the previous correct state."
+chapter:
+  id: V2
+  title: Validation and Business Logic
+section:
+  id: V2.3
+  title: Business Logic Security
+level: 1
+tags:
+  - business-logic  - transactions  - rollback  - integrity
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that transactions are being used at the business logic level such that either a business logic operation succeeds in its entirety or it is rolled back to the previous correct state.
