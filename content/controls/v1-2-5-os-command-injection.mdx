@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.2.5
+canonicalId: v5.0.0-1.2.5
+slug: v1-2-5-os-command-injection
+title: Protect against OS command injection
+summary: Use parameterized OS queries or contextual command line output encoding for operating system calls.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.2
+  title: Injection Prevention
+level: 1
+tags:
+  - command-injection  - os  - sandboxing
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.2.4
+canonicalId: v5.0.0-1.2.4
+slug: v1-2-4-parameterized-queries
+title: Use parameterized queries or ORMs
+summary: Protect database queries from SQL/NoSQL injection using parameterized queries, ORMs, or entity frameworks.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.2
+  title: Injection Prevention
+level: 1
+tags:
+  - sql-injection  - database  - orm
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that data selection or database queries (e.g., SQL, HQL, NoSQL, Cypher) use parameterized queries, ORMs, entity frameworks, or are otherwise protected from SQL Injection and other database injection attacks. This is also relevant when writing stored procedures.

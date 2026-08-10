@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { ControlCard } from "@/components/cards";
+import { SectionCard } from "@/components/cards";
 import { DocsLayout } from "@/components/docs-layout";
 import { Badge } from "@/components/ui/badge";
 import { categories, getCategoryBySlug } from "@/content/categories";
-import { getControlsByCategory } from "@/content/controls";
+import { getControlsBySectionId } from "@/content/controls";
+import { getSectionsByChapter } from "@/content/sections";
+import { getControlsBySection } from "@/lib/content/loader";
 
 export function generateStaticParams() {
   return categories.map((category) => ({ slug: category.slug }));
@@ -18,7 +20,15 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     notFound();
   }
 
-  const categoryControls = getControlsByCategory(category.id, category.asvsVersion);
+  const chapterSections = getSectionsByChapter(category.id);
+
+  const sectionsWithCounts = chapterSections.map((section) => {
+    const mdxCount = getControlsBySection(section.id).length;
+    const legacyCount = getControlsBySectionId(section.id).length;
+    return { section, count: mdxCount + legacyCount };
+  });
+
+  const totalControls = sectionsWithCounts.reduce((sum, s) => sum + s.count, 0);
 
   return (
     <DocsLayout>
@@ -26,7 +36,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },
-            { label: `ASVS ${category.asvsVersion}` },
             { label: `${category.id} ${category.title}` },
           ]}
         />
@@ -40,17 +49,21 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
           <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">{category.description}</p>
         </header>
 
-        <section className="mt-10" aria-labelledby="chapter-controls">
-          <h2 id="chapter-controls" className="text-2xl font-semibold tracking-tight">Chapter lessons</h2>
-          {categoryControls.length > 0 ? (
+        <section className="mt-10" aria-labelledby="chapter-sections">
+          <h2 id="chapter-sections" className="text-2xl font-semibold tracking-tight">
+            Sections ({totalControls} controls)
+          </h2>
+          {chapterSections.length > 0 ? (
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {categoryControls.map((control) => <ControlCard key={control.slug} control={control} />)}
+              {sectionsWithCounts.map(({ section, count }) => (
+                <SectionCard key={section.id} section={section} count={count} />
+              ))}
             </div>
           ) : (
             <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/20 p-6">
-              <p className="font-medium">No lessons have been published for {category.id} {category.title} yet.</p>
+              <p className="font-medium">No sections have been defined for {category.id} {category.title} yet.</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                This chapter is part of the official OWASP ASVS 5.0.0 structure. Training material, examples, and testing notes will be added as authoring progresses.
+                This chapter is part of the official OWASP ASVS 5.0.0 structure. Sections and training material will be added as authoring progresses.
               </p>
             </div>
           )}

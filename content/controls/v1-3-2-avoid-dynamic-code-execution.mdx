@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.3.2
+canonicalId: v5.0.0-1.3.2
+slug: v1-3-2-avoid-dynamic-code-execution
+title: Avoid dynamic code execution with user input
+summary: Avoid eval() or similar features like SpEL. If unavoidable, sanitize any user input before execution.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.3
+  title: Sanitization
+level: 1
+tags:
+  - code-injection  - eval  - spel
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed.

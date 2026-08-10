@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.5.2
+canonicalId: v5.0.0-1.5.2
+slug: v1-5-2-safe-deserialization
+title: Restrict deserialization of untrusted data
+summary: Enforce safe input handling such as an allowlist of object types or restricting client-defined types to prevent deserialization attacks.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.5
+  title: Safe Deserialization
+level: 1
+tags:
+  - deserialization  - allowlist  - type-safety
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that deserialization of untrusted data enforces safe input handling, such as using an allowlist of object types or restricting client-defined object types, to prevent deserialization attacks. Deserialization mechanisms that are explicitly defined as insecure must not be used with untrusted input.

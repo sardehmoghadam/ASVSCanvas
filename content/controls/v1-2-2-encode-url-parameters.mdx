@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.2.2
+canonicalId: v5.0.0-1.2.2
+slug: v1-2-2-encode-url-parameters
+title: Encode untrusted data in URLs
+summary: URL-encode or base64url-encode untrusted data in query/path parameters and only allow safe URL protocols.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.2
+  title: Injection Prevention
+level: 1
+tags:
+  - url-encoding  - injection  - xss
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that when dynamically building URLs, untrusted data is encoded according to its context (e.g., URL encoding or base64url encoding for query or path parameters). Ensure that only safe URL protocols are permitted (e.g., disallow javascript: or data:).

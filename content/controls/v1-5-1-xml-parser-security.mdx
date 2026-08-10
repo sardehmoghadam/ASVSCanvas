@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.5.1
+canonicalId: v5.0.0-1.5.1
+slug: v1-5-1-xml-parser-security
+title: Configure XML parsers securely
+summary: Use restrictive XML parser configuration and disable unsafe features such as external entity resolution to prevent XXE.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.5
+  title: Safe Deserialization
+level: 1
+tags:
+  - xxe  - xml  - parser  - deserialization
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application configures XML parsers to use a restrictive configuration and that unsafe features such as resolving external entities are disabled to prevent XML eXternal Entity (XXE) attacks.

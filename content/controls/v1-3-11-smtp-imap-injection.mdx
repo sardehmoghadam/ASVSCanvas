@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.3.11
+canonicalId: v5.0.0-1.3.11
+slug: v1-3-11-smtp-imap-injection
+title: Sanitize input before passing to mail systems
+summary: Sanitize user input before passing to mail systems to protect against SMTP or IMAP injection.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.3
+  title: Sanitization
+level: 1
+tags:
+  - smtp  - imap  - injection  - email
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application sanitizes user input before passing to mail systems to protect against SMTP or IMAP injection.

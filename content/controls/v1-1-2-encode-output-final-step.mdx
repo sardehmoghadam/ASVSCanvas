@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.1.2
+canonicalId: v5.0.0-1.1.2
+slug: v1-1-2-encode-output-final-step
+title: Encode output as final step before interpretation
+summary: Apply output encoding or escaping either as a final step before the interpreter consumes data or by the interpreter itself.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.1
+  title: Encoding and Sanitization Architecture
+level: 1
+tags:
+  - output-encoding  - xss  - escaping
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application performs output encoding and escaping either as a final step before being used by the interpreter for which it is intended or by the interpreter itself.

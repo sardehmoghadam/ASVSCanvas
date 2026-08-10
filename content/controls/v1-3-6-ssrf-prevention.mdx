@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.3.6
+canonicalId: v5.0.0-1.3.6
+slug: v1-3-6-ssrf-prevention
+title: Protect against SSRF attacks
+summary: Validate untrusted data against an allowlist of protocols, domains, paths, and ports before calling another service.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.3
+  title: Sanitization
+level: 1
+tags:
+  - ssrf  - url-validation  - network
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application protects against Server-side Request Forgery (SSRF) attacks, by validating untrusted data against an allowlist of protocols, domains, paths and ports and sanitizing potentially dangerous characters before using the data to call another service.

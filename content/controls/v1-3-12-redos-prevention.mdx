@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.3.12
+canonicalId: v5.0.0-1.3.12
+slug: v1-3-12-redos-prevention
+title: Mitigate ReDoS attacks in regular expressions
+summary: Ensure regex is free from exponential backtracking and sanitize untrusted input to prevent ReDoS.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.3
+  title: Sanitization
+level: 1
+tags:
+  - redos  - regex  - performance  - dos
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that regular expressions are free from elements causing exponential backtracking, and ensure untrusted input is sanitized to mitigate ReDoS or Runaway Regex attacks.

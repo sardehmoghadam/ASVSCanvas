@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.5.3
+canonicalId: v5.0.0-1.5.3
+slug: v1-5-3-consistent-parser-behavior
+title: Ensure consistent parser behavior
+summary: Ensure different parsers for the same data type perform consistently and use the same character encoding to prevent parser differential attacks.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.5
+  title: Safe Deserialization
+level: 1
+tags:
+  - parser  - deserialization  - json  - xml
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that different parsers used in the application for the same data type (e.g., JSON parsers, XML parsers, URL parsers), perform parsing in a consistent way and use the same character encoding mechanism to avoid issues such as JSON Interoperability vulnerabilities or different URI or file parsing behavior being exploited in Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks.

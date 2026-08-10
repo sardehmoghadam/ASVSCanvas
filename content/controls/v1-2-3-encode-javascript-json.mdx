@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.2.3
+canonicalId: v5.0.0-1.2.3
+slug: v1-2-3-encode-javascript-json
+title: Encode output in JavaScript and JSON
+summary: Use output encoding or escaping when dynamically building JavaScript or JSON content to avoid injection.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.2
+  title: Injection Prevention
+level: 1
+tags:
+  - javascript  - json  - injection  - xss
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that output encoding or escaping is used when dynamically building JavaScript content (including JSON), to avoid changing the message or document structure (to avoid JavaScript and JSON injection).

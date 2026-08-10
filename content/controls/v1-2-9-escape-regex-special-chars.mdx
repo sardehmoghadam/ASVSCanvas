@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.2.9
+canonicalId: v5.0.0-1.2.9
+slug: v1-2-9-escape-regex-special-chars
+title: Escape special characters in regular expressions
+summary: Escape regex metacharacters (typically with a backslash) to prevent misinterpretation.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.2
+  title: Injection Prevention
+level: 1
+tags:
+  - regex  - injection  - input-validation
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application escapes special characters in regular expressions (typically using a backslash) to prevent them from being misinterpreted as metacharacters.

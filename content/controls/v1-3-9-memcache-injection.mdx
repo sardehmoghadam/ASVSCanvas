@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V1.3.9
+canonicalId: v5.0.0-1.3.9
+slug: v1-3-9-memcache-injection
+title: Sanitize content before sending to memcache
+summary: Sanitize content before it is sent to memcache to prevent injection attacks.
+chapter:
+  id: V1
+  title: Encoding and Sanitization
+section:
+  id: V1.3
+  title: Sanitization
+level: 1
+tags:
+  - memcache  - injection  - caching
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application sanitizes content before it is sent to memcache to prevent injection attacks.
