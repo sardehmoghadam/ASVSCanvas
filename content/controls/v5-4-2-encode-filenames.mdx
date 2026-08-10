@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.4.2
+canonicalId: v5.0.0-5.4.2
+slug: v5-4-2-encode-filenames
+title: "Encode or sanitize file names in responses"
+summary: "Encode or sanitize file names served in HTTP response headers or email attachments following RFC 6266 to prevent injection."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.4
+  title: File Download
+level: 1
+tags:
+  - filename  - encoding  - rfc-6266  - injection
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that file names served (e.g., in HTTP response header fields or email attachments) are encoded or sanitized (e.g., following RFC 6266) to preserve document structure and prevent injection attacks.

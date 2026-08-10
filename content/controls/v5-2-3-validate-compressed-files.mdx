@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.2.3
+canonicalId: v5.0.0-5.2.3
+slug: v5-2-3-validate-compressed-files
+title: "Validate compressed file limits before extraction"
+summary: "Check compressed files against max uncompressed size and max number of files before decompression."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.2
+  title: File Upload and Content
+level: 1
+tags:
+  - compressed-files  - zip-bomb  - extraction  - dos
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application checks compressed files (e.g., zip, gz, docx, odt) against maximum allowed uncompressed size and against maximum number of files before uncompressing the file.

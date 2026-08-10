@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.3.3
+canonicalId: v5.0.0-5.3.3
+slug: v5-3-3-ignore-user-paths
+title: "Ignore user-provided paths in file processing"
+summary: "Server-side file processing such as decompression must ignore user-provided path information to prevent zip slip."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.3
+  title: File Storage
+level: 1
+tags:
+  - zip-slip  - path-traversal  - decompression  - file-processing
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that server-side file processing, such as file decompression, ignores user-provided path information to prevent vulnerabilities such as zip slip.

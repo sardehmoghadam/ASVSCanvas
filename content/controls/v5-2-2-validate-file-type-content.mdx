@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.2.2
+canonicalId: v5.0.0-5.2.2
+slug: v5-2-2-validate-file-type-content
+title: "Validate file type and content"
+summary: "Check file extension matches expected type and validate contents using magic bytes, image re-writing, and specialized libraries."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.2
+  title: File Upload and Content
+level: 1
+tags:
+  - file-upload  - magic-bytes  - content-validation  - file-type
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that when the application accepts a file, either on its own or within an archive such as a zip file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. This includes, but is not limited to, checking the initial magic bytes, performing image re-writing, and using specialized libraries for file content validation. For L1, this can focus just on files which are used to make specific business or security decisions. For L2 and up, this must apply to all files being accepted.

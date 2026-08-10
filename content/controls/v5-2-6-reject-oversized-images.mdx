@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.2.6
+canonicalId: v5.0.0-5.2.6
+slug: v5-2-6-reject-oversized-images
+title: "Reject oversized images to prevent pixel flood"
+summary: "Reject uploaded images with pixel dimensions larger than the maximum allowed to prevent pixel flood attacks."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.2
+  title: File Upload and Content
+level: 1
+tags:
+  - images  - pixel-flood  - dos  - upload-validation
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application rejects uploaded images with a pixel size larger than the maximum allowed, to prevent pixel flood attacks.

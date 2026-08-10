@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.2.5
+canonicalId: v5.0.0-5.2.5
+slug: v5-2-5-block-symlinks
+title: "Block symlinks in compressed uploads"
+summary: "Do not allow compressed files containing symlinks unless specifically required with an allowlist of symlink targets."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.2
+  title: File Upload and Content
+level: 1
+tags:
+  - symlinks  - compressed-files  - zip-slip  - path-traversal
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application does not allow uploading compressed files containing symlinks unless this is specifically required (in which case it will be necessary to enforce an allowlist of the files that can be symlinked to).

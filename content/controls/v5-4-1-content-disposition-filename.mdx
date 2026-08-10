@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.4.1
+canonicalId: v5.0.0-5.4.1
+slug: v5-4-1-content-disposition-filename
+title: "Set Content-Disposition filename safely"
+summary: "Validate or ignore user-submitted filenames in parameters and specify the filename in Content-Disposition header."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.4
+  title: File Download
+level: 1
+tags:
+  - content-disposition  - filename  - download  - sanitization
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application validates or ignores user-submitted filenames, including in a JSON, JSONP, or URL parameter and specifies a filename in the Content-Disposition header field in the response.

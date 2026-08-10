@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.3.2
+canonicalId: v5.0.0-5.3.2
+slug: v5-3-2-trusted-file-paths
+title: "Use trusted file paths for file operations"
+summary: "Use internally generated or trusted data for file paths instead of user-submitted filenames to prevent path traversal, LFI/RFI, and SSRF."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.3
+  title: File Storage
+level: 1
+tags:
+  - path-traversal  - lfi  - rfi  - ssrf  - sanitization
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that when the application creates file paths for file operations, instead of user-submitted filenames, it uses internally generated or trusted data, or if user-submitted filenames or file metadata must be used, strict validation and sanitization must be applied. This is to protect against path traversal, local or remote file inclusion (LFI, RFI), and server-side request forgery (SSRF) attacks.

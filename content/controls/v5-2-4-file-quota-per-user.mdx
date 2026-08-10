@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V5.2.4
+canonicalId: v5.0.0-5.2.4
+slug: v5-2-4-file-quota-per-user
+title: "Enforce file size quota and count per user"
+summary: "Enforce a file size quota and maximum number of files per user to prevent storage exhaustion."
+chapter:
+  id: V5
+  title: File Handling
+section:
+  id: V5.2
+  title: File Upload and Content
+level: 1
+tags:
+  - quota  - storage  - dos  - user-limits
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that a file size quota and maximum number of files per user are enforced to ensure that a single user cannot fill up the storage with too many files, or excessively large files.
