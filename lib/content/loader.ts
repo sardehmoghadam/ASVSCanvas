@@ -3,6 +3,10 @@ import path from "node:path";
 import matter from "gray-matter";
 import { compileMDX } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
+import { Callout } from "@/components/callout";
+import { CodeTabs } from "@/components/code-tabs";
+import { ReferencesList } from "@/components/references-list";
+import { RelatedControls } from "@/components/related-controls";
 import { ControlFrontmatterSchema, type ControlFrontmatter } from "./schema";
 
 export const CONTROLS_DIR = path.join(process.cwd(), "content", "controls");
@@ -76,6 +80,7 @@ export type CompiledControl = {
 export async function compileControl(entry: ControlEntry): Promise<CompiledControl> {
   const { content } = await compileMDX({
     source: entry.body,
+    components: { Callout, CodeTabs, ReferencesList, RelatedControls },
     options: {
       mdxOptions: {
         remarkPlugins: [remarkGfm],

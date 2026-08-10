@@ -3,7 +3,9 @@ import { ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Control } from "@/types/content";
 
-export function RelatedControls({ controls }: { controls: Control[] }) {
+export type RelatedControl = Pick<Control, "slug" | "title" | "summary">;
+
+export function RelatedControls({ controls }: { controls: RelatedControl[] }) {
   if (controls.length === 0) {
     return <p className="text-sm text-muted-foreground">No related controls yet.</p>;
   }

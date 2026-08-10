@@ -8,26 +8,115 @@ import { RelatedControls } from "@/components/related-controls";
 import { TableOfContents } from "@/components/table-of-contents";
 import { Badge } from "@/components/ui/badge";
 import { categories } from "@/content/categories";
-import { controls, getControlBySlug } from "@/content/controls";
+import { controls as legacyControls, getControlBySlug as getLegacyControl } from "@/content/controls";
+import {
+  getAllControls,
+  getControlBySlug as getMdxControl,
+  compileControl,
+  type ControlEntry,
+} from "@/lib/content/loader";
 
 const toc = ["Explanation", "Why It Matters", "Examples", "Testing Notes", "References", "Related Controls"];
 
 export function generateStaticParams() {
-  return controls.map((control) => ({ slug: control.slug }));
+  const mdxSlugs = getAllControls().map((entry) => entry.frontmatter.slug);
+  const legacySlugs = legacyControls.map((control) => control.slug);
+  const allSlugs = [...new Set([...mdxSlugs, ...legacySlugs])];
+  return allSlugs.map((slug) => ({ slug }));
+}
+
+/**
+ * Renders an MDX-authored control page.
+ * Falls back to the legacy structured-data controls array when no MDX file exists.
+ */
+async function renderMdxControl(entry: ControlEntry) {
+  const compiled = await compileControl(entry);
+  const { frontmatter } = compiled;
+  const category = categories.find((c) => c.id === frontmatter.chapter.id);
+  const allControls = getAllControls();
+  const related = allControls
+    .filter((e) => e.frontmatter.chapter.id === frontmatter.chapter.id && e.frontmatter.slug !== frontmatter.slug)
+    .slice(0, 2);
+
+  return (
+    <DocsLayout>
+      <div className="grid gap-8 px-4 py-10 sm:px-6 lg:px-0 xl:grid-cols-[minmax(0,1fr)_240px]">
+        <article className="min-w-0 max-w-4xl">
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              {
+                label: category?.title ?? frontmatter.chapter.title,
+                href: category ? `/categories/${category.slug}/` : undefined,
+              },
+              { label: frontmatter.controlId },
+            ]}
+          />
+          <header className="mt-8 border-b border-border/70 pb-8">
+            <div className="flex flex-wrap gap-2">
+              <Badge>{frontmatter.controlId}</Badge>
+              <Badge variant="outline">ASVS {frontmatter.asvsVersion}</Badge>
+              <Badge variant="secondary">{frontmatter.difficulty}</Badge>
+            </div>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance">{frontmatter.title}</h1>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">{frontmatter.summary}</p>
+          </header>
+
+          {category?.isLegacy && category.migrationNote ? (
+            <div className="mt-8">
+              <Callout kind="warning" title="ASVS 4.0.3 legacy control">
+                This control retains its original 4.0.3 identifier. {category.migrationNote}
+              </Callout>
+            </div>
+          ) : null}
+
+          <div className="mt-10 prose prose-slate max-w-none dark:prose-invert prose-headings:scroll-mt-24 prose-code:before:content-none prose-code:after:content-none">
+            {compiled.content}
+          </div>
+
+          {frontmatter.references.length > 0 ? (
+            <section id="references" className="mt-10 space-y-4">
+              <h2 className="text-2xl font-semibold">References</h2>
+              <ReferencesList references={frontmatter.references} />
+            </section>
+          ) : null}
+
+          {related.length > 0 ? (
+            <section id="related-controls" className="mt-10 space-y-4">
+              <h2 className="text-2xl font-semibold">Related Controls</h2>
+              <RelatedControls controls={related.map((e) => ({
+                slug: e.frontmatter.slug,
+                title: e.frontmatter.title,
+                summary: e.frontmatter.summary,
+              }))} />
+            </section>
+          ) : null}
+        </article>
+        <TableOfContents items={toc} />
+      </div>
+    </DocsLayout>
+  );
 }
 
 export default async function ControlPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const control = getControlBySlug(slug);
 
+  // Try MDX first, then fall back to legacy structured data
+  const mdxEntry = getMdxControl(slug);
+  if (mdxEntry) {
+    return renderMdxControl(mdxEntry);
+  }
+
+  // Fallback to legacy control
+  const control = getLegacyControl(slug);
   if (!control) {
     notFound();
   }
 
-    const category = categories.find(
+  const category = categories.find(
     (item) => item.id === control.categoryId && item.asvsVersion === control.asvsVersion,
   );
-  const related = controls
+  const related = legacyControls
     .filter(
       (item) =>
         item.categoryId === control.categoryId &&
@@ -53,7 +142,7 @@ export default async function ControlPage({ params }: { params: Promise<{ slug: 
           <header className="mt-8 border-b border-border/70 pb-8">
             <div className="flex flex-wrap gap-2">
               <Badge>{control.controlId}</Badge>
-                            <Badge variant="outline">ASVS {control.asvsVersion}</Badge>
+              <Badge variant="outline">ASVS {control.asvsVersion}</Badge>
               <Badge variant="secondary">{control.difficulty}</Badge>
             </div>
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance">{control.title}</h1>
