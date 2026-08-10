@@ -41,6 +41,15 @@ export type Control = {
   relatedControls: RelatedControl[];
 };
 
+export type Section = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  chapterId: string;
+  asvsVersion: AsvsVersion;
+};
+
 export type Category = {
   id: string;
   slug: string;
