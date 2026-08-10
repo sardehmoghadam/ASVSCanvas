@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.4.4
+canonicalId: v5.0.0-3.4.4
+slug: v3-4-4-x-content-type-options
+title: "Set X-Content-Type-Options: nosniff"
+summary: "Include X-Content-Type-Options: nosniff on all HTTP responses to prevent MIME type sniffing and enable CORB."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.4
+  title: Browser Security Mechanism Headers
+level: 1
+tags:
+  - content-type  - x-content-type-options  - mime-sniffing  - corb
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all HTTP responses contain an X-Content-Type-Options: nosniff header field. This instructs browsers not to use content sniffing and MIME type guessing for the given response, and to require the response Content-Type header field value to match the destination resource. For example, the response to a request for a style is only accepted if the response Content-Type is text/css. This also enables the use of the Cross-Origin Read Blocking (CORB) functionality by the browser.

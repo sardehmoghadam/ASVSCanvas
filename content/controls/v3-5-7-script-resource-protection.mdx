@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.5.7
+canonicalId: v5.0.0-3.5.7
+slug: v3-5-7-script-resource-protection
+title: "Protect script resource content from XSSI"
+summary: "Do not include data requiring authorization in script resource responses like JavaScript files."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.5
+  title: Browser Origin Separation
+level: 1
+tags:
+  - xssi  - script-resources  - authorization  - data-leakage
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that data requiring authorization is not included in script resource responses, like JavaScript files, to prevent Cross-Site Script Inclusion (XSSI) attacks.

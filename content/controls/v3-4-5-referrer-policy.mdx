@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.4.5
+canonicalId: v5.0.0-3.4.5
+slug: v3-4-5-referrer-policy
+title: "Set a restrictive Referrer-Policy"
+summary: "Set a referrer policy to prevent leakage of sensitive URL data (path, query, hostname) to third-party services."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.4
+  title: Browser Security Mechanism Headers
+level: 1
+tags:
+  - referrer-policy  - privacy  - sensitive-data
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application sets a referrer policy to prevent leakage of technically sensitive data to third-party services via the Referer HTTP request header field. This can be done using the Referrer-Policy HTTP response header field or via HTML element attributes. Sensitive data could include path and query data in the URL, and for internal non-public applications also the hostname.

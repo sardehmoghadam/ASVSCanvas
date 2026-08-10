@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.7.5
+canonicalId: v5.0.0-3.7.5
+slug: v3-7-5-unsupported-browser-features
+title: "Handle unsupported browser security features"
+summary: "Define and implement behavior (warning or blocking) when the browser does not support expected security features."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.7
+  title: Other Browser Security Considerations
+level: 1
+tags:
+  - browser  - compatibility  - graceful-degradation
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application behaves as documented (such as warning the user or blocking access) if the browser used to access the application does not support the expected security features.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.5.2
+canonicalId: v5.0.0-3.5.2
+slug: v3-5-2-cors-preflight
+title: "Secure CORS preflight for sensitive functionality"
+summary: "Ensure sensitive endpoints cannot be called without triggering CORS preflight by checking Origin, Content-Type, or using non-safelisted headers."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.5
+  title: Browser Origin Separation
+level: 1
+tags:
+  - cors  - preflight  - csrf  - origin
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if the application relies on the CORS preflight mechanism to prevent disallowed cross-origin use of sensitive functionality, it is not possible to call the functionality with a request which does not trigger a CORS-preflight request. This may require checking the values of the Origin and Content-Type request header fields or using an extra header field that is not a CORS-safelisted header-field.

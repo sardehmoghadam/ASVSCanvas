@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.7.3
+canonicalId: v5.0.0-3.7.3
+slug: v3-7-3-notify-external-redirects
+title: "Notify user on external redirects"
+summary: "Show a notification with an option to cancel when redirecting users to URLs outside the application control."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.7
+  title: Other Browser Security Considerations
+level: 1
+tags:
+  - redirect  - notification  - phishing
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application shows a notification when the user is being redirected to a URL outside of the application control, with an option to cancel the navigation.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.5.1
+canonicalId: v5.0.0-3.5.1
+slug: v3-5-1-csrf-anti-forgery-tokens
+title: "Prevent CSRF with anti-forgery tokens"
+summary: "Validate requests originate from the application using anti-forgery tokens or non-CORS-safelisted headers to defend against CSRF."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.5
+  title: Browser Origin Separation
+level: 1
+tags:
+  - csrf  - anti-forgery  - tokens  - same-origin
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if the application does not rely on the CORS preflight mechanism to prevent disallowed cross-origin requests to use sensitive functionality, these requests are validated to ensure they originate from the application itself. This may be done by using and validating anti-forgery tokens or requiring extra HTTP header fields that are not CORS-safelisted request-header fields. This is to defend against browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).

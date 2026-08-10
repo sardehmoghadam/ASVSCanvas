@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.3.1
+canonicalId: v5.0.0-4.3.1
+slug: v4-3-1-graphql-dos-prevention
+title: "Prevent GraphQL DoS with query controls"
+summary: "Use query allowlists, depth limiting, amount limiting, or query cost analysis to prevent expensive nested queries."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.3
+  title: GraphQL
+level: 1
+tags:
+  - graphql  - dos  - query-depth  - rate-limiting
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that a query allowlist, depth limiting, amount limiting, or query cost analysis is used to prevent GraphQL or data layer expression Denial of Service (DoS) as a result of expensive, nested queries.

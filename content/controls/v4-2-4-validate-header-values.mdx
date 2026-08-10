@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.2.4
+canonicalId: v5.0.0-4.2.4
+slug: v4-2-4-validate-header-values
+title: "Validate header field values in HTTP/2 and HTTP/3"
+summary: "Only accept HTTP/2 and HTTP/3 requests where header fields and values do not contain CR, LF, or CRLF sequences."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.2
+  title: HTTP Message Structure Validation
+level: 1
+tags:
+  - http2  - http3  - header-injection  - crlf
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application only accepts HTTP/2 and HTTP/3 requests where the header fields and values do not contain any CR (\r), LF (\n), or CRLF (\r\n) sequences, to prevent header injection attacks.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.1.1
+canonicalId: v5.0.0-4.1.1
+slug: v4-1-1-content-type-charset
+title: "Set correct Content-Type with charset"
+summary: "Every HTTP response with a body must include a Content-Type header matching the actual content, with charset parameter (e.g. UTF-8)."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.1
+  title: Generic Web Service Security
+level: 1
+tags:
+  - content-type  - charset  - http-headers  - iana
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that every HTTP response with a message body contains a Content-Type header field that matches the actual content of the response, including the charset parameter to specify safe character encoding (e.g., UTF-8, ISO-8859-1) according to IANA Media Types, such as text/*, */+xml and */xml.

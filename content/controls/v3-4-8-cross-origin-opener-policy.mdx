@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.4.8
+canonicalId: v5.0.0-3.4.8
+slug: v3-4-8-cross-origin-opener-policy
+title: "Set Cross-Origin-Opener-Policy"
+summary: "Include Cross-Origin-Opener-Policy with same-origin or same-origin-allow-popups to prevent tabnabbing and frame counting."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.4
+  title: Browser Security Mechanism Headers
+level: 1
+tags:
+  - coop  - cross-origin  - tabnabbing
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all HTTP responses that initiate a document rendering (such as responses with Content-Type text/html), include the Cross-Origin-Opener-Policy header field with the same-origin directive or the same-origin-allow-popups directive as required. This prevents attacks that abuse shared access to Window objects, such as tabnabbing and frame counting.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.2.2
+canonicalId: v5.0.0-4.2.2
+slug: v4-2-2-content-length-framing
+title: "Consistent Content-Length framing"
+summary: "Ensure Content-Length does not conflict with the content length as determined by HTTP framing to prevent request smuggling."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.2
+  title: HTTP Message Structure Validation
+level: 1
+tags:
+  - request-smuggling  - content-length  - framing  - http
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that when generating HTTP messages, the Content-Length header field does not conflict with the length of the content as determined by the framing of the HTTP protocol, in order to prevent request smuggling attacks.

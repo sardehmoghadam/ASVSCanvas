@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.2.3
+canonicalId: v5.0.0-4.2.3
+slug: v4-2-3-disable-connection-headers
+title: "Disable connection-specific headers in HTTP/2 and HTTP/3"
+summary: "Do not send or accept connection-specific headers like Transfer-Encoding in HTTP/2 or HTTP/3 to prevent header injection."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.2
+  title: HTTP Message Structure Validation
+level: 1
+tags:
+  - http2  - http3  - transfer-encoding  - header-injection
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application does not send nor accept HTTP/2 or HTTP/3 messages with connection-specific header fields such as Transfer-Encoding to prevent response splitting and header injection attacks.

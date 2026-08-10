@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.1.4
+canonicalId: v5.0.0-4.1.4
+slug: v4-1-4-restrict-http-methods
+title: "Restrict HTTP methods to supported ones"
+summary: "Only allow explicitly supported HTTP methods (including OPTIONS for preflight); block all unused methods."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.1
+  title: Generic Web Service Security
+level: 1
+tags:
+  - http-methods  - api  - options  - preflight
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that only HTTP methods that are explicitly supported by the application or its API (including OPTIONS during preflight requests) can be used and that unused methods are blocked.

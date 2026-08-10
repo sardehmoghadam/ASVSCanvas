@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.4.1
+canonicalId: v5.0.0-3.4.1
+slug: v3-4-1-hsts-policy
+title: "Enforce HTTP Strict Transport Security (HSTS)"
+summary: "Include Strict-Transport-Security on all responses with max-age of at least 1 year; L2+ must apply to all subdomains."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.4
+  title: Browser Security Mechanism Headers
+level: 1
+tags:
+  - hsts  - tls  - https  - strict-transport-security
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that a Strict-Transport-Security header field is included on all responses to enforce an HTTP Strict Transport Security (HSTS) policy. A maximum age of at least 1 year must be defined, and for L2 and up, the policy must apply to all subdomains as well.

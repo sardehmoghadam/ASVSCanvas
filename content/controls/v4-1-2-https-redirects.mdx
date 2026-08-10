@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.1.2
+canonicalId: v5.0.0-4.1.2
+slug: v4-1-2-https-redirects
+title: "Restrict HTTPS redirects to user-facing endpoints"
+summary: "Only user-facing endpoints should auto-redirect HTTP to HTTPS; other services must not transparently redirect to avoid unnoticed data leakage."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.1
+  title: Generic Web Service Security
+level: 1
+tags:
+  - https  - redirect  - hsts
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that only user-facing endpoints (intended for manual web-browser access) automatically redirect from HTTP to HTTPS, while other services or endpoints do not implement transparent redirects. This is to avoid a situation where a client is erroneously sending unencrypted HTTP requests, but since the requests are being automatically redirected to HTTPS, the leakage of sensitive data goes undiscovered.

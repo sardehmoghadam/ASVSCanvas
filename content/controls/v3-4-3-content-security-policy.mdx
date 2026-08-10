@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.4.3
+canonicalId: v5.0.0-3.4.3
+slug: v3-4-3-content-security-policy
+title: "Implement Content Security Policy (CSP)"
+summary: "Include a CSP header with object-src none and base-uri none at minimum; define allowlists or use nonces/hashes. L3 requires per-response nonce/hash policies."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.4
+  title: Browser Security Mechanism Headers
+level: 1
+tags:
+  - csp  - xss  - content-security-policy
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that HTTP responses include a Content-Security-Policy response header field which defines directives to ensure the browser only loads and executes trusted content or resources, in order to limit execution of malicious JavaScript. As a minimum, a global policy must be used which includes the directives object-src none and base-uri none and defines either an allowlist or uses nonces or hashes. For an L3 application, a per-response policy with nonces or hashes must be defined.

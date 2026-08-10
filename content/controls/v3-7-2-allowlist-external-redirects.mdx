@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.7.2
+canonicalId: v5.0.0-3.7.2
+slug: v3-7-2-allowlist-external-redirects
+title: "Allowlist external redirect destinations"
+summary: "Only redirect users to external hostnames or domains that appear on an allowlist."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.7
+  title: Other Browser Security Considerations
+level: 1
+tags:
+  - redirect  - allowlist  - open-redirect
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application will only automatically redirect the user to a different hostname or domain (which is not controlled by the application) where the destination appears on an allowlist.

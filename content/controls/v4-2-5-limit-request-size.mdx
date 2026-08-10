@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.2.5
+canonicalId: v5.0.0-4.2.5
+slug: v4-2-5-limit-request-size
+title: "Limit request URI and header size"
+summary: "Validate, sanitize, or limit URIs and request headers to avoid sending overly long requests that may cause denial of service."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.2
+  title: HTTP Message Structure Validation
+level: 1
+tags:
+  - request-size  - uri-length  - dos  - denial-of-service
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if the application (backend or frontend) builds and sends requests, it uses validation, sanitization, or other mechanisms to avoid creating URIs (such as for API calls) or HTTP request header fields (such as Authorization or Cookie), which are too long to be accepted by the receiving component. This could cause a denial of service, such as when sending an overly long request (e.g., a long cookie header field), which results in the server always responding with an error status.

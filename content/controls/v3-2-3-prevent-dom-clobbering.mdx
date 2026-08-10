@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.2.3
+canonicalId: v5.0.0-3.2.3
+slug: v3-2-3-prevent-dom-clobbering
+title: "Prevent DOM clobbering attacks"
+summary: "Use explicit variable declarations, strict type checking, avoid document-level globals, and implement namespace isolation."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.2
+  title: Unintended Content Interpretation
+level: 1
+tags:
+  - dom  - javascript  - clobbering  - namespace
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application avoids DOM clobbering when using client-side JavaScript by employing explicit variable declarations, performing strict type checking, avoiding storing global variables on the document object, and implementing namespace isolation.

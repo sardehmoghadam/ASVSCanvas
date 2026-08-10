@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.4.2
+canonicalId: v5.0.0-4.4.2
+slug: v4-4-2-websocket-origin
+title: "Validate WebSocket Origin header"
+summary: "During the initial HTTP WebSocket handshake, check the Origin header against a list of allowed origins."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.4
+  title: WebSocket
+level: 1
+tags:
+  - websocket  - origin  - csrf  - cross-origin
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, during the initial HTTP WebSocket handshake, the Origin header field is checked against a list of origins allowed for the application.

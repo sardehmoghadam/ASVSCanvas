@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.2.2
+canonicalId: v5.0.0-3.2.2
+slug: v3-2-2-safe-text-rendering
+title: "Use safe text rendering functions"
+summary: "Render text content using safe functions such as createTextNode or textContent to prevent unintended execution of HTML or JavaScript."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.2
+  title: Unintended Content Interpretation
+level: 1
+tags:
+  - xss  - dom  - javascript  - text-rendering
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that content intended to be displayed as text, rather than rendered as HTML, is handled using safe rendering functions (such as createTextNode or textContent) to prevent unintended execution of content such as HTML or JavaScript.

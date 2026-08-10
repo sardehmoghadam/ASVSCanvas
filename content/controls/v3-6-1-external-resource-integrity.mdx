@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.6.1
+canonicalId: v5.0.0-3.6.1
+slug: v3-6-1-external-resource-integrity
+title: "Validate external resource integrity with SRI"
+summary: "Use Subresource Integrity (SRI) for externally hosted, static, versioned assets. Document exceptions with security justification."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.6
+  title: External Resource Integrity
+level: 1
+tags:
+  - sri  - subresource-integrity  - cdn  - supply-chain
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that client-side assets, such as JavaScript libraries, CSS, or web fonts, are only hosted externally (e.g., on a Content Delivery Network) if the resource is static and versioned and Subresource Integrity (SRI) is used to validate the integrity of the asset. If this is not possible, there should be a documented security decision to justify this for each resource.

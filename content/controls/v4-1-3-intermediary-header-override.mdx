@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.1.3
+canonicalId: v5.0.0-4.1.3
+slug: v4-1-3-intermediary-header-override
+title: "Prevent intermediary header override"
+summary: "Headers set by intermediary layers (X-Real-IP, X-Forwarded-*, X-User-ID) must not be overridable by end-users."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.1
+  title: Generic Web Service Security
+level: 1
+tags:
+  - http-headers  - intermediary  - spoofing  - x-forwarded-for
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that any HTTP header field used by the application and set by an intermediary layer, such as a load balancer, a web proxy, or a backend-for-frontend service, cannot be overridden by the end-user. Example headers might include X-Real-IP, X-Forwarded-*, or X-User-ID.

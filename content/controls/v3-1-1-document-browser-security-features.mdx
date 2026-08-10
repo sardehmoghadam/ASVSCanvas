@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.1.1
+canonicalId: v5.0.0-3.1.1
+slug: v3-1-1-document-browser-security-features
+title: "Document browser security feature requirements"
+summary: "Define expected browser security features (HTTPS, HSTS, CSP) and how the application behaves when they are unavailable."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.1
+  title: Web Frontend Security Documentation
+level: 1
+tags:
+  - documentation  - browser  - hsts  - csp
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that application documentation states the expected security features that browsers using the application must support (such as HTTPS, HTTP Strict Transport Security (HSTS), Content Security Policy (CSP), and other relevant HTTP security mechanisms). It must also define how the application must behave when some of these features are not available (such as warning the user or blocking access).

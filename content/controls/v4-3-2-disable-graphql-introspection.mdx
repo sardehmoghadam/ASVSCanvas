@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.3.2
+canonicalId: v5.0.0-4.3.2
+slug: v4-3-2-disable-graphql-introspection
+title: "Disable GraphQL introspection in production"
+summary: "Disable GraphQL introspection queries in the production environment unless the API is meant for third-party use."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.3
+  title: GraphQL
+level: 1
+tags:
+  - graphql  - introspection  - production  - information-disclosure
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that GraphQL introspection queries are disabled in the production environment unless the GraphQL API is meant to be used by other parties.

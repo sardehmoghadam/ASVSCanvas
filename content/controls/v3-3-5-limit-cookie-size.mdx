@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.3.5
+canonicalId: v5.0.0-3.3.5
+slug: v3-3-5-limit-cookie-size
+title: "Limit cookie name and value size"
+summary: "Ensure combined cookie name and value length does not exceed 4096 bytes to prevent dropped cookies."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.3
+  title: Cookie Setup
+level: 1
+tags:
+  - cookies  - size-limit  - browser-compatibility
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that when the application writes a cookie, the cookie name and value length combined are not over 4096 bytes. Overly large cookies will not be stored by the browser and therefore not sent with requests, preventing the user from using application functionality which relies on that cookie.

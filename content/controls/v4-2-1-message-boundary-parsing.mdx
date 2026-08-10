@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V4.2.1
+canonicalId: v5.0.0-4.2.1
+slug: v4-2-1-message-boundary-parsing
+title: "Deterministic message boundary parsing"
+summary: "Determine HTTP message boundaries using the appropriate mechanism for the HTTP version to prevent request smuggling."
+chapter:
+  id: V4
+  title: API and Web Service
+section:
+  id: V4.2
+  title: HTTP Message Structure Validation
+level: 1
+tags:
+  - request-smuggling  - transfer-encoding  - content-length  - http-version
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all application components (including load balancers, firewalls, and application servers) determine boundaries of incoming HTTP messages using the appropriate mechanism for the HTTP version to prevent HTTP request smuggling. In HTTP/1.x, if a Transfer-Encoding header field is present, the Content-Length header must be ignored per RFC 2616. When using HTTP/2 or HTTP/3, if a Content-Length header field is present, the receiver must ensure that it is consistent with the length of the DATA frames.

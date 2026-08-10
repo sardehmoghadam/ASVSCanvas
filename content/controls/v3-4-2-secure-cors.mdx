@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.4.2
+canonicalId: v5.0.0-3.4.2
+slug: v3-4-2-secure-cors
+title: "Secure CORS configuration"
+summary: "Use a fixed Access-Control-Allow-Origin value or validate Origin against an allowlist. When using *, ensure responses contain no sensitive data."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.4
+  title: Browser Security Mechanism Headers
+level: 1
+tags:
+  - cors  - access-control  - origin
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header field is a fixed value by the application, or if the Origin HTTP request header field value is used, it is validated against an allowlist of trusted origins. When Access-Control-Allow-Origin: * needs to be used, verify that the response does not include any sensitive information.

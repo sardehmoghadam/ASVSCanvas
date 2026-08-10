@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.7.4
+canonicalId: v5.0.0-3.7.4
+slug: v3-7-4-hsts-preload
+title: "Add domain to HSTS preload list"
+summary: "Submit the application top-level domain to the public HSTS preload list so TLS is built into browsers by default."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.7
+  title: Other Browser Security Considerations
+level: 1
+tags:
+  - hsts  - preload  - tls  - browser
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application top-level domain (e.g., site.tld) is added to the public preload list for HTTP Strict Transport Security (HSTS). This ensures that the use of TLS for the application is built directly into the main browsers, rather than relying only on the Strict-Transport-Security response header field.

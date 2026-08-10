@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V3.3.3
+canonicalId: v5.0.0-3.3.3
+slug: v3-3-3-host-cookie-prefix
+title: "Use the __Host- cookie name prefix"
+summary: "Use the __Host- prefix for cookie names unless they are explicitly designed to be shared with other hosts."
+chapter:
+  id: V3
+  title: Web Frontend Security
+section:
+  id: V3.3
+  title: Cookie Setup
+level: 1
+tags:
+  - cookies  - host-prefix  - domain-locking
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that cookies have the __Host- prefix for the cookie name unless they are explicitly designed to be shared with other hosts.
