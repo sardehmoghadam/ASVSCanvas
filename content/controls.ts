@@ -176,6 +176,14 @@ export function getControlsByCategory(categoryId: string, asvsVersion?: string) 
   );
 }
 
+/** Derive section id from control id (V6.1.1 → V6.1) and return matching legacy controls. */
+export function getControlsBySectionId(sectionId: string): Control[] {
+  return controls.filter((control) => {
+    const parts = control.controlId.split(".");
+    return parts.length >= 2 && `V${parts[0].replace("V", "")}.${parts[1]}` === sectionId;
+  });
+}
+
 export function getAllTags() {
   return Array.from(new Set(controls.flatMap((control) => control.tags))).sort();
 }
