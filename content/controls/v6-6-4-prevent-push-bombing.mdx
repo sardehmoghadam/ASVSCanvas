@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.6.4
+canonicalId: v5.0.0-6.6.4
+slug: v6-6-4-prevent-push-bombing
+title: "Prevent push notification bombing"
+summary: "Use rate limiting and optionally number matching to mitigate push bombing attacks on MFA push notifications."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.6
+  title: Out-of-Band Authentication Mechanisms
+level: 1
+tags:
+  - mfa  - push-notification  - rate-limiting  - bombing
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, where push notifications are used for multi-factor authentication, rate limiting is used to prevent push bombing attacks. Number matching may also mitigate this risk.

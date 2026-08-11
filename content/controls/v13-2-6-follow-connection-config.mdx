@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V13.2.6
+canonicalId: v5.0.0-13.2.6
+slug: v13-2-6-follow-connection-config
+title: "Follow documented connection configuration"
+summary: "Application must follow documented configuration for each connection: max parallel connections, behavior at limit, timeouts, and retry strategies."
+chapter:
+  id: V13
+  title: Configuration
+section:
+  id: V13.2
+  title: Backend Communication Configuration
+level: 1
+tags:
+  - configuration  - connections  - timeout  - retry
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that where the application connects to separate services, it follows the documented configuration for each connection, such as maximum parallel connections, behavior when maximum allowed connections is reached, connection timeouts, and retry strategies.

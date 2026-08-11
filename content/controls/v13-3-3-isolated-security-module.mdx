@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V13.3.3
+canonicalId: v5.0.0-13.3.3
+slug: v13-3-3-isolated-security-module
+title: "Use isolated security module for crypto operations"
+summary: "All cryptographic operations must be performed using an isolated security module (vault or HSM) to protect key material from exposure."
+chapter:
+  id: V13
+  title: Configuration
+section:
+  id: V13.3
+  title: Secret Management
+level: 1
+tags:
+  - configuration  - cryptography  - hsm  - vault
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all cryptographic operations are performed using an isolated security module (such as a vault or hardware security module) to securely manage and protect key material from exposure outside of the security module.

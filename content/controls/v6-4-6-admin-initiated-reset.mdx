@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.4.6
+canonicalId: v5.0.0-6.4.6
+slug: v6-4-6-admin-initiated-reset
+title: "Admin-initiated reset without knowing password"
+summary: "Admins can initiate password reset but cannot change or choose the user password, preventing knowledge of the password."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.4
+  title: Authentication Factor Lifecycle and Recovery
+level: 1
+tags:
+  - password  - reset  - admin  - privilege
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that administrative users can initiate the password reset process for the user, but that this does not allow them to change or choose the user password. This prevents a situation where they know the user password.

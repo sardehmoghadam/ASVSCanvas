@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V13.4.7
+canonicalId: v5.0.0-13.4.7
+slug: v13-4-7-restrict-file-extensions
+title: "Restrict served file extensions"
+summary: "Web tier must be configured to only serve files with specific file extensions to prevent unintentional information, configuration, and source code leakage."
+chapter:
+  id: V13
+  title: Configuration
+section:
+  id: V13.4
+  title: Unintended Information Leakage
+level: 1
+tags:
+  - configuration  - file-extensions  - information-leakage  - web-server
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the web tier is configured to only serve files with specific file extensions to prevent unintentional information, configuration, and source code leakage.

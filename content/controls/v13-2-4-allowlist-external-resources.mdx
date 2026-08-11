@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V13.2.4
+canonicalId: v5.0.0-13.2.4
+slug: v13-2-4-allowlist-external-resources
+title: "Allowlist external resources and systems"
+summary: "Use an allowlist to define external resources or systems the application may communicate with, implemented at application layer, web server, firewall, or combination."
+chapter:
+  id: V13
+  title: Configuration
+section:
+  id: V13.2
+  title: Backend Communication Configuration
+level: 1
+tags:
+  - configuration  - allowlist  - external-resources  - firewall
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that an allowlist is used to define the external resources or systems with which the application is permitted to communicate (e.g., for outbound requests, data loads, or file access). This allowlist can be implemented at the application layer, web server, firewall, or a combination of different layers.

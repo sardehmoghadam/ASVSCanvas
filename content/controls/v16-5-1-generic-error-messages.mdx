@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V16.5.1
+canonicalId: v5.0.0-16.5.1
+slug: v16-5-1-generic-error-messages
+title: "Return generic error messages"
+summary: "Return a generic message to the consumer on unexpected or security-sensitive errors; no exposure of stack traces, queries, secret keys, or tokens."
+chapter:
+  id: V16
+  title: Security Logging & Error Handling
+section:
+  id: V16.5
+  title: Error Handling
+level: 1
+tags:
+  - error-handling  - generic-errors  - information-leakage
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that a generic message is returned to the consumer when an unexpected or security-sensitive error occurs, ensuring no exposure of sensitive internal system data such as stack traces, queries, secret keys, and tokens.

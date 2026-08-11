@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.2.2
+canonicalId: v5.0.0-11.2.2
+slug: v11-2-2-crypto-agility
+title: "Design for crypto agility"
+summary: "Cryptographic algorithms, key lengths, rounds, ciphers, and modes must be reconfigurable and swappable; keys and passwords must be replaceable for seamless PQC upgrades."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.2
+  title: Secure Cryptography Implementation
+level: 1
+tags:
+  - cryptography  - crypto-agility  - pqc  - migration
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application is designed with crypto agility such that random number, authenticated encryption, MAC, or hashing algorithms, key lengths, rounds, ciphers and modes can be reconfigured, upgraded, or swapped at any time, to protect against cryptographic breaks. Similarly, it must also be possible to replace keys and passwords and re-encrypt data. This will allow for seamless upgrades to post-quantum cryptography (PQC), once high-assurance implementations of approved PQC schemes or standards are widely available.

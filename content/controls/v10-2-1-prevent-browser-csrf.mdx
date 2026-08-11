@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.2.1
+canonicalId: v5.0.0-10.2.1
+slug: v10-2-1-prevent-browser-csrf
+title: "Prevent browser-based CSRF on token requests"
+summary: "Protect against CSRF attacks triggering token requests using PKCE or state parameter validation in the authorization request."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.2
+  title: OAuth Client
+level: 1
+tags:
+  - oauth  - csrf  - pkce  - state
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if the code flow is used, the OAuth client has protection against browser-based request forgery attacks, commonly known as CSRF, which trigger token requests, either by using proof key for code exchange (PKCE) functionality or checking the state parameter that was sent in the authorization request.

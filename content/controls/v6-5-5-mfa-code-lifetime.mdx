@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.5.5
+canonicalId: v5.0.0-6.5.5
+slug: v6-5-5-mfa-code-lifetime
+title: "Enforce MFA code lifetime limits"
+summary: "Out-of-band codes max 10 minutes lifetime; TOTPs max 30 seconds."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.5
+  title: General Multi-factor Authentication Requirements
+level: 1
+tags:
+  - mfa  - totp  - lifetime  - expiration
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that out-of-band authentication requests, codes, or tokens, as well as time-based one-time passwords (TOTPs) have a defined lifetime. Out of band requests must have a maximum lifetime of 10 minutes and for TOTP a maximum lifetime of 30 seconds.

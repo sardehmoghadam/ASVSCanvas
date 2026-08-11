@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.4.4
+canonicalId: v5.0.0-11.4.4
+slug: v11-4-4-key-stretching-kdf
+title: "Use approved KDF with key stretching"
+summary: "Use approved key derivation functions with key stretching parameters when deriving secret keys from passwords; balance security and performance."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.4
+  title: Hashing and Hash-based Functions
+level: 1
+tags:
+  - cryptography  - kdf  - key-stretching  - brute-force
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application uses approved key derivation functions with key stretching parameters when deriving secret keys from passwords. The parameters in use must balance security and performance to prevent brute-force attacks from compromising the resulting cryptographic key.

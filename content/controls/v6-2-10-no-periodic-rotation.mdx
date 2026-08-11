@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.2.10
+canonicalId: v5.0.0-6.2.10
+slug: v6-2-10-no-periodic-rotation
+title: "No periodic password rotation required"
+summary: "Passwords stay valid until compromised or rotated by the user; the application must not require periodic rotation."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.2
+  title: Password Security
+level: 1
+tags:
+  - password  - rotation  - policy  - nist
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that a user password stays valid until it is discovered to be compromised or the user rotates it. The application must not require periodic credential rotation.

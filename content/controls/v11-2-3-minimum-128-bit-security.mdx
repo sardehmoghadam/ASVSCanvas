@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.2.3
+canonicalId: v5.0.0-11.2.3
+slug: v11-2-3-minimum-128-bit-security
+title: "Minimum 128-bit security for cryptographic primitives"
+summary: "All cryptographic primitives must provide at least 128 bits of security; e.g., 256-bit ECC or 3072-bit RSA."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.2
+  title: Secure Cryptography Implementation
+level: 1
+tags:
+  - cryptography  - security-bits  - key-size  - ecc  - rsa
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all cryptographic primitives utilize a minimum of 128-bits of security based on the algorithm, key size, and configuration. For example, a 256-bit ECC key provides roughly 128 bits of security where RSA requires a 3072-bit key to achieve 128 bits of security.

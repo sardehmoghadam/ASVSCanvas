@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.7.2
+canonicalId: v5.0.0-10.7.2
+slug: v10-7-2-clear-consent-information
+title: "Present clear consent information"
+summary: "Consent prompt must present sufficient information: requested authorizations (scope, resource server, RAR details), client identity, and authorization lifetime."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.7
+  title: Consent Management
+level: 1
+tags:
+  - oauth  - consent  - transparency
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that when the authorization server prompts for user consent, it presents sufficient and clear information about what is being consented to. When applicable, this should include the nature of the requested authorizations (typically based on scope, resource server, Rich Authorization Requests (RAR) authorization details), the identity of the authorized application, and the lifetime of these authorizations.

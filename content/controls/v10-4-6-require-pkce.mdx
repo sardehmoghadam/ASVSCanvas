@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.4.6
+canonicalId: v5.0.0-10.4.6
+slug: v10-4-6-require-pkce
+title: "Require PKCE for code grant"
+summary: "Authorization server must require valid code_challenge, reject plain method, and validate code_verifier on token requests to mitigate authorization code interception."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.4
+  title: OAuth Authorization Server
+level: 1
+tags:
+  - oauth  - authorization-server  - pkce  - code-interception
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if the code grant is used, the authorization server mitigates authorization code interception attacks by requiring proof key for code exchange (PKCE). For authorization requests, the authorization server must require a valid code_challenge value and must not accept a code_challenge_method value of plain. For a token request, it must require validation of the code_verifier parameter.

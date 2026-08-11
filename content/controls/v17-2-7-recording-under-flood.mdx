@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V17.2.7
+canonicalId: v5.0.0-17.2.7
+slug: v17-2-7-recording-under-flood
+title: "Recording continues under SRTP flood"
+summary: "Audio/video recording mechanisms must continue processing incoming media traffic during a flood of SRTP packets from legitimate users."
+chapter:
+  id: V17
+  title: WebRTC
+section:
+  id: V17.2
+  title: Media
+level: 1
+tags:
+  - webrtc  - recording  - srtp  - flood
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that any audio or video recording mechanisms associated with the media server are able to continue processing incoming media traffic during a flood of Secure Real-time Transport Protocol (SRTP) packets from legitimate users.

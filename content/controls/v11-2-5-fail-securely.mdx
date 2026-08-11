@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.2.5
+canonicalId: v5.0.0-11.2.5
+slug: v11-2-5-fail-securely
+title: "Cryptographic modules must fail securely"
+summary: "All cryptographic modules must fail securely; errors must be handled in a way that does not enable vulnerabilities such as Padding Oracle attacks."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.2
+  title: Secure Cryptography Implementation
+level: 1
+tags:
+  - cryptography  - fail-secure  - padding-oracle  - error-handling
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all cryptographic modules fail securely, and errors are handled in a way that does not enable vulnerabilities, such as Padding Oracle attacks.

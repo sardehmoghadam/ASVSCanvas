@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V9.2.2
+canonicalId: v5.0.0-9.2.2
+slug: v9-2-2-validate-token-type
+title: "Validate token type and purpose"
+summary: "Validate token type: access tokens for authorization, ID tokens for authentication; do not accept tokens for wrong purposes."
+chapter:
+  id: V9
+  title: Self-contained Tokens
+section:
+  id: V9.2
+  title: Token content
+level: 1
+tags:
+  - tokens  - jwt  - token-type  - purpose
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the service receiving a token validates the token to be the correct type and is meant for the intended purpose before accepting the token contents. For example, only access tokens can be accepted for authorization decisions and only ID Tokens can be used for proving user authentication.

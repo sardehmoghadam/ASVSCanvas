@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V8.3.1
+canonicalId: v5.0.0-8.3.1
+slug: v8-3-1-trusted-service-authorization
+title: "Enforce authorization at trusted service layer"
+summary: "Enforce authorization rules at a trusted backend service, not relying on client-side controls that consumers could manipulate."
+chapter:
+  id: V8
+  title: Authorization
+section:
+  id: V8.3
+  title: Operation Level Authorization
+level: 1
+tags:
+  - authorization  - server-side  - trusted-layer  - enforcement
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application enforces authorization rules at a trusted service layer and does not rely on controls that an untrusted consumer could manipulate, such as client-side JavaScript.

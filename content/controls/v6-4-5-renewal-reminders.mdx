@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.4.5
+canonicalId: v5.0.0-6.4.5
+slug: v6-4-5-renewal-reminders
+title: "Send timely renewal reminders for expiring mechanisms"
+summary: "Send renewal instructions with enough time before expiration; use automated reminders if necessary."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.4
+  title: Authentication Factor Lifecycle and Recovery
+level: 1
+tags:
+  - authentication  - renewal  - reminders  - expiration
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that renewal instructions for authentication mechanisms which expire are sent with enough time to be carried out before the old authentication mechanism expires, configuring automated reminders if necessary.

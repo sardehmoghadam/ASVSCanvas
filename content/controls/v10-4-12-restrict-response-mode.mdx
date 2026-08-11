@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.4.12
+canonicalId: v5.0.0-10.4.12
+slug: v10-4-12-restrict-response-mode
+title: "Restrict response_mode per client"
+summary: "Authorization server only allows response_mode values that a given client needs; validate against expected values or use PAR/JAR."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.4
+  title: OAuth Authorization Server
+level: 1
+tags:
+  - oauth  - authorization-server  - response-mode  - par
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that for a given client, the authorization server only allows the response_mode value that this client needs to use. For example, by having the authorization server validate this value against the expected values or by using pushed authorization request (PAR) or JWT-secured Authorization Request (JAR).

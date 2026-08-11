@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V9.1.2
+canonicalId: v5.0.0-9.1.2
+slug: v9-1-2-allowlist-algorithms
+title: "Allowlist token algorithms"
+summary: "Only allowlisted algorithms for token creation/verification; prohibit None algorithm; prevent key confusion if mixing symmetric/asymmetric."
+chapter:
+  id: V9
+  title: Self-contained Tokens
+section:
+  id: V9.1
+  title: Token source and integrity
+level: 1
+tags:
+  - tokens  - algorithms  - jwt  - key-confusion
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that only algorithms on an allowlist can be used to create and verify self-contained tokens, for a given context. The allowlist must include the permitted algorithms, ideally only either symmetric or asymmetric algorithms, and must not include the None algorithm. If both symmetric and asymmetric must be supported, additional controls will be needed to prevent key confusion.

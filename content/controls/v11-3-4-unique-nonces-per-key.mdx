@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.3.4
+canonicalId: v5.0.0-11.3.4
+slug: v11-3-4-unique-nonces-per-key
+title: "Unique nonces per key and data element"
+summary: "Nonces, IVs, and other single-use numbers must not be reused for more than one encryption key and data-element pair; use appropriate generation method."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.3
+  title: Encryption Algorithms
+level: 1
+tags:
+  - cryptography  - nonce  - iv  - unique
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that nonces, initialization vectors, and other single-use numbers are not used for more than one encryption key and data-element pair. The method of generation must be appropriate for the algorithm being used.

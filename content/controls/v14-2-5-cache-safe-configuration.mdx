@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V14.2.5
+canonicalId: v5.0.0-14.2.5
+slug: v14-2-5-cache-safe-configuration
+title: "Configure caching to prevent web cache deception"
+summary: "Caching mechanisms must only cache responses with expected content type and no sensitive, dynamic content; return 404/302 for non-existent files rather than valid files."
+chapter:
+  id: V14
+  title: Data Protection
+section:
+  id: V14.2
+  title: General Data Protection
+level: 1
+tags:
+  - data-protection  - caching  - web-cache-deception
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that caching mechanisms are configured to only cache responses which have the expected content type for that resource and do not contain sensitive, dynamic content. The web server should return a 404 or 302 response when a non-existent file is accessed rather than returning a different, valid file. This should prevent Web Cache Deception attacks.

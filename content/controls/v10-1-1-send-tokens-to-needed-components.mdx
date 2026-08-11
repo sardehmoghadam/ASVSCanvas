@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.1.1
+canonicalId: v5.0.0-10.1.1
+slug: v10-1-1-send-tokens-to-needed-components
+title: "Send tokens only to needed components"
+summary: "Only send tokens to components that strictly need them; e.g., BFF pattern keeps access/refresh tokens server-side for browser apps."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.1
+  title: Generic OAuth and OIDC Security
+level: 1
+tags:
+  - oauth  - tokens  - bff  - least-privilege
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that tokens are only sent to components that strictly need them. For example, when using a backend-for-frontend pattern for browser-based JavaScript applications, access and refresh tokens shall only be accessible for the backend.

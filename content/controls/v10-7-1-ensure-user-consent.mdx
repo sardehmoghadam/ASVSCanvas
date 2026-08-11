@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.7.1
+canonicalId: v5.0.0-10.7.1
+slug: v10-7-1-ensure-user-consent
+title: "Ensure user consent for each authorization"
+summary: "Authorization server ensures user consents to each authorization request; always prompt for consent if client identity cannot be assured."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.7
+  title: Consent Management
+level: 1
+tags:
+  - oauth  - consent  - user-prompt
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the authorization server ensures that the user consents to each authorization request. If the identity of the client cannot be assured, the authorization server must always explicitly prompt the user for consent.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.2.4
+canonicalId: v5.0.0-15.2.4
+slug: v15-2-4-prevent-dependency-confusion
+title: "Prevent dependency confusion attacks"
+summary: "Third-party components and transitive dependencies must be included from expected repositories (internal or external); no risk of dependency confusion attacks."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.2
+  title: Security Architecture and Dependencies
+level: 1
+tags:
+  - secure-coding  - dependencies  - dependency-confusion  - supply-chain
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that third-party components and all of their transitive dependencies are included from the expected repository, whether internally owned or an external source, and that there is no risk of a dependency confusion attack.

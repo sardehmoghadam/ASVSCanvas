@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.3.3
+canonicalId: v5.0.0-6.3.3
+slug: v6-3-3-multi-factor-authentication
+title: "Require multi-factor or combined single-factor authentication"
+summary: "Use MFA or multiple single-factor mechanisms. L3 requires hardware-based auth with phishing resistance and user intent verification."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.3
+  title: General Authentication Security
+level: 1
+tags:
+  - mfa  - multi-factor  - fido  - phishing-resistance
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that either a multi-factor authentication mechanism or a combination of single-factor authentication mechanisms, must be used in order to access the application. For L3, one of the factors must be a hardware-based authentication mechanism which provides compromise and impersonation resistance against phishing attacks while verifying the intent to authenticate by requiring a user-initiated action (such as a button press on a FIDO hardware key or a mobile phone). Relaxing any of the considerations in this requirement requires a fully documented rationale and a comprehensive set of mitigating controls.

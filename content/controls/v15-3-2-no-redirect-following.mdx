@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.3.2
+canonicalId: v5.0.0-15.3.2
+slug: v15-3-2-no-redirect-following
+title: "Do not follow external redirects unless intended"
+summary: "Backend calls to external URLs must be configured to not follow redirects unless it is intended functionality."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.3
+  title: Defensive Coding
+level: 1
+tags:
+  - defensive-coding  - redirects  - ssrf
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that where the application backend makes calls to external URLs, it is configured to not follow redirects unless it is intended functionality.

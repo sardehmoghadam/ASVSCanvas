@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V9.2.1
+canonicalId: v5.0.0-9.2.1
+slug: v9-2-1-validate-token-time
+title: "Validate token time span"
+summary: "Accept tokens only if verification time is within validity bounds (e.g., nbf and exp claims for JWTs)."
+chapter:
+  id: V9
+  title: Self-contained Tokens
+section:
+  id: V9.2
+  title: Token content
+level: 1
+tags:
+  - tokens  - jwt  - expiration  - nbf
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if a validity time span is present in the token data, the token and its content are accepted only if the verification time is within this validity time span. For example, for JWTs, the claims nbf and exp must be verified.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.4.15
+canonicalId: v5.0.0-10.4.15
+slug: v10-4-15-protect-authorization-details
+title: "Protect authorization_details from tampering"
+summary: "For server-side clients, ensure authorization_details value is from the client backend and not user-tampered; use PAR or JAR."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.4
+  title: OAuth Authorization Server
+level: 1
+tags:
+  - oauth  - authorization-server  - authorization-details  - par  - jar
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, for a server-side client (which is not executed on the end-user device), the authorization server ensures that the authorization_details parameter value is from the client backend and that the user has not tampered with it. For example, by requiring the usage of pushed authorization request (PAR) or JWT-secured Authorization Request (JAR).

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.3.3
+canonicalId: v5.0.0-15.3.3
+slug: v15-3-3-mass-assignment-protection
+title: "Prevent mass assignment attacks"
+summary: "Limit allowed fields per controller and action; prevent inserting or updating field values not intended to be part of that action."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.3
+  title: Defensive Coding
+level: 1
+tags:
+  - defensive-coding  - mass-assignment  - input-validation
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application has countermeasures to protect against mass assignment attacks by limiting allowed fields per controller and action, e.g., it is not possible to insert or update a field value when it was not intended to be part of that action.

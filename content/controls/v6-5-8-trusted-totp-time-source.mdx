@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.5.8
+canonicalId: v5.0.0-6.5.8
+slug: v6-5-8-trusted-totp-time-source
+title: "Use trusted time source for TOTP"
+summary: "TOTPs must be checked against a time source from a trusted service, not from an untrusted or client-provided time."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.5
+  title: General Multi-factor Authentication Requirements
+level: 1
+tags:
+  - mfa  - totp  - time  - ntp
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that time-based one-time passwords (TOTPs) are checked based on a time source from a trusted service and not from an untrusted or client provided time.

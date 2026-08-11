@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V17.3.1
+canonicalId: v5.0.0-17.3.1
+slug: v17-3-1-signaling-rate-limiting
+title: "Implement signaling rate limiting"
+summary: "Signaling server must continue processing legitimate incoming signaling messages during a flood attack by implementing rate limiting at the signaling level."
+chapter:
+  id: V17
+  title: WebRTC
+section:
+  id: V17.3
+  title: Signaling
+level: 1
+tags:
+  - webrtc  - signaling  - rate-limiting  - dos
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the signaling server is able to continue processing legitimate incoming signaling messages during a flood attack. This should be achieved by implementing rate limiting at the signaling level.

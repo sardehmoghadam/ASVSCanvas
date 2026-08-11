@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.3.8
+canonicalId: v5.0.0-6.3.8
+slug: v6-3-8-prevent-user-enumeration
+title: "Prevent user enumeration"
+summary: "Avoid revealing valid users through error messages, HTTP codes, or response timing in auth, registration, and forgot password."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.3
+  title: General Authentication Security
+level: 1
+tags:
+  - authentication  - enumeration  - error-messages  - timing
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that valid users cannot be deduced from failed authentication challenges, such as by basing on error messages, HTTP response codes, or different response times. Registration and forgot password functionality must also have this protection.

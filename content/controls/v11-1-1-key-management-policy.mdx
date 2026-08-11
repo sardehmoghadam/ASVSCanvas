@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.1.1
+canonicalId: v5.0.0-11.1.1
+slug: v11-1-1-key-management-policy
+title: "Document key management policy"
+summary: "Documented key management policy and lifecycle following a standard such as NIST SP 800-57; ensure keys are not overshared."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.1
+  title: Cryptographic Inventory and Documentation
+level: 1
+tags:
+  - cryptography  - key-management  - policy  - nist
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that there is a documented policy for management of cryptographic keys and a cryptographic key lifecycle that follows a key management standard such as NIST SP 800-57. This should include ensuring that keys are not overshared (for example, with more than two entities for shared secrets and more than one entity for private keys).

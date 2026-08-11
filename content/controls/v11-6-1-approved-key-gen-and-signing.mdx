@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.6.1
+canonicalId: v5.0.0-11.6.1
+slug: v11-6-1-approved-key-gen-and-signing
+title: "Use approved key generation and signing algorithms"
+summary: "Only approved algorithms for key generation, seeding, and digital signature generation/verification; avoid generating insecure keys such as RSA keys vulnerable to Fermat factorization."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.6
+  title: Public Key Cryptography
+level: 1
+tags:
+  - cryptography  - key-generation  - digital-signature  - rsa
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that only approved cryptographic algorithms and modes of operation are used for key generation and seeding, and digital signature generation and verification. Key generation algorithms must not generate insecure keys vulnerable to known attacks, for example, RSA keys which are vulnerable to Fermat factorization.

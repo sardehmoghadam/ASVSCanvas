@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V9.2.3
+canonicalId: v5.0.0-9.2.3
+slug: v9-2-3-validate-token-audience
+title: "Validate token audience"
+summary: "Only accept tokens intended for this service; for JWTs, validate the aud claim against a service-defined allowlist."
+chapter:
+  id: V9
+  title: Self-contained Tokens
+section:
+  id: V9.2
+  title: Token content
+level: 1
+tags:
+  - tokens  - jwt  - audience  - aud
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the service only accepts tokens which are intended for use with that service (audience). For JWTs, this can be achieved by validating the aud claim against an allowlist defined in the service.

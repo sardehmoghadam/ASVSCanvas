@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V16.4.3
+canonicalId: v5.0.0-16.4.3
+slug: v16-4-3-secure-log-transmission
+title: "Transmit logs securely to separate system"
+summary: "Logs must be securely transmitted to a logically separate system for analysis, detection, alerting, and escalation so logs survive a breach."
+chapter:
+  id: V16
+  title: Security Logging & Error Handling
+section:
+  id: V16.4
+  title: Log Protection
+level: 1
+tags:
+  - logging  - transmission  - separation
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that logs are securely transmitted to a logically separate system for analysis, detection, alerting, and escalation. The aim is to ensure that if the application is breached, the logs are not compromised.

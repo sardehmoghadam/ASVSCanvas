@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V12.3.5
+canonicalId: v5.0.0-12.3.5
+slug: v12-3-5-strong-intra-service-auth
+title: "Use strong intra-service authentication"
+summary: "Intra-service communications must use strong authentication such as TLS client authentication with PKI, resistant to replay. Consider service mesh for certificate management in microservices."
+chapter:
+  id: V12
+  title: Secure Communication
+section:
+  id: V12.3
+  title: General Service to Service Communication Security
+level: 1
+tags:
+  - tls  - service-mesh  - intra-service  - pki
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that services communicating internally within a system (intra-service communications) use strong authentication to ensure that each endpoint is verified. Strong authentication methods, such as TLS client authentication, must be employed to ensure identity, using public-key infrastructure and mechanisms that are resistant to replay attacks. For microservice architectures, consider using a service mesh to simplify certificate management and enhance security.

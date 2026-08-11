@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V17.1.1
+canonicalId: v5.0.0-17.1.1
+slug: v17-1-1-restrict-turn-ips
+title: "Restrict TURN server IP access"
+summary: "TURN service must only allow access to non-reserved IP addresses (no internal networks, broadcast, loopback) for both IPv4 and IPv6."
+chapter:
+  id: V17
+  title: WebRTC
+section:
+  id: V17.1
+  title: TURN Server
+level: 1
+tags:
+  - webrtc  - turn  - ip-restriction
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the Traversal Using Relays around NAT (TURN) service only allows access to IP addresses that are not reserved for special purposes (e.g., internal networks, broadcast, loopback). Note that this applies to both IPv4 and IPv6 addresses.

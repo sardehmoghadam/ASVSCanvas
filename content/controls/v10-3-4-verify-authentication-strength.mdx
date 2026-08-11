@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.3.4
+canonicalId: v5.0.0-10.3.4
+slug: v10-3-4-verify-authentication-strength
+title: "Verify authentication strength from token"
+summary: "If resource server requires specific auth strength, methods, or recentness, verify acr, amr, and auth_time claims from the token."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.3
+  title: OAuth Resource Server
+level: 1
+tags:
+  - oauth  - resource-server  - acr  - amr  - auth-time
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if the resource server requires specific authentication strength, methods, or recentness, it verifies that the presented access token satisfies these constraints. For example, if present, using the OIDC acr, amr and auth_time claims respectively.

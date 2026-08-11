@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V8.3.2
+canonicalId: v5.0.0-8.3.2
+slug: v8-3-2-immediate-authorization-changes
+title: "Apply authorization changes immediately"
+summary: "Authorization changes must take effect immediately. If not possible (e.g., self-contained tokens), alert and revert unauthorized actions."
+chapter:
+  id: V8
+  title: Authorization
+section:
+  id: V8.3
+  title: Operation Level Authorization
+level: 1
+tags:
+  - authorization  - revocation  - tokens  - real-time
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that changes to values on which authorization decisions are made are applied immediately. Where changes cannot be applied immediately, (such as when relying on data in self-contained tokens), there must be mitigating controls to alert when a consumer performs an action when they are no longer authorized to do so and revert the change. Note that this alternative would not mitigate information leakage.

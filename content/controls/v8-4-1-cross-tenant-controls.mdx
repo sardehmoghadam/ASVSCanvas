@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V8.4.1
+canonicalId: v5.0.0-8.4.1
+slug: v8-4-1-cross-tenant-controls
+title: "Enforce cross-tenant isolation controls"
+summary: "Multi-tenant applications must use cross-tenant controls to ensure consumer operations never affect tenants they lack permissions for."
+chapter:
+  id: V8
+  title: Authorization
+section:
+  id: V8.4
+  title: Other Authorization Considerations
+level: 1
+tags:
+  - authorization  - multi-tenant  - isolation  - cross-tenant
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that multi-tenant applications use cross-tenant controls to ensure consumer operations will never affect tenants with which they do not have permissions to interact.

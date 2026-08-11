@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V13.2.1
+canonicalId: v5.0.0-13.2.1
+slug: v13-2-1-authenticate-backend-components
+title: "Authenticate backend component communications"
+summary: "Backend communications must use individual service accounts, short-term tokens, or certificate-based authentication; not unchanging credentials like passwords or API keys."
+chapter:
+  id: V13
+  title: Configuration
+section:
+  id: V13.2
+  title: Backend Communication Configuration
+level: 1
+tags:
+  - configuration  - authentication  - backend  - service-accounts
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that communications between backend application components that do not support the application standard user session mechanism, including APIs, middleware, and data layers, are authenticated. Authentication must use individual service accounts, short-term tokens, or certificate-based authentication and not unchanging credentials such as passwords, API keys, or shared accounts with privileged access.

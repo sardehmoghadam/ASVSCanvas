@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V9.1.1
+canonicalId: v5.0.0-9.1.1
+slug: v9-1-1-validate-token-signature
+title: "Validate self-contained token signature"
+summary: "Validate tokens using digital signature or MAC before accepting contents to protect against tampering."
+chapter:
+  id: V9
+  title: Self-contained Tokens
+section:
+  id: V9.1
+  title: Token source and integrity
+level: 1
+tags:
+  - tokens  - signature  - mac  - integrity
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that self-contained tokens are validated using their digital signature or MAC to protect against tampering before accepting the token contents.

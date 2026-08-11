@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.8.2
+canonicalId: v5.0.0-6.8.2
+slug: v6-8-2-validate-auth-assertions
+title: "Validate authentication assertion signatures"
+summary: "Always validate digital signatures on JWTs and SAML assertions; reject unsigned or invalid signatures."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.8
+  title: Authentication with an Identity Provider
+level: 1
+tags:
+  - identity-provider  - jwt  - saml  - signature
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the presence and integrity of digital signatures on authentication assertions (for example on JWTs or SAML assertions) are always validated, rejecting any assertions that are unsigned or have invalid signatures.

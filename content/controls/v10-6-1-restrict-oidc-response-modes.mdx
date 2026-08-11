@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.6.1
+canonicalId: v5.0.0-10.6.1
+slug: v10-6-1-restrict-oidc-response-modes
+title: "Restrict OIDC response modes"
+summary: "OpenID Provider only allows code, ciba, id_token, or id_token code response modes. Code is preferred; token (Implicit flow) must not be used."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.6
+  title: OpenID Provider
+level: 1
+tags:
+  - oidc  - provider  - response-mode  - implicit-flow
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the OpenID Provider only allows values code, ciba, id_token, or id_token code for response mode. Note that code is preferred over id_token code (the OIDC Hybrid flow), and token (any Implicit flow) must not be used.

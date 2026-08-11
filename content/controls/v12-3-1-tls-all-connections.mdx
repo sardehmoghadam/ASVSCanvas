@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V12.3.1
+canonicalId: v5.0.0-12.3.1
+slug: v12-3-1-tls-all-connections
+title: "Use encrypted protocol for all connections"
+summary: "Use encrypted protocol such as TLS for all inbound and outbound connections including monitoring, management, databases, middleware, and external APIs."
+chapter:
+  id: V12
+  title: Secure Communication
+section:
+  id: V12.3
+  title: General Service to Service Communication Security
+level: 1
+tags:
+  - tls  - encryption  - service-to-service
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that an encrypted protocol such as TLS is used for all inbound and outbound connections to and from the application, including monitoring systems, management tools, remote access and SSH, middleware, databases, mainframes, partner systems, or external APIs. The server must not fall back to insecure or unencrypted protocols.

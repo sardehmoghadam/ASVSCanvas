@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.8.1
+canonicalId: v5.0.0-6.8.1
+slug: v6-8-1-prevent-idp-spoofing
+title: "Prevent identity provider spoofing"
+summary: "Register users with IdP ID + user ID combination to prevent spoofing across multiple identity providers."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.8
+  title: Authentication with an Identity Provider
+level: 1
+tags:
+  - identity-provider  - idp  - spoofing  - namespace
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if the application supports multiple identity providers (IdPs), the user identity cannot be spoofed via another supported identity provider (e.g., by using the same user identifier). The standard mitigation would be for the application to register and identify the user using a combination of the IdP ID (serving as a namespace) and the user ID in the IdP.

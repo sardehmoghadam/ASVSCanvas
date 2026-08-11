@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.4.7
+canonicalId: v5.0.0-10.4.7
+slug: v10-4-7-mitigate-malicious-dynamic-registration
+title: "Mitigate malicious dynamic client registration"
+summary: "If unauthenticated dynamic client registration is supported, validate client metadata, ensure user consent, and warn before processing authorization with untrusted clients."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.4
+  title: OAuth Authorization Server
+level: 1
+tags:
+  - oauth  - authorization-server  - dynamic-registration  - consent
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that if the authorization server supports unauthenticated dynamic client registration, it mitigates the risk of malicious client applications. It must validate client metadata such as any registered URIs, ensure the user consent, and warn the user before processing an authorization request with an untrusted client application.

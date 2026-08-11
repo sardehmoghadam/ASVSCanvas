@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V12.2.1
+canonicalId: v5.0.0-12.2.1
+slug: v12-2-1-tls-external-connectivity
+title: "Use TLS for all external HTTP connectivity"
+summary: "TLS must be used for all connectivity between a client and external-facing HTTP-based services, with no fallback to insecure communications."
+chapter:
+  id: V12
+  title: Secure Communication
+section:
+  id: V12.2
+  title: HTTPS Communication with External Facing Services
+level: 1
+tags:
+  - tls  - https  - external-services
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that TLS is used for all connectivity between a client and external facing, HTTP-based services, and does not fall back to insecure or unencrypted communications.

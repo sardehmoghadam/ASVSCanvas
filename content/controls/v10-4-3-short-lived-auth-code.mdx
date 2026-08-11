@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.4.3
+canonicalId: v5.0.0-10.4.3
+slug: v10-4-3-short-lived-auth-code
+title: "Short-lived authorization code"
+summary: "Authorization code max lifetime: 10 minutes for L1/L2, 1 minute for L3."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.4
+  title: OAuth Authorization Server
+level: 1
+tags:
+  - oauth  - authorization-server  - authorization-code  - expiration
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the authorization code is short-lived. The maximum lifetime can be up to 10 minutes for L1 and L2 applications and up to 1 minute for L3 applications.

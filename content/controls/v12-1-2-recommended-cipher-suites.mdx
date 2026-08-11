@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V12.1.2
+canonicalId: v5.0.0-12.1.2
+slug: v12-1-2-recommended-cipher-suites
+title: "Enable only recommended cipher suites with forward secrecy"
+summary: "Only recommended cipher suites enabled with strongest set preferred; L3 must support only cipher suites providing forward secrecy."
+chapter:
+  id: V12
+  title: Secure Communication
+section:
+  id: V12.1
+  title: General TLS Security Guidance
+level: 1
+tags:
+  - tls  - cipher-suites  - forward-secrecy
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that only recommended cipher suites are enabled, with the strongest cipher suites set as preferred. L3 applications must only support cipher suites which provide forward secrecy.

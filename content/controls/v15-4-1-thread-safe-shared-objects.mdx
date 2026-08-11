@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.4.1
+canonicalId: v5.0.0-15.4.1
+slug: v15-4-1-thread-safe-shared-objects
+title: "Use thread-safe shared object access"
+summary: "Shared objects in multi-threaded code must be accessed safely using thread-safe types and synchronization (locks, semaphores) to avoid race conditions and data corruption."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.4
+  title: Safe Concurrency
+level: 1
+tags:
+  - concurrency  - thread-safety  - locks  - semaphores
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that shared objects in multi-threaded code (such as caches, files, or in-memory objects accessed by multiple threads) are accessed safely by using thread-safe types and synchronization mechanisms like locks or semaphores to avoid race conditions and data corruption.

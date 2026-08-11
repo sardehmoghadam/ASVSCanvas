@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.3.2
+canonicalId: v5.0.0-10.3.2
+slug: v10-3-2-enforce-authorization-from-claims
+title: "Enforce authorization decisions from token claims"
+summary: "Resource server enforces authorization based on sub, scope, and authorization_details claims if present."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.3
+  title: OAuth Resource Server
+level: 1
+tags:
+  - oauth  - resource-server  - claims  - authorization
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the resource server enforces authorization decisions based on claims from the access token that define delegated authorization. If claims such as sub, scope, and authorization_details are present, they must be part of the decision.

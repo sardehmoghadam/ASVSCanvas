@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.6.2
+canonicalId: v5.0.0-11.6.2
+slug: v11-6-2-secure-key-exchange
+title: "Use secure key exchange mechanisms"
+summary: "Approved algorithms for key exchange (e.g., Diffie-Hellman) with secure parameters to prevent adversary-in-the-middle attacks and cryptographic breaks."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.6
+  title: Public Key Cryptography
+level: 1
+tags:
+  - cryptography  - key-exchange  - diffie-hellman  - secure-parameters
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that approved cryptographic algorithms are used for key exchange (such as Diffie-Hellman) with a focus on ensuring that key exchange mechanisms use secure parameters. This will prevent attacks on the key establishment process which could lead to adversary-in-the-middle attacks or cryptographic breaks.

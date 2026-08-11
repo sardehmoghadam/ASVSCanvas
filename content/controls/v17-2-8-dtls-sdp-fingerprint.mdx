@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V17.2.8
+canonicalId: v5.0.0-17.2.8
+slug: v17-2-8-dtls-sdp-fingerprint
+title: "Validate DTLS certificate against SDP fingerprint"
+summary: "DTLS certificate must be checked against SDP fingerprint attribute; terminate media stream if check fails to ensure authenticity."
+chapter:
+  id: V17
+  title: WebRTC
+section:
+  id: V17.2
+  title: Media
+level: 1
+tags:
+  - webrtc  - dtls  - sdp  - fingerprint
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the Datagram Transport Layer Security (DTLS) certificate is checked against the Session Description Protocol (SDP) fingerprint attribute, terminating the media stream if the check fails, to ensure the authenticity of the media stream.

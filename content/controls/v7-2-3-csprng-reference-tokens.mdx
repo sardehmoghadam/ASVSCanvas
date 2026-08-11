@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V7.2.3
+canonicalId: v5.0.0-7.2.3
+slug: v7-2-3-csprng-reference-tokens
+title: "Generate reference tokens with CSPRNG"
+summary: "If using reference tokens, generate them with CSPRNG and at least 128 bits of entropy."
+chapter:
+  id: V7
+  title: Session Management
+section:
+  id: V7.2
+  title: Fundamental Session Management Security
+level: 1
+tags:
+  - session  - csprng  - entropy  - reference-tokens
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that if reference tokens are used to represent user sessions, they are unique and generated using a cryptographically secure pseudo-random number generator (CSPRNG) and possess at least 128 bits of entropy.

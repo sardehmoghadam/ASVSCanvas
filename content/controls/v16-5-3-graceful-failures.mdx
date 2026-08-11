@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V16.5.3
+canonicalId: v5.0.0-16.5.3
+slug: v16-5-3-graceful-failures
+title: "Fail gracefully and securely"
+summary: "Application must fail gracefully and securely, preventing fail-open conditions such as processing transactions despite validation errors."
+chapter:
+  id: V16
+  title: Security Logging & Error Handling
+section:
+  id: V16.5
+  title: Error Handling
+level: 1
+tags:
+  - error-handling  - fail-secure  - fail-open
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application fails gracefully and securely, including when an exception occurs, preventing fail-open conditions such as processing a transaction despite errors resulting from validation logic.

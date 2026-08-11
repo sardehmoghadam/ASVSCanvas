@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V14.3.1
+canonicalId: v5.0.0-14.3.1
+slug: v14-3-1-clear-client-storage
+title: "Clear authenticated data from client storage"
+summary: "Clear authenticated data from client storage after session termination; Clear-Site-Data header may help but client-side must also clean up if server is unavailable."
+chapter:
+  id: V14
+  title: Data Protection
+section:
+  id: V14.3
+  title: Client-side Data Protection
+level: 1
+tags:
+  - data-protection  - client-side  - storage  - clear-site-data
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that authenticated data is cleared from client storage, such as the browser DOM, after the client or session is terminated. The Clear-Site-Data HTTP response header field may be able to help with this but the client-side should also be able to clear up if the server connection is not available when the session is terminated.

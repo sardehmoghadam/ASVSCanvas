@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V17.2.3
+canonicalId: v5.0.0-17.2.3
+slug: v17-2-3-srtp-authentication
+title: "Check SRTP authentication at media server"
+summary: "SRTP authentication must be checked at the media server to prevent RTP injection attacks leading to DoS or media insertion."
+chapter:
+  id: V17
+  title: WebRTC
+section:
+  id: V17.2
+  title: Media
+level: 1
+tags:
+  - webrtc  - srtp  - authentication  - rtp-injection
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that Secure Real-time Transport Protocol (SRTP) authentication is checked at the media server to prevent Real-time Transport Protocol (RTP) injection attacks from leading to either a Denial of Service condition or audio or video media insertion into media streams.

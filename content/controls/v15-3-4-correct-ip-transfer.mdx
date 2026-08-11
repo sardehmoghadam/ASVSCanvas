@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.3.4
+canonicalId: v5.0.0-15.3.4
+slug: v15-3-4-correct-ip-transfer
+title: "Transfer correct client IP address"
+summary: "All proxying and middleware must transfer the user original IP correctly using trusted data fields that cannot be manipulated; use for logging and rate limiting."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.3
+  title: Defensive Coding
+level: 1
+tags:
+  - defensive-coding  - ip-address  - proxy  - rate-limiting
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all proxying and middleware components transfer the user original IP address correctly using trusted data fields that cannot be manipulated by the end user, and the application and web server use this correct value for logging and security decisions such as rate limiting, taking into account that even the original IP address may not be reliable due to dynamic IPs, VPNs, or corporate firewalls.

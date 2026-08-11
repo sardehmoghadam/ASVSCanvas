@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.3.5
+canonicalId: v5.0.0-15.3.5
+slug: v15-3-5-strict-type-comparisons
+title: "Use strict type and comparator operations"
+summary: "Variables must be explicitly checked for correct type; use strict equality and comparator operations to avoid type juggling or type confusion vulnerabilities."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.3
+  title: Defensive Coding
+level: 1
+tags:
+  - defensive-coding  - type-juggling  - strict-comparison
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application explicitly ensures that variables are of the correct type and performs strict equality and comparator operations. This is to avoid type juggling or type confusion vulnerabilities caused by the application code making an assumption about a variable type.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.5.2
+canonicalId: v5.0.0-11.5.2
+slug: v11-5-2-csprng-under-load
+title: "CSPRNG works under heavy demand"
+summary: "Random number generation mechanism must work securely even under heavy demand."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.5
+  title: Random Values
+level: 1
+tags:
+  - cryptography  - csprng  - resilience  - load
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the random number generation mechanism in use is designed to work securely, even under heavy demand.

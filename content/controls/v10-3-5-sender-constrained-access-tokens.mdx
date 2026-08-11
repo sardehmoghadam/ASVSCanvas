@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.3.5
+canonicalId: v5.0.0-10.3.5
+slug: v10-3-5-sender-constrained-access-tokens
+title: "Use sender-constrained access tokens"
+summary: "Prevent stolen/replayed access tokens by requiring sender-constrained tokens: mTLS for OAuth 2 or DPoP."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.3
+  title: OAuth Resource Server
+level: 1
+tags:
+  - oauth  - resource-server  - mtls  - dpop  - replay
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the resource server prevents the use of stolen access tokens or replay of access tokens (from unauthorized parties) by requiring sender-constrained access tokens, either Mutual TLS for OAuth 2 or OAuth 2 Demonstration of Proof of Possession (DPoP).

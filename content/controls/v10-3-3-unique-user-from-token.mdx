@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.3.3
+canonicalId: v5.0.0-10.3.3
+slug: v10-3-3-unique-user-from-token
+title: "Identify unique user from access token"
+summary: "Identify user from claims that cannot be reassigned, typically issuer plus subject (iss + sub) combination."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.3
+  title: OAuth Resource Server
+level: 1
+tags:
+  - oauth  - resource-server  - user-identity  - iss-sub
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that if an access control decision requires identifying a unique user from an access token (JWT or related token introspection response), the resource server identifies the user from claims that cannot be reassigned to other users. Typically, it means using a combination of iss and sub claims.

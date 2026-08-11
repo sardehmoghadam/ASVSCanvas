@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.6.1
+canonicalId: v5.0.0-6.6.1
+slug: v6-6-1-pstn-otp-restrictions
+title: "Restrict PSTN OTP delivery"
+summary: "PSTN/SMS OTP only when phone is pre-validated, stronger methods offered, and risks disclosed. L3 must not offer phone/SMS."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.6
+  title: Out-of-Band Authentication Mechanisms
+level: 1
+tags:
+  - mfa  - sms  - pstn  - otp
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that authentication mechanisms using the Public Switched Telephone Network (PSTN) to deliver One-time Passwords (OTPs) via phone or SMS are offered only when the phone number has previously been validated, alternate stronger methods (such as Time based One-time Passwords) are also offered, and the service provides information on their security risks to users. For L3 applications, phone and SMS must not be available as options.

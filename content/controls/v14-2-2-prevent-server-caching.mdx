@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V14.2.2
+canonicalId: v5.0.0-14.2.2
+slug: v14-2-2-prevent-server-caching
+title: "Prevent sensitive data caching in servers"
+summary: "Application prevents sensitive data from being cached in server components such as load balancers and application caches, or ensures secure purging after use."
+chapter:
+  id: V14
+  title: Data Protection
+section:
+  id: V14.2
+  title: General Data Protection
+level: 1
+tags:
+  - data-protection  - caching  - sensitive-data
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application prevents sensitive data from being cached in server components, such as load balancers and application caches, or ensures that the data is securely purged after use.

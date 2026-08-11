@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V14.3.3
+canonicalId: v5.0.0-14.3.3
+slug: v14-3-3-no-sensitive-data-in-browser-storage
+title: "No sensitive data in browser storage"
+summary: "Browser storage (localStorage, sessionStorage, IndexedDB, cookies) must not contain sensitive data except session tokens."
+chapter:
+  id: V14
+  title: Data Protection
+section:
+  id: V14.3
+  title: Client-side Data Protection
+level: 1
+tags:
+  - data-protection  - browser-storage  - sensitive-data
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that data stored in browser storage (such as localStorage, sessionStorage, IndexedDB, or cookies) does not contain sensitive data, with the exception of session tokens.

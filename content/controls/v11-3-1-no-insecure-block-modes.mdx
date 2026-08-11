@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.3.1
+canonicalId: v5.0.0-11.3.1
+slug: v11-3-1-no-insecure-block-modes
+title: "Prohibit insecure block modes and padding"
+summary: "Insecure block modes (e.g., ECB) and weak padding schemes (e.g., PKCS#1 v1.5) must not be used."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.3
+  title: Encryption Algorithms
+level: 1
+tags:
+  - cryptography  - block-mode  - ecb  - padding
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that insecure block modes (e.g., ECB) and weak padding schemes (e.g., PKCS#1 v1.5) are not used.

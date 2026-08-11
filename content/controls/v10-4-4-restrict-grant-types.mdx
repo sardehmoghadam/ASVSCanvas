@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.4.4
+canonicalId: v5.0.0-10.4.4
+slug: v10-4-4-restrict-grant-types
+title: "Restrict grant types per client"
+summary: "Authorization server only allows grants that a client needs; implicit and password grants must no longer be used."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.4
+  title: OAuth Authorization Server
+level: 1
+tags:
+  - oauth  - authorization-server  - grant-types  - implicit-flow
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that for a given client, the authorization server only allows the usage of grants that this client needs to use. Note that the grants token (Implicit flow) and password (Resource Owner Password Credentials flow) must no longer be used.

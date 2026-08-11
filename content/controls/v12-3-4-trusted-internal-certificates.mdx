@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V12.3.4
+canonicalId: v5.0.0-12.3.4
+slug: v12-3-4-trusted-internal-certificates
+title: "Use trusted certificates for internal TLS"
+summary: "Internal TLS connections use trusted certificates; for self-signed, configure consuming service to trust only specific internal CAs and specific self-signed certificates."
+chapter:
+  id: V12
+  title: Secure Communication
+section:
+  id: V12.3
+  title: General Service to Service Communication Security
+level: 1
+tags:
+  - tls  - internal-services  - certificates  - self-signed
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that TLS connections between internal services use trusted certificates. Where internally generated or self-signed certificates are used, the consuming service must be configured to only trust specific internal CAs and specific self-signed certificates.

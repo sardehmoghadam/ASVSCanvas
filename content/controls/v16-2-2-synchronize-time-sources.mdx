@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V16.2.2
+canonicalId: v5.0.0-16.2.2
+slug: v16-2-2-synchronize-time-sources
+title: "Synchronize time sources with UTC or timezone offset"
+summary: "Time sources must be synchronized; timestamps in security events must use UTC or include explicit time zone offset to prevent confusion."
+chapter:
+  id: V16
+  title: Security Logging & Error Handling
+section:
+  id: V16.2
+  title: General Logging
+level: 1
+tags:
+  - logging  - timestamps  - utc  - synchronization
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that time sources for all logging components are synchronized, and that timestamps in security event metadata use UTC or include an explicit time zone offset. UTC is recommended to ensure consistency across distributed systems and to prevent confusion during daylight saving time transitions.

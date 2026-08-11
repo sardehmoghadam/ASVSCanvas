@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.6.3
+canonicalId: v5.0.0-6.6.3
+slug: v6-6-3-rate-limit-oob-codes
+title: "Rate-limit out-of-band authentication codes"
+summary: "Protect code-based OOB mechanisms against brute force with rate limiting. Consider using 64-bit entropy codes."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.6
+  title: Out-of-Band Authentication Mechanisms
+level: 1
+tags:
+  - mfa  - rate-limiting  - brute-force  - out-of-band
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that a code based out-of-band authentication mechanism is protected against brute force attacks by using rate limiting. Consider also using a code with at least 64 bits of entropy.

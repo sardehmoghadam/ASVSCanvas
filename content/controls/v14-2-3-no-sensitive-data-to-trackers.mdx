@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V14.2.3
+canonicalId: v5.0.0-14.2.3
+slug: v14-2-3-no-sensitive-data-to-trackers
+title: "Do not send sensitive data to untrusted parties"
+summary: "Defined sensitive data must not be sent to untrusted parties such as user trackers to prevent unwanted data collection outside of application control."
+chapter:
+  id: V14
+  title: Data Protection
+section:
+  id: V14.2
+  title: General Data Protection
+level: 1
+tags:
+  - data-protection  - trackers  - sensitive-data  - privacy
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that defined sensitive data is not sent to untrusted parties (e.g., user trackers) to prevent unwanted collection of data outside of the application control.

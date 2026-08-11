@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.4.5
+canonicalId: v5.0.0-10.4.5
+slug: v10-4-5-mitigate-refresh-token-replay
+title: "Mitigate refresh token replay attacks"
+summary: "Use sender-constrained refresh tokens (DPoP or mTLS). For L1/L2, refresh token rotation with invalidation after use and revocation of all tokens if a revoked refresh token is reused."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.4
+  title: OAuth Authorization Server
+level: 1
+tags:
+  - oauth  - authorization-server  - refresh-token  - dpop  - mtls
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the authorization server mitigates refresh token replay attacks for public clients, preferably using sender-constrained refresh tokens, i.e., DPoP or Certificate-Bound Access Tokens using mTLS. For L1 and L2 applications, refresh token rotation may be used. If refresh token rotation is used, the authorization server must invalidate the refresh token after usage, and revoke all refresh tokens for that authorization if an already used and invalidated refresh token is provided.

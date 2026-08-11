@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.5.3
+canonicalId: v5.0.0-10.5.3
+slug: v10-5-3-reject-impersonating-issuer
+title: "Reject impersonating authorization server metadata"
+summary: "Client must reject authorization server metadata if the issuer URL does not exactly match the pre-configured issuer URL expected by the client."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.5
+  title: OIDC Client
+level: 1
+tags:
+  - oidc  - client  - issuer  - metadata
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the client rejects attempts by a malicious authorization server to impersonate another authorization server through authorization server metadata. The client must reject authorization server metadata if the issuer URL in the authorization server metadata does not exactly match the pre-configured issuer URL expected by the client.

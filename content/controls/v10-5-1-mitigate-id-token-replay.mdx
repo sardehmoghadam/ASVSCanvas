@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.5.1
+canonicalId: v5.0.0-10.5.1
+slug: v10-5-1-mitigate-id-token-replay
+title: "Mitigate ID Token replay attacks"
+summary: "Client must ensure the nonce claim in the ID Token matches the nonce value sent in the authentication request."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.5
+  title: OIDC Client
+level: 1
+tags:
+  - oidc  - client  - replay  - nonce
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the client (as the relying party) mitigates ID Token replay attacks. For example, by ensuring that the nonce claim in the ID Token matches the nonce value sent in the authentication request to the OpenID Provider (in OAuth2 referred to as the authorization request sent to the authorization server).

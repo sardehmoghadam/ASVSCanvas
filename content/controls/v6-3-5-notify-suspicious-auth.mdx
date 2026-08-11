@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.3.5
+canonicalId: v5.0.0-6.3.5
+slug: v6-3-5-notify-suspicious-auth
+title: "Notify users of suspicious authentication attempts"
+summary: "Notify users of unusual location/login, partial MFA success, post-inactivity auth, or success after multiple failures."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.3
+  title: General Authentication Security
+level: 1
+tags:
+  - authentication  - notification  - suspicious  - monitoring
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that users are notified of suspicious authentication attempts (successful or unsuccessful). This may include authentication attempts from an unusual location or client, partially successful authentication (only one of multiple factors), an authentication attempt after a long period of inactivity or a successful authentication after several unsuccessful attempts.

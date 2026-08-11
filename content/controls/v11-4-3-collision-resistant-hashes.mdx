@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.4.3
+canonicalId: v5.0.0-11.4.3
+slug: v11-4-3-collision-resistant-hashes
+title: "Use collision-resistant hash functions with appropriate length"
+summary: "Hash functions used in digital signatures must be collision resistant; output length at least 256 bits for collision resistance, 128 bits for second pre-image resistance only."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.4
+  title: Hashing and Hash-based Functions
+level: 1
+tags:
+  - cryptography  - hash  - collision-resistance  - bit-length
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that hash functions used in digital signatures, as part of data authentication or data integrity are collision resistant and have appropriate bit-lengths. If collision resistance is required, the output length must be at least 256 bits. If only resistance to second pre-image attacks is required, the output length must be at least 128 bits.

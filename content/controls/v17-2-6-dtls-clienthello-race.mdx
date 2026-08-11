@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V17.2.6
+canonicalId: v5.0.0-17.2.6
+slug: v17-2-6-dtls-clienthello-race
+title: "Prevent DTLS ClientHello race condition"
+summary: "Media server must not be susceptible to the ClientHello Race Condition vulnerability in DTLS; verify by checking if server is known vulnerable or by performing race condition test."
+chapter:
+  id: V17
+  title: WebRTC
+section:
+  id: V17.2
+  title: Media
+level: 1
+tags:
+  - webrtc  - dtls  - race-condition  - clienthello
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the media server is not susceptible to the ClientHello Race Condition vulnerability in Datagram Transport Layer Security (DTLS) by checking if the media server is publicly known to be vulnerable or by performing the race condition test.

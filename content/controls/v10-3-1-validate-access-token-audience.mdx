@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.3.1
+canonicalId: v5.0.0-10.3.1
+slug: v10-3-1-validate-access-token-audience
+title: "Validate access token audience at resource server"
+summary: "Resource server only accepts access tokens intended for it; check audience via structured token claim (e.g., aud in JWT) or token introspection."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.3
+  title: OAuth Resource Server
+level: 1
+tags:
+  - oauth  - resource-server  - audience  - introspection
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the resource server only accepts access tokens that are intended for use with that service (audience). The audience may be included in a structured access token (such as the aud claim in JWT), or it can be checked using the token introspection endpoint.

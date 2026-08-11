@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.4.4
+canonicalId: v5.0.0-15.4.4
+slug: v15-4-4-prevent-thread-starvation
+title: "Prevent thread starvation with fair scheduling"
+summary: "Resource allocation policies must prevent thread starvation by ensuring fair access to resources, e.g., using thread pools to allow lower-priority threads to proceed within reasonable timeframes."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.4
+  title: Safe Concurrency
+level: 1
+tags:
+  - concurrency  - thread-starvation  - thread-pool  - fairness
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that resource allocation policies prevent thread starvation by ensuring fair access to resources, such as by leveraging thread pools, allowing lower-priority threads to proceed within a reasonable timeframe.

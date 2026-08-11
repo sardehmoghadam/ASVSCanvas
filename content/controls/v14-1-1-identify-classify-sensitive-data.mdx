@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V14.1.1
+canonicalId: v5.0.0-14.1.1
+slug: v14-1-1-identify-classify-sensitive-data
+title: "Identify and classify sensitive data"
+summary: "All sensitive data created and processed must be identified and classified into protection levels, accounting for encoded data (e.g., Base64, JWT payloads) that is easily decoded."
+chapter:
+  id: V14
+  title: Data Protection
+section:
+  id: V14.1
+  title: Data Protection Documentation
+level: 1
+tags:
+  - data-protection  - classification  - documentation
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all sensitive data created and processed by the application has been identified and classified into protection levels. This includes data that is only encoded and therefore easily decoded, such as Base64 strings or the plaintext payload inside a JWT. Protection levels need to take into account any data protection and privacy regulations and standards which the application is required to comply with.

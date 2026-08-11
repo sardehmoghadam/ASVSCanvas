@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.5.2
+canonicalId: v5.0.0-10.5.2
+slug: v10-5-2-unique-user-from-id-token
+title: "Identify unique user from ID Token"
+summary: "Client uniquely identifies user from the sub claim, which cannot be reassigned to other users within the scope of an identity provider."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.5
+  title: OIDC Client
+level: 1
+tags:
+  - oidc  - client  - user-identity  - sub
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the client uniquely identifies the user from ID Token claims, usually the sub claim, which cannot be reassigned to other users (for the scope of an identity provider).

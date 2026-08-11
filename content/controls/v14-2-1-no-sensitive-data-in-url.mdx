@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V14.2.1
+canonicalId: v5.0.0-14.2.1
+slug: v14-2-1-no-sensitive-data-in-url
+title: "No sensitive data in URL or query string"
+summary: "Sensitive data must only be sent in HTTP message body or headers; URL and query string must not contain sensitive information such as API keys or session tokens."
+chapter:
+  id: V14
+  title: Data Protection
+section:
+  id: V14.2
+  title: General Data Protection
+level: 1
+tags:
+  - data-protection  - url  - sensitive-data
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that sensitive data is only sent to the server in the HTTP message body or header fields, and that the URL and query string do not contain sensitive information, such as an API key or session token.

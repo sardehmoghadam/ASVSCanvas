@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.5.4
+canonicalId: v5.0.0-6.5.4
+slug: v6-5-4-minimum-mfa-entropy
+title: "Enforce minimum MFA code entropy"
+summary: "Lookup secrets and out-of-band codes must have at least 20 bits of entropy (e.g., 4 random alphanumeric or 6 random digits)."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.5
+  title: General Multi-factor Authentication Requirements
+level: 1
+tags:
+  - mfa  - entropy  - code-length  - security
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that lookup secrets and out-of-band authentication codes have a minimum of 20 bits of entropy (typically 4 random alphanumeric characters or 6 random digits is sufficient).

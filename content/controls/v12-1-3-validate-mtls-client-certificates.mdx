@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V12.1.3
+canonicalId: v5.0.0-12.1.3
+slug: v12-1-3-validate-mtls-client-certificates
+title: "Validate mTLS client certificates before use"
+summary: "Application validates that mTLS client certificates are trusted before using the certificate identity for authentication or authorization."
+chapter:
+  id: V12
+  title: Secure Communication
+section:
+  id: V12.1
+  title: General TLS Security Guidance
+level: 1
+tags:
+  - tls  - mtls  - client-certificates  - validation
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application validates that mTLS client certificates are trusted before using the certificate identity for authentication or authorization.

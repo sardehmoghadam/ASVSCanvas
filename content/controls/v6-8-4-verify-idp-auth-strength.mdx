@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.8.4
+canonicalId: v5.0.0-6.8.4
+slug: v6-8-4-verify-idp-auth-strength
+title: "Verify identity provider authentication strength"
+summary: "Verify auth strength, methods, and recentness via IdP claims (acr, amr, auth_time); assume minimum if not provided by IdP."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.8
+  title: Authentication with an Identity Provider
+level: 1
+tags:
+  - identity-provider  - oidc  - claims  - auth-strength
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if an application uses a separate Identity Provider (IdP) and expects specific authentication strength, methods, or recentness for specific functions, the application verifies this using the information returned by the IdP. For example, if OIDC is used, this might be achieved by validating ID Token claims such as acr, amr, and auth_time (if present). If the IdP does not provide this information, the application must have a documented fallback approach that assumes that the minimum strength authentication mechanism was used (for example, single-factor authentication using username and password).

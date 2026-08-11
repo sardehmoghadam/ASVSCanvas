@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V13.4.1
+canonicalId: v5.0.0-13.4.1
+slug: v13-4-1-remove-source-control-metadata
+title: "Remove source control metadata from deployment"
+summary: "Application deployed without .git or .svn folders or in a way that makes these folders inaccessible externally and to the application itself."
+chapter:
+  id: V13
+  title: Configuration
+section:
+  id: V13.4
+  title: Unintended Information Leakage
+level: 1
+tags:
+  - configuration  - information-leakage  - git  - deployment
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application is deployed either without any source control metadata, including the .git or .svn folders, or in a way that these folders are inaccessible both externally and to the application itself.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.4.2
+canonicalId: v5.0.0-15.4.2
+slug: v15-4-2-prevent-toctou
+title: "Prevent TOCTOU race conditions"
+summary: "Resource state checks and dependent actions must be performed as a single atomic operation to prevent time-of-check to time-of-use (TOCTOU) race conditions."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.4
+  title: Safe Concurrency
+level: 1
+tags:
+  - concurrency  - toctou  - atomic  - race-condition
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that checks on a resource state, such as its existence or permissions, and the actions that depend on them are performed as a single atomic operation to prevent time-of-check to time-of-use (TOCTOU) race conditions. For example, checking if a file exists before opening it, or verifying a user access before granting it.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V7.2.4
+canonicalId: v5.0.0-7.2.4
+slug: v7-2-4-new-session-on-auth
+title: "Generate new session token on authentication"
+summary: "Generate a new session token on authentication and re-authentication, and terminate the current session token."
+chapter:
+  id: V7
+  title: Session Management
+section:
+  id: V7.2
+  title: Fundamental Session Management Security
+level: 1
+tags:
+  - session  - token  - session-fixation  - rotation
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application generates a new session token on user authentication, including re-authentication, and terminates the current session token.

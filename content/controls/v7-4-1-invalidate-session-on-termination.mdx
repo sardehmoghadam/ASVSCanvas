@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V7.4.1
+canonicalId: v5.0.0-7.4.1
+slug: v7-4-1-invalidate-session-on-termination
+title: "Invalidate sessions on termination"
+summary: "On logout/expiration, fully invalidate session data at backend. For self-contained tokens, use termination lists or per-user key rotation."
+chapter:
+  id: V7
+  title: Session Management
+section:
+  id: V7.4
+  title: Session Termination
+level: 1
+tags:
+  - session  - termination  - invalidation  - logout
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that when session termination is triggered (such as logout or expiration), the application disallows any further use of the session. For reference tokens or stateful sessions, this means invalidating the session data at the application backend. Applications using self-contained tokens will need a solution such as maintaining a list of terminated tokens, disallowing tokens produced before a per-user date and time or rotating a per-user signing key.

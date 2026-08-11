@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.5.1
+canonicalId: v5.0.0-11.5.1
+slug: v11-5-1-csprng-with-entropy
+title: "Use CSPRNG with sufficient entropy"
+summary: "All non-guessable random numbers/strings must use a CSPRNG with at least 128 bits of entropy; UUIDs do not satisfy this condition."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.5
+  title: Random Values
+level: 1
+tags:
+  - cryptography  - csprng  - entropy  - random
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that all random numbers and strings which are intended to be non-guessable must be generated using a cryptographically secure pseudo-random number generator (CSPRNG) and have at least 128 bits of entropy. Note that UUIDs do not respect this condition.

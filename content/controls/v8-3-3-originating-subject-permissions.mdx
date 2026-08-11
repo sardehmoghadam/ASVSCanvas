@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V8.3.3
+canonicalId: v5.0.0-8.3.3
+slug: v8-3-3-originating-subject-permissions
+title: "Use originating subject permissions for access"
+summary: "Access decisions must be based on the originating consumer permissions, not on intermediary or service permissions when acting on their behalf."
+chapter:
+  id: V8
+  title: Authorization
+section:
+  id: V8.3
+  title: Operation Level Authorization
+level: 1
+tags:
+  - authorization  - delegation  - impersonation  - service-accounts
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that access to an object is based on the originating subject (e.g., consumer) permissions, not on the permissions of any intermediary or service acting on their behalf. For example, if a consumer calls a web service using a self-contained token for authentication, and the service then requests data from a different service, the second service will use the consumer token, rather than a machine-to-machine token from the first service, to make permission decisions.

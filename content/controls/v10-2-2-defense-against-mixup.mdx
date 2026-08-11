@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.2.2
+canonicalId: v5.0.0-10.2.2
+slug: v10-2-2-defense-against-mixup
+title: "Defense against mix-up attacks"
+summary: "If OAuth client interacts with more than one authorization server, it must validate the iss parameter in authorization and token responses to prevent mix-up attacks."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.2
+  title: OAuth Client
+level: 1
+tags:
+  - oauth  - mix-up-attack  - issuer-validation
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that, if the OAuth client can interact with more than one authorization server, it has a defense against mix-up attacks. For example, it could require that the authorization server return the iss parameter value and validate it in the authorization response and the token response.

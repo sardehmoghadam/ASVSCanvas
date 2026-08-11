@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V7.4.3
+canonicalId: v5.0.0-7.4.3
+slug: v7-4-3-terminate-other-sessions
+title: "Allow termination of other sessions on factor change"
+summary: "Offer to terminate all other active sessions after password change, MFA update, or removal of any authentication factor."
+chapter:
+  id: V7
+  title: Session Management
+section:
+  id: V7.4
+  title: Session Termination
+level: 1
+tags:
+  - session  - termination  - password-change  - mfa
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application gives the option to terminate all other active sessions after a successful change or removal of any authentication factor (including password change via reset or recovery and, if present, an MFA settings update).

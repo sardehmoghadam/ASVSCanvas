@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.5.1
+canonicalId: v5.0.0-6.5.1
+slug: v6-5-1-single-use-mfa-codes
+title: "Enforce single-use MFA codes"
+summary: "Lookup secrets, out-of-band codes, and TOTPs must only be successfully usable once."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.5
+  title: General Multi-factor Authentication Requirements
+level: 1
+tags:
+  - mfa  - totp  - lookup-secrets  - replay
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that lookup secrets, out-of-band authentication requests or codes, and time-based one-time passwords (TOTPs) are only successfully usable once.

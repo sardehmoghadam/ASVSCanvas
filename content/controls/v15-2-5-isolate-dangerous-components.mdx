@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.2.5
+canonicalId: v5.0.0-15.2.5
+slug: v15-2-5-isolate-dangerous-components
+title: "Isolate dangerous functionality and risky components"
+summary: "Implement additional protections around documented dangerous functionality or risky components: sandboxing, encapsulation, containerization, or network isolation."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.2
+  title: Security Architecture and Dependencies
+level: 1
+tags:
+  - secure-coding  - isolation  - sandbox  - containerization
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the application implements additional protections around parts of the application which are documented as containing dangerous functionality or using third-party libraries considered to be risky components. This could include techniques such as sandboxing, encapsulation, containerization or network level isolation to delay and deter attackers who compromise one part of an application from pivoting elsewhere in the application.

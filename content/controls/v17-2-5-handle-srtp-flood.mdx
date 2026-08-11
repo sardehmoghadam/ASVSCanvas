@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V17.2.5
+canonicalId: v5.0.0-17.2.5
+slug: v17-2-5-handle-srtp-flood
+title: "Handle SRTP packet floods"
+summary: "Media server must continue processing incoming media traffic during a flood of SRTP packets from legitimate users."
+chapter:
+  id: V17
+  title: WebRTC
+section:
+  id: V17.2
+  title: Media
+level: 1
+tags:
+  - webrtc  - srtp  - dos  - flood
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the media server is able to continue processing incoming media traffic during a flood of Secure Real-time Transport Protocol (SRTP) packets from legitimate users.

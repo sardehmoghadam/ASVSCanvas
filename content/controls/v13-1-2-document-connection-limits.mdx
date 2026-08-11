@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V13.1.2
+canonicalId: v5.0.0-13.1.2
+slug: v13-1-2-document-connection-limits
+title: "Document max concurrent connections"
+summary: "Define max concurrent connections per service and behavior when limit is reached, including fallback and recovery mechanisms."
+chapter:
+  id: V13
+  title: Configuration
+section:
+  id: V13.1
+  title: Configuration Documentation
+level: 1
+tags:
+  - configuration  - documentation  - connections  - dos
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that for each service the application uses, the documentation defines the maximum number of concurrent connections (e.g., connection pool limits) and how the application behaves when that limit is reached, including any fallback or recovery mechanisms, to prevent denial of service conditions.

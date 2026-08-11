@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.4.4
+canonicalId: v5.0.0-6.4.4
+slug: v6-4-4-identity-proofing-for-mfa-loss
+title: "Require identity proofing for MFA factor loss"
+summary: "If an MFA factor is lost, perform identity proofing at the same level as during enrollment."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.4
+  title: Authentication Factor Lifecycle and Recovery
+level: 1
+tags:
+  - mfa  - identity-proofing  - recovery  - enrollment
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that if a multi-factor authentication factor is lost, evidence of identity proofing is performed at the same level as during enrollment.

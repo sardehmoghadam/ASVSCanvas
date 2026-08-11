@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.5.4
+canonicalId: v5.0.0-10.5.4
+slug: v10-5-4-validate-id-token-audience
+title: "Validate ID Token audience"
+summary: "Client validates that the ID Token aud claim equals the client_id value for the client."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.5
+  title: OIDC Client
+level: 1
+tags:
+  - oidc  - client  - audience  - aud
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the client validates that the ID Token is intended to be used for that client (audience) by checking that the aud claim from the token is equal to the client_id value for the client.

@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V9.1.3
+canonicalId: v5.0.0-9.1.3
+slug: v9-1-3-trusted-key-sources
+title: "Use trusted pre-configured key sources"
+summary: "Key material for token validation must come from trusted pre-configured sources; validate jku, x5u, jwk headers against allowlist."
+chapter:
+  id: V9
+  title: Self-contained Tokens
+section:
+  id: V9.1
+  title: Token source and integrity
+level: 1
+tags:
+  - tokens  - jwt  - jku  - key-management
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that key material that is used to validate self-contained tokens is from trusted pre-configured sources for the token issuer, preventing attackers from specifying untrusted sources and keys. For JWTs and other JWS structures, headers such as jku, x5u, and jwk must be validated against an allowlist of trusted sources.

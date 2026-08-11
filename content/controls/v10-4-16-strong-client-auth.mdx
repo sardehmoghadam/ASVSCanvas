@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V10.4.16
+canonicalId: v5.0.0-10.4.16
+slug: v10-4-16-strong-client-auth
+title: "Use strong client authentication"
+summary: "Confidential clients must use strong client authentication based on public-key cryptography resistant to replay: mTLS (tls_client_auth) or private_key_jwt."
+chapter:
+  id: V10
+  title: OAuth and OIDC
+section:
+  id: V10.4
+  title: OAuth Authorization Server
+level: 1
+tags:
+  - oauth  - authorization-server  - client-authentication  - mtls  - private-key-jwt
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the client is confidential and the authorization server requires the use of strong client authentication methods (based on public-key cryptography and resistant to replay attacks), such as mutual TLS (tls_client_auth, self_signed_tls_client_auth) or private key JWT (private_key_jwt).

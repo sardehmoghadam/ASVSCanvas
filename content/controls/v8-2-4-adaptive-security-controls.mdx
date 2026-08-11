@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V8.2.4
+canonicalId: v5.0.0-8.2.4
+slug: v8-2-4-adaptive-security-controls
+title: "Implement adaptive security controls"
+summary: "Implement adaptive controls based on contextual attributes (time, location, IP, device) for auth decisions at session start and during sessions."
+chapter:
+  id: V8
+  title: Authorization
+section:
+  id: V8.2
+  title: General Authorization Design
+level: 1
+tags:
+  - authorization  - adaptive  - context  - risk-based
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that adaptive security controls based on a consumer environmental and contextual attributes (such as time of day, location, IP address, or device) are implemented for authentication and authorization decisions, as defined in the application documentation. These controls must be applied when the consumer tries to start a new session and also during an existing session.

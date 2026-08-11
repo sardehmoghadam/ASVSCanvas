@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V16.5.4
+canonicalId: v5.0.0-16.5.4
+slug: v16-5-4-last-resort-error-handler
+title: "Define last resort error handler"
+summary: "Define a last resort error handler to catch all unhandled exceptions, preventing error detail loss and application process crashes."
+chapter:
+  id: V16
+  title: Security Logging & Error Handling
+section:
+  id: V16.5
+  title: Error Handling
+level: 1
+tags:
+  - error-handling  - exception-handling  - availability
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that a last resort error handler is defined which will catch all unhandled exceptions. This is both to avoid losing error details that must go to log files and to ensure that an error does not take down the entire application process, leading to a loss of availability.

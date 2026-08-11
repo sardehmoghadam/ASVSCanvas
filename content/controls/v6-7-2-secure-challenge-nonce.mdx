@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V6.7.2
+canonicalId: v5.0.0-6.7.2
+slug: v6-7-2-secure-challenge-nonce
+title: "Use secure challenge nonces"
+summary: "Challenge nonce must be at least 64 bits and statistically unique or unique over the cryptographic device lifetime."
+chapter:
+  id: V6
+  title: Authentication
+section:
+  id: V6.7
+  title: Cryptographic Authentication Mechanism
+level: 1
+tags:
+  - authentication  - nonce  - challenge  - crypto
+difficulty: intermediate
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that the challenge nonce is at least 64 bits in length, and statistically unique or unique over the lifetime of the cryptographic device.

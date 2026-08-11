@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V11.4.1
+canonicalId: v5.0.0-11.4.1
+slug: v11-4-1-approved-hash-functions
+title: "Use only approved hash functions"
+summary: "Use only approved hash functions for digital signatures, HMAC, KDF, and random bit generation. MD5 and similar disallowed hashes must not be used for any cryptographic purpose."
+chapter:
+  id: V11
+  title: Cryptography
+section:
+  id: V11.4
+  title: Hashing and Hash-based Functions
+level: 1
+tags:
+  - cryptography  - hash  - sha  - approved-algorithms
+difficulty: foundational
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that only approved hash functions are used for general cryptographic use cases, including digital signatures, HMAC, KDF, and random bit generation. Disallowed hash functions, such as MD5, must not be used for any cryptographic purpose.

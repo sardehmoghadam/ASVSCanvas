@@ -1,0 +1,27 @@
+---
+schemaVersion: "1.0.0"
+asvsVersion: "5.0.0"
+controlId: V15.4.3
+canonicalId: v5.0.0-15.4.3
+slug: v15-4-3-consistent-locking
+title: "Use consistent locking to prevent deadlocks"
+summary: "Locks must be used consistently to prevent threads getting stuck; locking logic must stay within resource-managing code to prevent external modification."
+chapter:
+  id: V15
+  title: Secure Coding & Architecture
+section:
+  id: V15.4
+  title: Safe Concurrency
+level: 1
+tags:
+  - concurrency  - locks  - deadlock  - consistency
+difficulty: advanced
+reviewStatus: draft
+references:
+  - label: OWASP ASVS 5.0.0
+    url: https://owasp.org/www-project-application-security-verification-standard/
+---
+
+## Requirement
+
+Verify that locks are used consistently to avoid threads getting stuck, whether by waiting on each other or retrying endlessly, and that locking logic stays within the code responsible for managing the resource to ensure locks cannot be inadvertently or maliciously modified by external classes or code.
