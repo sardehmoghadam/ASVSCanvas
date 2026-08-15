@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpenText, CheckCircle2, Code2, LockKeyhole, SearchCheck, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpenText, CheckCircle2, Code2, HeartHandshake, LockKeyhole, SearchCheck, ShieldCheck, Sparkles } from "lucide-react";
 import { CategoryCard } from "@/components/cards";
 import { SearchBox } from "@/components/search-box";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/categories/v5-encoding-sanitization/"><Button size="lg">Start learning <ArrowRight className="h-4 w-4" /></Button></Link>
-              <Link href="/authoring/"><Button size="lg" variant="outline">Authoring guide</Button></Link>
+              <Link href="/contribute/"><Button size="lg" variant="outline">Contribute <HeartHandshake className="h-4 w-4" /></Button></Link>
             </div>
             <div className="mt-8 max-w-xl"><SearchBox /></div>
           </div>

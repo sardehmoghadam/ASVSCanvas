@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
   { href: "/categories/v5-encoding-sanitization/", label: "ASVS 5.0.0" },
-  { href: "/authoring/", label: "Authoring" },
+  { href: "/contribute/", label: "Contribute" },
 ];
 
 export function Header() {
