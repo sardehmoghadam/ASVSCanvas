@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that dynamically allocated memory and resources are released, and that references or pointers to freed memory are removed or set to null to prevent dangling pointers and use-after-free vulnerabilities.
+Use-after-free and double-free bugs arise when memory or a resource is released while code still holds references to it. This control requires disciplined lifetime management: free each resource exactly once, and invalidate (null out) pointers to freed memory so later misuse is detected instead of silently reading stale data.
+
+## Why This Matters
+
+A use-after-free lets an attacker read or write through a pointer to memory that has been reallocated to a different object — a powerful corruption primitive behind many real exploits (browsers, kernels, services). Double-frees corrupt allocator metadata directly. These bugs are hard to spot by eye and are frequently caught only by sanitizers, so the defense must be structural.
+
+## Main Security Requirement
+
+> Verify that dynamically allocated memory and resources are released, and that references or pointers to freed memory are removed or set to null to prevent dangling pointers and use-after-free vulnerabilities.
+
+## Common Failure Patterns
+
+- `free(p)` then using `p` without nulling it.
+- Returning a pointer to a local/stack buffer from a function.
+- Copying a pointer into multiple owners without a clear single owner (double free).
+- Freeing inside a loop or error path without tracking ownership.
+- Leaving file handles, locks, or sockets unclosed (resource lifetimes mirror memory lifetimes).
+
+## Secure Implementation
+
+Prefer RAII / ownership types so cleanup is automatic.
+
+```cpp
+// C++: smart pointers own and release memory exactly once.
+std::unique_ptr<Buffer> buf = std::make_unique<Buffer>(size);
+// No manual free; lifetime ends with scope.
+```
+
+```c
+// C: null the pointer immediately after freeing to catch reuse.
+free(ptr);
+ptr = NULL;
+```
+
+In garbage-collected languages, explicitly release non-memory resources (files, sockets, locks) in `finally`/`using` blocks, and avoid retaining references in caches longer than needed.
+
+## Key Rules
+
+- Prefer RAII, smart pointers, or GC over manual free/delete.
+- Null pointers immediately after freeing; never double-free.
+- Establish a single clear owner for every allocation.
+- Release OS resources (descriptors, locks) promptly with deterministic cleanup.
+- Run ASan/MSan and fuzzers to catch use-after-free and leaks in CI.
+
+## Checklist for Code Review
+
+- Is ownership of each allocation unambiguous (no shared raw pointers)?
+- Are pointers nulled immediately after free/delete?
+- Are there any paths that free the same object twice?
+- Are stack-buffer pointers returned to callers?
+- Are files, sockets, and locks deterministically released on all paths?

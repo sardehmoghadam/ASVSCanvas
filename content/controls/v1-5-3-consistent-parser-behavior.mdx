@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that different parsers used in the application for the same data type (e.g., JSON parsers, XML parsers, URL parsers), perform parsing in a consistent way and use the same character encoding mechanism to avoid issues such as JSON Interoperability vulnerabilities or different URI or file parsing behavior being exploited in Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks.
+When two components parse the same data differently — a front-end JSON parser, a backend JSON parser, and a validation layer each with different rules — an attacker can craft input that one component accepts and another misreads. This control requires using one canonical parser per data type, with a single character encoding, so the application's view of the data is unambiguous.
+
+## Why This Matters
+
+"Differential parsing" powers many real bypasses: duplicate JSON keys where the last-wins rule differs between layers, number formats that parse differently, Unicode/URL weirdness that one parser normalizes and another passes through, and confused path separators that slip past an SSRF filter. If security enforcement and the actual consume of data disagree on what the data *is*, the check can be bypassed.
+
+## Main Security Requirement
+
+> Verify that different parsers used in the application for the same data type (e.g., JSON parsers, XML parsers, URL parsers), perform parsing in a consistent way and use the same character encoding mechanism to avoid issues such as JSON Interoperability vulnerabilities or different URI or file parsing behavior being exploited in Remote File Inclusion (RFI) or Server-side Request Forgery (SSRF) attacks.
+
+## Common Failure Patterns
+
+- Parsing once for validation and again with a different library for use.
+- Relying on "last key wins" while a downstream system takes the first (or vice versa).
+- Accepting arbitrary character encodings and letting each parser guess.
+- Mixing URL parsers/routers with different normalization of `%2e`, `..`, and backslashes.
+- Resolving file paths with one OS/API and checking them with another set of rules.
+
+## Secure Implementation
+
+Parse once, validate the parsed structure, then reuse it:
+
+```python
+import json
+
+# Canonical: parse exactly once, enforce UTF-8, reject duplicate keys.
+def load_json(raw: bytes):
+    text = raw.decode("utf-8")                     # one encoding, no guessing
+    return json.loads(text,
+                      object_pairs_hook=_reject_duplicate_keys)
+
+def _reject_duplicate_keys(pairs):
+    d = {}
+    for k, v in pairs:
+        if k in d:
+            raise ValueError(f"duplicate key: {k}")
+        d[k] = v
+    return d
+```
+
+Normalize URLs/paths in a single place with one library, and use the *same* normalized value for both the security check and the request:
+
+```text
+resolve -> normalize -> validate -> THEN execute (do not re-parse later)
+```
+
+## Key Rules
+
+- Use a single, well-known parser per data type across the whole application.
+- Fix one character encoding (UTF-8) and reject invalid sequences early.
+- Reject ambiguous input: duplicate JSON keys, mixed separators, non-canonical forms.
+- Normalize URLs/paths once and apply checks to the same value that is used.
+- Keep validation and consumption operating on the same parsed representation.
+
+## Checklist for Code Review
+
+- Is the same JSON (or XML/URL) parser used everywhere, with one encoding?
+- Are duplicate keys and non-canonical forms rejected?
+- Is data parsed once and reused for both validation and execution?
+- Are URLs/paths normalized by one component before security checks?
+- Is any input decoded or re-parsed a second time by different rules?

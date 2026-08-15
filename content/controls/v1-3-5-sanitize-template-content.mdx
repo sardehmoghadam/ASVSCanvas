@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application sanitizes or disables user-supplied scriptable or expression template language content, such as Markdown, CSS or XSL stylesheets, BBCode, or similar.
+Applications often let users submit markup or styling: Markdown, BBCode, CSS, XSLT. These formats are more powerful than they look — a stylesheet can reference external resources or trigger `expression()`, and XSLT can execute functions. This control requires rendering such content through a safe, restricted processor (or disabling the expressive parts entirely).
+
+## Why This Matters
+
+Treating user markup as inert text is a mistake. Markdown can embed raw HTML (and therefore script); CSS can exfiltrate data via `url()` and `@import` and, in legacy contexts, execute expressions; XSLT can read files and make network requests. An attacker who controls stylesheet or template content can often read or transmit data they should not see.
+
+## Main Security Requirement
+
+> Verify that the application sanitizes or disables user-supplied scriptable or expression template language content, such as Markdown, CSS or XSL stylesheets, BBCode, or similar.
+
+## Common Failure Patterns
+
+- Rendering Markdown with raw HTML and links enabled, then trusting the output.
+- Accepting user CSS and inserting it into pages (style injection / data exfiltration).
+- Processing user XSLT with full XPath functions and network access.
+- Using BBCode parsers that allow unvalidated URLs (`javascript:`).
+- Failing to sanitize the final HTML output of a Markdown/BBCode renderer.
+
+## Secure Implementation
+
+Render Markdown, then sanitize the resulting HTML:
+
+```python
+import markdown, bleach
+html = markdown.markdown(user_md)
+clean = bleach.clean(html, tags=["p","b","i","a","code","pre","ul","ol","li"],
+                     attributes={"a": ["href"]},
+                     protocols=["http","https"])
+```
+
+Disable raw HTML/scripts in the Markdown parser itself (e.g., strip or escape before conversion), and treat CSS as high-risk:
+
+```text
+User CSS -> parse -> keep only allowlisted properties/selectors -> reject url(), @import, expression()
+```
+
+For XSLT or BBCode that isn't essential, disable it outright; if required, use a sandboxed, feature-limited processor.
+
+## Key Rules
+
+- Render user markup, then sanitize the HTML output with an allowlist.
+- Disable raw HTML and scripting features in the Markdown/BBCode parser.
+- Restrict user CSS to safe properties; block `url()`, `@import`, and `expression()`.
+- Sandbox XSLT and expression engines, disabling filesystem/network functions.
+- Validate all URLs in generated links against a safe-scheme allowlist.
+
+## Checklist for Code Review
+
+- Is user Markdown/BBCode rendered and then HTML-sanitized?
+- Are raw HTML/scripts disabled in the template/markdown processor?
+- Is user CSS filtered to allowlisted properties with no `url()`/`@import`?
+- Are XSLT/expression processors sandboxed with restricted features?
+- Are generated links and image URLs protocol-validated?

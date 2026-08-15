@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that deserialization of untrusted data enforces safe input handling, such as using an allowlist of object types or restricting client-defined object types, to prevent deserialization attacks. Deserialization mechanisms that are explicitly defined as insecure must not be used with untrusted input.
+Deserialization turns a byte stream back into live objects. In many languages the deserializer can instantiate arbitrary classes and trigger code paths (`readObject`, `__reduce__`, gadget chains), turning untrusted bytes into code execution. This control requires either not deserializing untrusted data, or tightly restricting what types may be created with an explicit allowlist — and banning known-insecure mechanisms.
+
+## Why This Matters
+
+Deserialization is a top code-execution vector in Java, .NET, Python, PHP, and Ruby. Even "just reading objects" can invoke constructors, `__destruct`/`finalize`, or gadget chains that reach the filesystem or a command shell. Because the vulnerable call looks innocuous, whole frameworks have been compromised through a single `ObjectInputStream.readObject()` on attacker-controlled data.
+
+## Main Security Requirement
+
+> Verify that deserialization of untrusted data enforces safe input handling, such as using an allowlist of object types or restricting client-defined object types, to prevent deserialization attacks. Deserialization mechanisms that are explicitly defined as insecure must not be used with untrusted input.
+
+## Common Failure Patterns
+
+- `readObject()`/`pickle.loads()`/`BinaryFormatter` on client-supplied bytes.
+- Deny-listing "dangerous" classes instead of allow-listing safe ones.
+- Trusting a type field from the client to choose a class at the server.
+- Serializing full runtime objects when only plain data is needed.
+- Keeping insecure deserializers enabled "for compatibility" on public endpoints.
+
+## Secure Implementation
+
+Prefer JSON (schema-validated) for data interchange; never deserialize native object streams from untrusted input:
+
+```python
+# Safe: JSON with a schema; no native object reconstruction.
+import json
+data = json.loads(raw)             # plain dicts/lists only
+```
+
+When native deserialization is unavoidable, enforce an allowlist filter:
+
+```java
+import java.io.*;
+
+ObjectInputFilter filter = ObjectInputFilter.Config.createFilter(
+    "com.example.model.*;!*");     // allow only model types; reject everything else
+ObjectInputFilter.Config.setSerialFilter(filter);
+```
+
+Serialize only data-transfer objects, sign/encrypt serialized blobs, and keep known-insecure mechanisms (Java native serialization over untrusted input, `BinaryFormatter`, `pickle`) disabled.
+
+## Key Rules
+
+- Use JSON or schema-validated data formats instead of native deserialization.
+- If unavoidable, set a strict allowlist filter of permitted types.
+- Never let the client pick object classes or types.
+- Treat serialized blobs as untrusted; protect them with integrity (signature/encryption).
+- Remove insecure deserializers from public/untrusted paths.
+
+## Checklist for Code Review
+
+- Is untrusted input deserialized with a native object stream anywhere?
+- Could JSON + schema validation replace the deserialization?
+- Is a strict type allowlist (`!*` reject-all fallback) applied?
+- Are serialized blobs integrity-protected and only accepted from trusted sources?
+- Are known-insecure mechanisms (native Java serialization, `BinaryFormatter`, `pickle`) disabled?

@@ -5,6 +5,7 @@ import { compileMDX } from "next-mdx-remote/rsc";
 import remarkGfm from "remark-gfm";
 import { Callout } from "@/components/callout";
 import { CodeTabs } from "@/components/code-tabs";
+import { createMdHeading } from "@/components/mdx-heading";
 import { ReferencesList } from "@/components/references-list";
 import { RelatedControls } from "@/components/related-controls";
 import { ControlFrontmatterSchema, type ControlFrontmatter } from "./schema";
@@ -80,7 +81,18 @@ export type CompiledControl = {
 export async function compileControl(entry: ControlEntry): Promise<CompiledControl> {
   const { content } = await compileMDX({
     source: entry.body,
-    components: { Callout, CodeTabs, ReferencesList, RelatedControls },
+    components: {
+      Callout,
+      CodeTabs,
+      ReferencesList,
+      RelatedControls,
+      h1: createMdHeading(1),
+      h2: createMdHeading(2),
+      h3: createMdHeading(3),
+      h4: createMdHeading(4),
+      h5: createMdHeading(5),
+      h6: createMdHeading(6),
+    },
     options: {
       mdxOptions: {
         remarkPlugins: [remarkGfm],

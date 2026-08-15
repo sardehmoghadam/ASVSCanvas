@@ -25,6 +25,64 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application uses memory-safe string, safer memory copy and pointer arithmetic to detect or prevent stack, buffer, or heap overflows.
+Memory corruption vulnerabilities — stack, heap, and buffer overflows — occur when code writes beyond an allocated region. This control requires writing memory-safe code: use languages or libraries with bounds checking, prefer length-limited string and copy functions, and validate that pointer arithmetic stays inside the intended buffer.
+
+## Why This Matters
+
+Overflows are the historical root of the most severe exploit classes: they can overwrite adjacent data, control flow (return addresses, function pointers), and data structures, then be chained into arbitrary code execution. In native languages, a single unsafe `strcpy` or unchecked indexing call can be enough to compromise a process.
+
+## Main Security Requirement
+
+> Verify that the application uses memory-safe string, safer memory copy and pointer arithmetic to detect or prevent stack, buffer, or heap overflows.
+
+## Common Failure Patterns
+
+- Using `strcpy`, `strcat`, `sprintf`, `gets`, and unchecked array indexing in C/C++.
+- Copying a *source* length into a smaller destination without checking the destination size.
+- Pointer arithmetic that trusts an external length or offset.
+- Allocating based on one length and writing based on another (e.g., UTF-8 vs bytes).
+- Disabling compiler hardening and sanitizers in release builds.
+
+## Secure Implementation
+
+Prefer memory-safe languages, and use bounds-checked primitives when native code is required:
+
+```c
+// Bounds-checked copy: never writes past dst_size.
+strlcpy(dst, src, dst_size);
+snprintf(dst, dst_size, "%s", src);
+
+// Never: strcpy(dst, src);  // no destination bound
+```
+
+Rust forbids the class entirely through safe code:
+
+```rust
+let s = user_input;             // owned, bounds-checked String
+let v = s.clone();              // no manual copy length bookkeeping
+```
+
+Enable tooling to catch the bug class at build/test time:
+
+```text
+gcc/clang:  -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now
+test:       AddressSanitizer, MemorySanitizer, fuzzing (libFuzzer/AFL)
+```
+
+## Key Rules
+
+- Prefer memory-safe languages where possible.
+- Use `strlcpy`/`snprintf` and other length-checked functions; ban `strcpy`/`gets`/`sprintf`.
+- Validate lengths and offsets before any pointer arithmetic.
+- Keep allocation size and write size in the same unit (bytes vs. characters).
+- Compile with stack protection and run sanitizers/fuzzers in CI.
+
+## Checklist for Code Review
+
+- Are dangerous functions (`strcpy`, `strcat`, `sprintf`, `gets`) absent?
+- Do every copy and pointer-walk carry an explicit destination bound?
+- Are allocation and write sizes consistent?
+- Is the code compiled with stack-protection and fortify flags?
+- Are sanitizers and fuzzing part of the test pipeline?

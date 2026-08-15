@@ -24,6 +24,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application sanitizes content before it is sent to memcache to prevent injection attacks.
+The memcached protocol is a plain-text, line-oriented protocol in which newlines separate commands. If an application writes untrusted values into memcached without stripping carriage return and line feed characters, an attacker can terminate the intended command early and inject their own memcached commands. This control requires sanitizing keys and values before storage.
+
+## Why This Matters
+
+An injected `\r\n` lets an attacker break out of a `set` command and issue additional commands — reading other cache entries (`get`), overwriting them (`set`/`replace`/`append`), or deleting keys (`delete`/`flush_all`). Applications use the cache for sessions, counters, and business data, so cache poisoning can escalate into session hijacking or logic corruption.
+
+## Main Security Requirement
+
+> Verify that the application sanitizes content before it is sent to memcache to prevent injection attacks.
+
+## Common Failure Patterns
+
+- Storing raw user input as keys or values without stripping CR/LF.
+- Using text-protocol concatenation instead of a client library's safe API.
+- Trusting cache keys built from HTTP headers (e.g., `Vary`/URL fragments).
+- Forgetting that `flush_all` only needs a bare newline-terminated command.
+- Mixing the binary protocol and text protocol assumptions without controls.
+
+## Secure Implementation
+
+Use a client library and strip CR/LF from any value or key:
+
+```python
+import pymemcache.client.base as base
+
+def sanitize(v: str) -> str:
+    return v.replace("\r", "").replace("\n", "")
+
+client = base.Client(("127.0.0.1", 11211))
+client.set(sanitize(key), sanitize(value), expire=300)
+```
+
+Reject rather than silently sanitize where structure matters, and validate lengths and key character sets:
+
+```text
+Key rules:   no whitespace/control chars, max 250 bytes
+Value rules: no raw CR/LF; encode structured data (JSON) so newlines are escaped
+```
+
+Segregate the memcached service (private network, no auth bypass) so even a hardened client never trusts cache contents.
+
+## Key Rules
+
+- Strip or reject `\r` and `\n` in every key and value before storage.
+- Use a client library's API rather than hand-writing the memcached protocol.
+- Cap key/value lengths and restrict key characters.
+- Encode structured values (JSON) so control characters are neutralized.
+- Isolate memcached to a trusted, private network segment.
+
+## Checklist for Code Review
+
+- Are CR/LF characters removed or rejected from keys and values?
+- Is the memcached protocol accessed through a library, not raw writes?
+- Are key and value lengths bounded and key characters restricted?
+- Is structured data serialized (JSON) before caching?
+- Is the cache service network-isolated from untrusted input sources?

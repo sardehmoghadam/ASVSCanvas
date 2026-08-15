@@ -24,6 +24,65 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed.
+Dynamic evaluation turns a string into executable code — `eval()` in JavaScript, `SpEL`/`OGNL` expression evaluation in Java, `sp_executesql`, or shell `eval`. This control says: do not run untrusted data as code. If an expression engine is unavoidable (configuration, business rules), it must run with a restricted evaluator and sanitized input.
+
+## Why This Matters
+
+Evaluation is a direct path to arbitrary code execution. `eval(userInput)` lets an attacker run anything the process can. Even "safe" expression languages like SpEL can read files, invoke classes, and spawn commands unless their evaluation context is locked down. Injection through an expression engine is usually a full compromise.
+
+## Main Security Requirement
+
+> Verify that the application avoids the use of eval() or other dynamic code execution features such as Spring Expression Language (SpEL). Where there is no alternative, any user input being included must be sanitized before being executed.
+
+## Common Failure Patterns
+
+- `eval()`, `new Function()`, or `setTimeout(str, …)` with any user-influenced string.
+- SpEL parsed with `StandardEvaluationContext` (reflection-capable) on user input.
+- Expression templates that concatenate variables into the expression string instead of binding them.
+- Dynamic SQL run via `sp_executesql` built from input.
+- Assuming an "internal only" endpoint will never receive hostile input.
+
+## Secure Implementation
+
+Replace `eval` with structured handling:
+
+```javascript
+// Instead of eval, parse JSON with a typed parser.
+const value = JSON.parse(userString);
+```
+
+Restrict SpEL to a deny-list-free, reflection-free context:
+
+```java
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
+
+SpelExpressionParser parser = new SpelExpressionParser();
+var context = SimpleEvaluationContext
+    .forReadOnlyDataBinding()
+    .withInstanceMethods()
+    .build();
+
+// Keep user input out of the expression itself; bind it as a variable.
+parser.parseExpression("#name").getValue(context, name);
+```
+
+If dynamic SQL is required, parameterize; never build `sp_executesql` strings from untrusted values.
+
+## Key Rules
+
+- Prefer JSON parsers, template engines, or hardcoded logic over `eval`-style features.
+- If an expression engine is required, use a restricted context with reflection and class access disabled.
+- Bind user values as variables, never concatenate them into the expression.
+- Treat all inputs as untrusted, including those from "internal" sources.
+- Log and alert on attempts to inject expression syntax.
+
+## Checklist for Code Review
+
+- Are `eval`, `new Function`, and timing-based string evaluation absent?
+- Does SpEL use `SimpleEvaluationContext` (or equivalent) rather than the full context?
+- Are user values bound as variables, not interpolated into expressions?
+- Is dynamic SQL parameterized rather than assembled and `EXEC`-ed?
+- Is there any path where untrusted data reaches an expression/shell evaluator?

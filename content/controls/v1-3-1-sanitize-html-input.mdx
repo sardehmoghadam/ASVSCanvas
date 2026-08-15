@@ -25,6 +25,64 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all untrusted HTML input from WYSIWYG editors or similar is sanitized using a well-known and secure HTML sanitization library or framework feature.
+When users can submit HTML — through rich-text/WYSIWYG editors, comment fields, or imports — the application must clean that HTML before storing or rendering it. "Sanitizing" means parsing the markup and dropping everything outside an allowlist of harmless tags and attributes instead of trying to reject "bad" strings with regexes.
+
+## Why This Matters
+
+Stored HTML is rendered in the browser, so any `<script>`, `onerror` handler, `javascript:` URL, or `<iframe>` becomes persistent cross-site scripting. HTML is notoriously easy to sneak past string filters (capitalization, entities, null bytes, comments). A dedicated, maintained sanitizer understands the full parsing rules and is the only reliable defense.
+
+## Main Security Requirement
+
+> Verify that all untrusted HTML input from WYSIWYG editors or similar is sanitized using a well-known and secure HTML sanitization library or framework feature.
+
+## Common Failure Patterns
+
+- Trusting a WYSIWYG editor's client-side output without server-side sanitization.
+- Filtering with regexes or `htmlspecialchars` (escapes everything, or misses tricks).
+- Allowing event-handler attributes (`on*`) or `style` with `expression()`/`url()`.
+- Forgetting that SVG/MathML embedded in HTML can execute script.
+- Sanitizing only at input and reinserting raw values later.
+
+## Secure Implementation
+
+Use a maintained allowlist sanitizer. Client-side, DOMPurify (still validate server-side):
+
+```javascript
+import DOMPurify from "dompurify";
+
+const config = { ALLOWED_TAGS: ["b", "i", "p", "a", "ul", "li"], ALLOWED_ATTR: ["href"] };
+const clean = DOMPurify.sanitize(userHtml, config);
+```
+
+Server-side, the OWASP Java HTML Sanitizer or Python's Bleach:
+
+```python
+import bleach
+
+clean = bleach.clean(
+    user_html,
+    tags=["b", "i", "p", "a", "ul", "li"],
+    attributes={"a": ["href", "title"]},
+    protocols=["http", "https"],
+)
+```
+
+Re-apply sanitization (or at least the same allowlist) when rendering stored content, and enforce link protocols.
+
+## Key Rules
+
+- Use a well-known allowlist sanitizer; never regex-based blacklists.
+- Sanitize on the server, not only in the browser.
+- Allow only the tags/attributes you actually need; block `script`, `style`, event handlers, and active URLs.
+- Strip or restrict SVG and MathML inside HTML.
+- Treat sanitized output as data; re-check before any "raw HTML" rendering.
+
+## Checklist for Code Review
+
+- Is a maintained sanitizer with an explicit allowlist in use?
+- Is sanitization performed server-side on input and again before rendering?
+- Are `on*` event attributes, `style`, `<script>`, `<iframe>`, and `javascript:` URLs excluded?
+- Is embedded SVG/MathML handled?
+- Are stored-html render paths re-sanitized or known-safe?

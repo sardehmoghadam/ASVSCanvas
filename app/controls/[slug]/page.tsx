@@ -15,6 +15,7 @@ import {
   compileControl,
   type ControlEntry,
 } from "@/lib/content/loader";
+import { extractHeadings } from "@/lib/content/headings";
 
 const toc = ["Explanation", "Why It Matters", "Examples", "Testing Notes", "References", "Related Controls"];
 
@@ -37,6 +38,7 @@ async function renderMdxControl(entry: ControlEntry) {
   const related = allControls
     .filter((e) => e.frontmatter.chapter.id === frontmatter.chapter.id && e.frontmatter.slug !== frontmatter.slug)
     .slice(0, 2);
+  const headings = extractHeadings(entry.body);
 
   return (
     <DocsLayout>
@@ -92,7 +94,7 @@ async function renderMdxControl(entry: ControlEntry) {
             </section>
           ) : null}
         </article>
-        <TableOfContents items={toc} />
+        <TableOfContents items={headings} />
       </div>
     </DocsLayout>
   );

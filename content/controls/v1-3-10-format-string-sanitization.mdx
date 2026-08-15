@@ -24,6 +24,68 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that format strings which might resolve in an unexpected or malicious way when used are sanitized before being processed.
+Format string injection occurs when user input is used as the *format* argument to a formatting function (`printf`, `String.format`, `logger.info(f"...")`, Python `%`). Format specifiers such as `%s`, `%n`, or `%x` are then interpreted as instructions, reading or writing memory locations or leaking data. This control requires treating all format strings as trusted constants and sanitizing any that must include user data.
+
+## Why This Matters
+
+In C, a user-controlled `%n` writes to an attacker-chosen address, enabling arbitrary memory writes. In managed languages the impact is usually information disclosure or crashes, but the root cause is identical: format specifiers from untrusted data change program behavior. The rule is simple and universal — never let data become a format string.
+
+## Main Security Requirement
+
+> Verify that format strings which might resolve in an unexpected or malicious way when used are sanitized before being processed.
+
+## Common Failure Patterns
+
+- `printf(userInput)` or `sprintf(userInput, …)` with user data as the format.
+- Python `logging` or f-string built from concatenated user input used as the format.
+- Passing a stored or translated string straight to `String.format` when it contains user text.
+- Sanitizing by "removing `%`" inconsistently, missing `%%`, positional, or locale specifiers.
+- Using user input to choose format strings from a lookup without allowlisting.
+
+## Secure Implementation
+
+Always use a fixed format string with values passed as arguments:
+
+```c
+// Safe: format is a constant; user input is a %s argument.
+printf("%s", user_input);
+
+// Unsafe: user input is the format string itself.
+printf(user_input);
+```
+
+```java
+// Safe: format fixed at compile time, value bound as an argument.
+System.out.printf("Value: %s%n", userInput);
+
+// Unsafe: userInput controls the format.
+String.format(userInput, someValue);
+```
+
+```python
+# Safe: format is a literal here; the value is a substitution argument.
+logging.info("user=%s", user_input)
+
+# Unsafe: user_input is the format string.
+logging.info(user_input)
+```
+
+If a translated/templated format must contain user-chosen text, escape every `%` in that text before it is embedded in the format string.
+
+## Key Rules
+
+- Keep format strings as constants; pass user data as arguments only.
+- Never pass a user-influenced string as a format argument.
+- Escape `%` (and locale-specific specifiers) before embedding data into a format.
+- Limit logging/formatting of raw external input; log structured fields instead.
+- Cover formatting calls in static analysis and code review.
+
+## Checklist for Code Review
+
+- Are all format strings fixed constants with user data passed as arguments?
+- Is there any `printf`, `String.format`, f-string, or logger call using user data as the format?
+- Are message catalogs/translations verified to be free of user-controlled specifiers?
+- Is raw input logged through structured fields rather than as format strings?
+- Does static analysis flag user-data-as-format patterns?

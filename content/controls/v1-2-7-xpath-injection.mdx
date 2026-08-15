@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application is protected against XPath injection attacks by using query parameterization or precompiled queries.
+XPath is a query language for XML documents. XPath injection occurs when an application builds an XPath expression by concatenating user input, allowing an attacker to inject boolean conditions or path steps. Like SQL parameterization, XPath parameterization binds values separately so they are treated as data — literals — and never as expression syntax.
+
+## Why This Matters
+
+An XPath expression such as `//user[username='admin' and password='x']` can be manipulated: the password `'] or '1'='1` turns the check into a tautology, bypassing authentication. XPath also has no concept of privileges like SQL — a single injected query can reveal the entire document, so a successful attack can dump the whole XML data set.
+
+## Main Security Requirement
+
+> Verify that the application is protected against XPath injection attacks by using query parameterization or precompiled queries.
+
+## Common Failure Patterns
+
+- Building expressions with concatenation: `"//user[name='" + name + "']"`.
+- Filtering input with ad-hoc `replace()` calls instead of parameterization.
+- Treating XPath as "just a string" and reusing HTML or SQL escaping.
+- Allowing user input to choose the location path or axis, not just literal values.
+- Ignoring that XPath 1.0 has no native bind parameters in many plain-JavaXPath APIs.
+
+## Secure Implementation
+
+Use an XPath engine that supports variables. Java with `javax.xml.xpath`:
+
+```java
+import javax.xml.xpath.*;
+
+// Precompile the query with an argument placeholder.
+XPathExpression expr = xpath.compile("//user[username = $u and password = $p]");
+
+// Bind values as variables, never by string concatenation.
+NamedElement context = new BasicXPathVariableResolver()
+    .bind("u", username)
+    .bind("p", password);
+```
+
+Frameworks such as Saxon and XSLT processors expose native parameter binding; prefer those over the raw JAXP API. Restrict the query as much as possible (single node set, exact match) and treat the XML store as read-only where feasible.
+
+## Key Rules
+
+- Precompile XPath expressions and bind values as variables — never concatenate.
+- Restrict input to literal values; never let users shape paths, axes, or functions.
+- Use an engine/library with explicit parameterization.
+- Keep XML documents used for queries read-only and least-privileged.
+- Validate input types (string vs. number) before binding.
+
+## Checklist for Code Review
+
+- Are all XPath expressions precompiled with value placeholders?
+- Is there any string concatenation of untrusted data into an XPath string?
+- Are variable values type-checked and length-limited?
+- Can user input alter the location path, axis, or function calls?
+- Is the XML source protected from arbitrary reads by query manipulation?

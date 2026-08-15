@@ -24,6 +24,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding.
+This control is about calling the operating system safely. When an application runs a shell command or spawns a process, any untrusted data must not be interpreted as command syntax. The two safe patterns are: (1) parameterized execution, passing arguments as an explicit array so they never meet a shell, and (2) contextual output encoding if a shell string truly cannot be avoided.
+
+## Why This Matters
+
+Shells interpret metacharacters such as `;`, `|`, `&`, `$()`, backticks, and quotes. If a filename or search term is concatenated into a command string, an attacker can terminate the intended command and run their own. Command injection frequently leads to full server compromise because the command runs with the application's privileges.
+
+## Main Security Requirement
+
+> Verify that the application protects against OS command injection and that operating system calls use parameterized OS queries or use contextual command line output encoding.
+
+## Common Failure Patterns
+
+- `os.system("ping " + host)` or `Runtime.exec("ping " + host)` where `host` is user input.
+- Using `system()`, `popen()`, or `exec()` with a single concatenated string instead of an argument array.
+- Forgetting that some APIs run through `cmd.exe` / `/bin/sh` even when you think you passed an argument.
+- Escaping metacharacters by hand instead of using an argument list.
+- Passing user data into `bash -c` or `cmd /c` wrappers.
+
+## Secure Implementation
+
+Pass arguments as an array so no shell is involved:
+
+```python
+import subprocess
+
+# Safe: argv list, shell=False by default.
+subprocess.run(["ping", "-c", "1", host], check=True)
+```
+
+```java
+// Safe: ProcessBuilder takes a command list, not a shell string.
+new ProcessBuilder("ping", "-c", "1", host).start();
+```
+
+If a shell is unavoidable, encode arguments for that context and never accept raw input:
+
+```python
+import shlex
+# Only as a last resort; prefer the argv-list form above.
+command = "echo " + shlex.quote(user_input)
+subprocess.run(command, shell=True)
+```
+
+## Key Rules
+
+- Use parameterized/argv-list APIs (`subprocess.run(list)`, `ProcessBuilder`) — never shell strings.
+- Keep `shell=True` / `cmd /c` / `bash -c` disabled wherever possible.
+- Validate untrusted arguments against an allowlist of values and lengths.
+- Run processes with the least privilege necessary (no running as root just to "ping").
+- Prefer libraries that call the OS for you over hand-rolled process spawning.
+
+## Checklist for Code Review
+
+- Are all process spawns using argument arrays rather than concatenated shell strings?
+- Is `shell=True` (or equivalent) present anywhere, and is it justified and encoded?
+- Are metacharacters (`; | & $ \` quotes)` rejected or neutralized for untrusted input?
+- Are command arguments allowlisted and length-limited?
+- Does the child process run with minimal, dedicated privileges?

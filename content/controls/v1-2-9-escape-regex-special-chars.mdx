@@ -24,6 +24,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application escapes special characters in regular expressions (typically using a backslash) to prevent them from being misinterpreted as metacharacters.
+Regular expressions treat certain characters as operators: `. ^ $ * + ? ( ) [ ] { } | \`. When untrusted input is pasted into a pattern, those characters must be escaped so they match literally instead of changing the pattern's behavior. Every mainstream language provides an "escape for regex" helper for exactly this purpose.
+
+## Why This Matters
+
+An unescaped value inside a pattern can break the intended match, allow an attacker to widen the match unexpectedly, or — combined with a poorly built pattern — create a catastrophic-backtracking (ReDoS) condition. Even without remote code execution, a user-controlled regex can cause denial of service or logic errors in search, routing, or filtering.
+
+## Main Security Requirement
+
+> Verify that the application escapes special characters in regular expressions (typically using a backslash) to prevent them from being misinterpreted as metacharacters.
+
+## Common Failure Patterns
+
+- Building patterns with concatenation: `new RegExp("^" + user + "$")`.
+- Escaping a hand-picked list of characters and forgetting `]`, `\`, or `-` in character classes.
+- Confusing regex escaping with HTML or SQL escaping.
+- Treating user input as a *pattern* itself (letting users submit raw regex).
+- Forgetting to also validate length, so a hostile pattern is still expensive to run.
+
+## Secure Implementation
+
+Escape the value with the platform helper, then use it as a literal:
+
+```javascript
+const escaped = user.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const re = new RegExp("^" + escaped + "$");
+```
+
+```java
+import java.util.regex.Pattern;
+String safe = Pattern.quote(userInput);
+Pattern.compile("^" + safe + "$");
+```
+
+```python
+import re
+escaped = re.escape(user_input)
+re.compile(r"^" + escaped + r"$")
+```
+
+When users legitimately supply pattern syntax, validate it against your engine's rules and enforce a timeout:
+
+```javascript
+const re = new RegExp(userPattern, "u");
+// Wrap execution in a timeout/worker so a bad pattern cannot stall the app.
+```
+
+## Key Rules
+
+- Use the language's regex-escape helper (`Pattern.quote`, `re.escape`, or equivalent).
+- Escape before interpolation, and never pass user data straight into a pattern.
+- Distinguish "user supplies a literal" (escape it) from "user supplies a pattern" (validate + time-limit).
+- Enforce length limits on both values and patterns.
+- Avoid using regex where a simple string equality or `includes` would do.
+
+## Checklist for Code Review
+
+- Is untrusted input escaped with a regex-escape helper before use in patterns?
+- Are character-class metacharacters (`]`, `-`, `\`, `^`) accounted for?
+- If users submit raw patterns, are they validated and run under a timeout?
+- Are pattern and input lengths limited?
+- Could the same logic be expressed without regular expressions?

@@ -24,6 +24,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application protects against template injection attacks by not allowing templates to be built based on untrusted input. Where there is no alternative, any untrusted input being included dynamically during template creation must be sanitized or strictly validated.
+Server-side template injection (SSTI) occurs when user input is placed into a template and then *evaluated* by a template engine (Jinja2, Thymeleaf, Freemarker, Pug, Handlebars-with-helpers). Template engines can access objects, call methods, and sometimes reach the underlying language, turning the template into a code-execution channel. This control says: treat template *source* as trusted code and never let users supply or influence it.
+
+## Why This Matters
+
+Engines are meant to evaluate expressions, so `{{ }}` or `${...}` in user content is re-run on the server. A payload such as `{{7*7}}` proving 49 is the classic test; worse payloads read files, open reverse shells, or exfiltrate configuration. Even "simple" template syntax can walk the object graph to dangerous classes.
+
+## Main Security Requirement
+
+> Verify that the application protects against template injection attacks by not allowing templates to be built based on untrusted input. Where there is no alternative, any untrusted input being included dynamically during template creation must be sanitized or strictly validated.
+
+## Common Failure Patterns
+
+- Rendering user input as a template: `render("Hello " + user)` instead of passing it as a variable.
+- Using raw-text interpolation (`{{{ }}}`, `{% raw %}`) for user values.
+- Storing templates in the DB and treating user-editable templates as safe.
+- "Sandboxing" an engine but still exposing `os`, `__class__`, or reflection.
+- Concatenating user input into template source strings at build time.
+
+## Secure Implementation
+
+Pass user data as a variable into a fixed, pre-written template:
+
+```python
+from jinja2 import Environment, select_autoescape
+
+env = Environment(autoescape=select_autoescape(["html"]))
+template = env.from_string("Hello {{ name }}!")   # trusted, hardcoded source
+out = template.render(name=user_name)             # user data is data, not code
+```
+
+Never evaluate user-provided templates. If users must author templates, allow only a tiny, feature-subset syntax and run compilation/evaluation in a sandbox with no filesystem or network. Prefer logic-less templates where possible.
+
+## Key Rules
+
+- Separate template source (trusted, fixed) from template data (untrusted).
+- Bind user values as variables; never concatenate them into template text.
+- Use auto-escaping for the output context.
+- Do not allow user-authored templates; if unavoidable, use a sandboxed minimal engine.
+- Treat serialized templates and expression strings as code during review.
+
+## Checklist for Code Review
+
+- Are all templates fixed/developer-authored, with user data passed as variables only?
+- Is there any string concatenation of user input into template source?
+- Is auto-escaping enabled for the output context?
+- Are user-editable or stored templates rendered with a sandboxed, feature-minimal engine?
+- Can user input reach `render`, `evaluate`, or equivalent template/expression APIs?

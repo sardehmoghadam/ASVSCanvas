@@ -24,6 +24,73 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that data selection or database queries (e.g., SQL, HQL, NoSQL, Cypher) use parameterized queries, ORMs, entity frameworks, or are otherwise protected from SQL Injection and other database injection attacks. This is also relevant when writing stored procedures.
+Parameterized queries separate the *structure* of a database query from the *data* it operates on. The query text is sent with placeholders, and the values are bound separately so the database can never interpret a value as part of the SQL/query language. This applies to SQL, HQL, Cypher (Neo4j), and other query languages, and to stored procedures that assemble queries inside the database.
+
+## Why This Matters
+
+SQL injection is one of the oldest and most damaging vulnerabilities. When a query is built by concatenating user input, an attacker can close a string literal and append arbitrary query language — reading, modifying, or deleting data, or executing further commands. Parameterization neutralizes the attack class entirely for data values, regardless of how clever the input is.
+
+## Main Security Requirement
+
+> Verify that data selection or database queries (e.g., SQL, HQL, NoSQL, Cypher) use parameterized queries, ORMs, entity frameworks, or are otherwise protected from SQL Injection and other database injection attacks. This is also relevant when writing stored procedures.
+
+## Common Failure Patterns
+
+- String concatenation of user input into SQL: `"SELECT … WHERE name = '" + name + "'"`.
+- Escaping quotes manually instead of binding values (fragile, bypassable).
+- Building `ORDER BY`, column names, or table names from user input without allowlisting.
+- Stored procedures that concatenate and `EXEC` dynamic SQL.
+- Using raw NoSQL/Cypher string builders instead of their parameterized APIs.
+
+## Secure Implementation
+
+Use bound parameters from the driver in every language. PostgreSQL with Node:
+
+```javascript
+await db.query(
+  "SELECT * FROM users WHERE email = $1 AND active = $2",
+  [email, true],
+);
+```
+
+Java with JDBC `PreparedStatement`:
+
+```java
+String sql = "SELECT * FROM users WHERE email = ?";
+try (PreparedStatement ps = conn.prepareStatement(sql)) {
+  ps.setString(1, email);
+  ResultSet rs = ps.executeQuery();
+  // ...
+}
+```
+
+ORMs and entity frameworks use parameterization internally for value lookups:
+
+```java
+userRepository.findByEmail(email); // Hibernate/JPA binds the value
+```
+
+For dynamic identifiers (column or table names) that cannot be bound, allowlist them:
+
+```javascript
+const allowedColumns = new Set(["id", "name", "created_at", "email"]);
+if (!allowedColumns.has(sortBy)) throw new Error("Invalid column");
+```
+
+## Key Rules
+
+- Never concatenate untrusted data into query strings.
+- Use bound parameters for all data values across SQL, NoSQL, Cypher, and HQL.
+- For `IN`-lists, bind one placeholder per element rather than interpolating.
+- Allowlist identifiers (columns, tables, sort fields) that cannot be parameterized.
+- Avoid dynamic SQL built inside stored procedures; parameterize there too.
+
+## Checklist for Code Review
+
+- Are all queries using placeholders/binding, with no string concatenation of data?
+- Are ORM "raw query" methods receiving bound parameters, not interpolated strings?
+- Are dynamic sort/column/table names validated against an explicit allowlist?
+- Do stored procedures parameterize their inputs instead of concatenating and EXEC-ing?
+- Do NoSQL/Cypher calls use their parameterized/pattern APIs?

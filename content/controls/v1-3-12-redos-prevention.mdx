@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that regular expressions are free from elements causing exponential backtracking, and ensure untrusted input is sanitized to mitigate ReDoS or Runaway Regex attacks.
+ReDoS (Regular Expression Denial of Service) happens when a regex engine's backtracking explodes exponentially on certain inputs. Nested quantifiers such as `(a+)+` or `(a|a)+$` force the engine to explore an astronomically large number of paths for a slightly mismatched string. This control requires writing backtracking-safe patterns and bounding untrusted input before it is matched.
+
+## Why This Matters
+
+A single vulnerable regex on a user-facing endpoint can peg a CPU for minutes or hours — a reliable, low-bandwidth denial-of-service with no special access. The attack often needs only a long string of the right shape. Because the regex "looks fine" and passes unit tests, it ships; only pathological input triggers the hang.
+
+## Main Security Requirement
+
+> Verify that regular expressions are free from elements causing exponential backtracking, and ensure untrusted input is sanitized to mitigate ReDoS or Runaway Regex attacks.
+
+## Common Failure Patterns
+
+- Nested quantifiers: `(a+)+`, `([a-zA-Z]+)*`, `(a|b?){2,}`+ style patterns.
+- Overlapping alternations that re-match the same text many ways.
+- Unbounded `.*` followed by a term that must backtrack on long input.
+- No timeout on regex execution in engines that support one.
+- No length limit on the string being matched against a user-influenced pattern.
+
+## Secure Implementation
+
+Prefer engines with linear-time guarantees, and rewrite ambiguous patterns:
+
+```python
+# Vulnerable: (a+)+$ backtracks exponentially on "aaaa…b".
+import re
+re.match(r"(a+)+$", user_input)
+
+# Safer: a single quantified atom, or an explicit repetition limit.
+re.match(r"a+$", user_input)
+```
+
+Use timeout/limits where the engine supports them:
+
+```java
+import java.util.regex.Pattern;
+// .NET: new Regex(pattern, RegexOptions.None, TimeSpan.FromMilliseconds(100))
+// Java: manual timeout via a watchdog; prefer possessive/atomic quantifiers.
+Pattern p = Pattern.compile("a++$"); // possessive quantifiers do not backtrack
+```
+
+Use a linear-time engine (RE2, Rust `regex`, Go `regexp`) for untrusted patterns, and always cap input length before matching.
+
+## Key Rules
+
+- Avoid nested or adjacent quantifiers that can combine exponentially.
+- Prefer atomic groups and possessive quantifiers to suppress backtracking.
+- Use a regex engine with linear-time guarantees for user-influenced patterns.
+- Add a timeout to every regex that processes untrusted input.
+- Limit input length before applying any pattern.
+
+## Checklist for Code Review
+
+- Are there nested/overlapping quantifiers (`(a+)+`, `(x*)*`) in the codebase?
+- Are possessive/atomic constructs used to prevent backtracking?
+- Is regex execution time-limited (timeouts, worker pools)?
+- Is untrusted input length-capped before matching?
+- Could linear-time engines (RE2/Rust/Go) replace backtracking engines for risky patterns?

@@ -25,6 +25,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that output encoding or escaping is used when dynamically building JavaScript content (including JSON), to avoid changing the message or document structure (to avoid JavaScript and JSON injection).
+This control covers the moment untrusted data is written into JavaScript or JSON. When you compose JS source code as text and inject a value, that value must be escaped as a JavaScript string literal; when you emit JSON, values must be serialized by a JSON serializer so an attacker cannot break out of a string and inject arbitrary code or object fields.
+
+## Why This Matters
+
+JavaScript and JSON have their own string-literal syntax and their own escape characters (quotes, backslashes, control characters, unicode escapes). HTML entity encoding does nothing here: inside `<script>` the content is parsed by a JS engine, not an HTML parser. An attacker who can inject a `"` or `</script>` into a dynamically built script can take over the page. In JSON, a mismatched quote can inject extra keys, and in some setups, a `</script>` inside JSON can break out of an embedded `<script>` block.
+
+## Main Security Requirement
+
+> Verify that output encoding or escaping is used when dynamically building JavaScript content (including JSON), to avoid changing the message or document structure (to avoid JavaScript and JSON injection).
+
+## Common Failure Patterns
+
+- Building JavaScript strings with raw concatenation and HTML-encoding instead of JS-escaping.
+- Using `JSON.stringify` output inside an HTML `<script>` element without escaping `</script>`, `<`, or U+2028/U+2029.
+- Placing untrusted data in event handlers (`onclick="…"`) where JS escaping is impossible to do safely.
+- Emitting JSON by hand (`"{" + name + ":" + value + "}"`) instead of a serializer.
+- Forgetting that `eval`, `new Function`, and `document.write` reinterpret data as code.
+
+## Secure Implementation
+
+Serialize JSON with the platform library, and escape the HTML-significant characters when embedding into a script tag:
+
+```javascript
+// Build data as an object, then serialize centrally.
+const payload = JSON.stringify({ name: user.name, role: user.role });
+
+// When embedding inside <script>, neutralize </script> and line separators.
+const safe = payload
+  .replace(/</g, "\u003C")
+  .replace(/\u2028/g, "\\u2028")
+  .replace(/\u2029/g, "\\u2029");
+```
+
+Better still, avoid embedding JSON in script tags entirely — fetch it via a separate endpoint or a `data-*` attribute read with `JSON.parse`:
+
+```html
+<div id="app" data-config='{"id": 7}'></div>
+```
+
+```javascript
+const config = JSON.parse(document.getElementById("app").dataset.config);
+```
+
+## Key Rules
+
+- Use `JSON.stringify` / serializer libraries for all JSON; never build JSON by concatenation.
+- JavaScript string literals need JS escaping (backslash, quotes, control chars), never HTML escaping.
+- Avoid putting untrusted data into inline event handlers.
+- When embedding JSON in HTML, escape `<` and the U+2028/U+2029 separators.
+- Treat `eval`, `new Function`, and `document.write` on untrusted data as injection sinks.
+
+## Checklist for Code Review
+
+- Is all JSON generated through a serializer rather than string concatenation?
+- Are values inside `<script>` blocks escaped for JavaScript and for `</script>`?
+- Are U+2028/U+2029 handled when embedding JSON in script?
+- Is untrusted data kept out of inline event handlers and `eval`-style sinks?
+- Is the JSON `Content-Type` correctly set to prevent MIME sniffing?

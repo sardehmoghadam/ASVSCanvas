@@ -24,6 +24,65 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application protects against Server-side Request Forgery (SSRF) attacks, by validating untrusted data against an allowlist of protocols, domains, paths and ports and sanitizing potentially dangerous characters before using the data to call another service.
+SSRF happens when the server fetches a URL or host supplied (or influenced) by a client. An attacker points the server at internal addresses — the cloud metadata service at `169.254.169.254`, `localhost`, or private ranges — and makes it read secrets or probe the internal network. This control requires validating every outbound target against an allowlist of protocol, domain, path, and port before any request is made.
+
+## Why This Matters
+
+The server's position inside the trust boundary is exactly what makes SSRF dangerous: it can reach systems the attacker cannot. A single "check this URL" feature can become a gateway to cloud credentials, internal admin panels, or data stores. Validation must happen at the network layer too, because DNS names can resolve to internal addresses after you validate the string.
+
+## Main Security Requirement
+
+> Verify that the application protects against Server-side Request Forgery (SSRF) attacks, by validating untrusted data against an allowlist of protocols, domains, paths and ports and sanitizing potentially dangerous characters before using the data to call another service.
+
+## Common Failure Patterns
+
+- Fetching any user-supplied URL with no allowlist.
+- Validating the hostname string but not re-resolving DNS (rebinding).
+- Missing IP-address re-check after DNS resolution (private/loopback/link-local ranges).
+- Allowing redirects without re-validating the redirected target.
+- Trusting only the URL scheme, leaving `file://`, `gopher://`, or ftp:// enabled.
+
+## Secure Implementation
+
+Allowlist and then re-validate at the network layer:
+
+```python
+import ipaddress, socket
+from urllib.parse import urlparse
+
+ALLOWED_HOSTS = {"api.example.com"}
+ALLOWED_SCHEMES = {"https"}
+
+def validate_url(raw: str) -> str:
+    parsed = urlparse(raw)
+    if parsed.scheme not in ALLOWED_SCHEMES:
+        raise ValueError("scheme not allowed")
+    if parsed.hostname not in ALLOWED_HOSTS:
+        raise ValueError("host not allowed")
+
+    for info in socket.getaddrinfo(parsed.hostname, None):
+        ip = ipaddress.ip_address(info[4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise ValueError("internal address blocked")
+    return parsed.geturl()
+```
+
+Make requests through a dedicated egress proxy, disable redirects (or re-validate each hop), and never return the response body verbatim to the end user.
+
+## Key Rules
+
+- Allowlist protocol, host, port, and path before any request.
+- Re-resolve DNS and reject private/loopback/link-local/metadata addresses.
+- Validate every redirect target too, or disallow redirects.
+- Route outbound fetches through an egress proxy outside the trusted network.
+- Restrict response handling (size, content type, timeout) to prevent abuse.
+
+## Checklist for Code Review
+
+- Is every server-side fetch driven by user data protected by an allowlist?
+- Are private/loopback/link-local/metadata IPs rejected after DNS resolution?
+- Are redirects re-validated or disabled?
+- Is outbound traffic isolated from the internal network (egress proxy/allowlist)?
+- Are timeouts and response-size limits enforced on outbound requests?

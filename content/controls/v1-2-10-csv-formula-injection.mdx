@@ -24,6 +24,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application is protected against CSV and Formula Injection. The application must follow the escaping rules defined in RFC 4180 sections 2.6 and 2.7 when exporting CSV content. Additionally, when exporting to CSV or other spreadsheet formats (such as XLS, XLSX, or ODF), special characters (including '=', '+', '-', '@', '\t' (tab), and '\0' (null character)) must be escaped with a single quote if they appear as the first character in a field value.
+Spreadsheets treat a cell whose first character is `=`, `+`, `-`, or `@` as a *formula* rather than text. If an application exports user data to CSV (or XLS/XLSX/ODF) without guarding against this, an attacker can inject formulas such as `=HYPERLINK("http://evil")` or `=cmd|'/c calc'!A0`. This control requires proper CSV escaping (RFC 4180) plus prefixing those leading characters with a single quote so they are stored as literal text.
+
+## Why This Matters
+
+Formula injection turns an innocuous export feature into code execution inside the spreadsheet application, or into silent data exfiltration — a formula can reference remote cells and leak values when the file is opened or recalculated. Because the data is "just text" to the server, developers often miss it. The fix is cheap and surgical: quote the field when it starts with a dangerous character.
+
+## Main Security Requirement
+
+> Verify that the application is protected against CSV and Formula Injection. The application must follow the escaping rules defined in RFC 4180 sections 2.6 and 2.7 when exporting CSV content. Additionally, when exporting to CSV or other spreadsheet formats (such as XLS, XLSX, or ODF), special characters (including '=', '+', '-', '@', '\t' (tab), and '\0' (null character)) must be escaped with a single quote if they appear as the first character in a field value.
+
+## Common Failure Patterns
+
+- Writing user data to CSV with no RFC 4180 quoting and no formula prefixing.
+- Prefixing only `=` and forgetting `+`, `-`, and `@`.
+- Neutralizing data only when it arrives, so values exported later from the DB are unchanged.
+- Applying a spreadsheet sanitizer to the whole cell instead of only the leading character.
+- Exporting to XLS/XLSX via libraries that do not neutralize formula prefixes.
+
+## Secure Implementation
+
+Use a proper CSV writer for structure and prefix dangerous leading characters:
+
+```python
+import csv, io
+
+def neutralize_cell(value: str) -> str:
+    # A leading '=', '+', '-', '@', tab, or NUL turns text into a formula.
+    if value.startswith(("=", "+", "-", "@", "\t", "\0")):
+        return "'" + value
+    return value
+
+def to_csv(rows) -> str:
+    buf = io.StringIO()
+    writer = csv.writer(buf, quoting=csv.QUOTE_ALL)  # RFC 4180 quoting
+    for row in rows:
+        writer.writerow([neutralize_cell(str(c)) for c in row])
+    return buf.getvalue()
+```
+
+Apply the same rule in every exporter (CSV, XLS/XLSX/ODF) and treat the neutralization as a reusable, tested utility rather than ad-hoc code per report.
+
+## Key Rules
+
+- Always export through a library that quotes per RFC 4180.
+- Prefix `=`, `+`, `-`, `@` (and leading tab/NUL) with a single quote.
+- Neutralize at export time, not only at input time.
+- Apply the same protection to every spreadsheet format, not just CSV.
+- Keep the neutralizer centralized and unit-tested.
+
+## Checklist for Code Review
+
+- Is every spreadsheet/CSV export using RFC 4180-compliant quoting?
+- Are leading `=`, `+`, `-`, `@`, tab, and NUL characters prefixed with a quote?
+- Is neutralization applied to data as it is exported, regardless of when it was stored?
+- Are XLS/XLSX/ODF exporters covered as well as CSV?
+- Is there a shared, tested helper instead of per-report copying?

@@ -24,6 +24,65 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that sign, range, and input validation techniques are used to prevent integer overflows.
+Integer overflow happens when an arithmetic operation produces a value outside the representable range of its type, wrapping around (unsigned) or hitting undefined behavior (signed). This control requires validating that values are within expected sign and range bounds before arithmetic, and using checked or oversized arithmetic when they are not.
+
+## Why This Matters
+
+An overflow can turn a small allocation into a tiny one (then a buffer overflow), bypass size checks (`if (len + n < max)`), corrupt loop termination, or break comparison logic. Because the result looks like a valid number, the corruption surfaces later, far from its cause — classic overflow-to-exploit chains start here.
+
+## Main Security Requirement
+
+> Verify that sign, range, and input validation techniques are used to prevent integer overflows.
+
+## Common Failure Patterns
+
+- Adding or multiplying untrusted sizes without checking for wraparound.
+- Comparing `len + offset` in a way that wraps past the bound.
+- Mixing signed and unsigned values in comparisons.
+- Down-casting a larger type into a smaller one without range checks.
+- Ignoring negative/zero values that then drive allocation or indexing.
+
+## Secure Implementation
+
+Use checked arithmetic in languages that provide it:
+
+```rust
+// Rust: checked arithmetic returns None on overflow.
+let total = size_per_item.checked_mul(count)?;
+```
+
+```c
+#include <stdint.h>
+
+// Bounds-check before use; validate sign and range up front.
+if (count < 0 || count > SIZE_MAX / size_per_item) {
+    return ERR_TOO_LARGE;
+}
+size_t total = (size_t)count * size_per_item;
+```
+
+Encapsulate operations in helpers that validate every input:
+
+```text
+Before +,*:  check operand ranges and result <= type max
+Before cast: check value fits the destination type
+Reject:      negative/zero where positive is required (sizes, indices, lengths)
+```
+
+## Key Rules
+
+- Validate sign and range of every untrusted numeric input on entry.
+- Use checked/overflow-aware arithmetic (`checked_*`, builtins) at size computation.
+- Guard size multiplications and additions against wraparound before allocating.
+- Avoid silent mixed signed/unsigned comparisons and narrowing casts.
+- Reject negative or zero values for indexes, sizes, and counts.
+
+## Checklist for Code Review
+
+- Are untrusted lengths, counts, and offsets range- and sign-validated?
+- Do arithmetic expressions use checked/overflow-safe constructs?
+- Are allocation-size computations guarded against wraparound?
+- Are there implicit signed/unsigned or narrowing conversions?
+- Are negative/zero inputs rejected where they are invalid?

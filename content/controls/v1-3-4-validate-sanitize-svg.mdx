@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that user-supplied Scalable Vector Graphics (SVG) scriptable content is validated or sanitized to contain only tags and attributes (such as draw graphics) that are safe for the application, e.g., do not contain scripts and foreignObject.
+SVG is an XML format that can carry active content: `<script>`, event handler attributes (`onload`), `<foreignObject>` (which embeds HTML), and `javascript:` URLs. Accepting user SVG means it will be rendered as an image — but in many browsers it is parsed in a context that can execute embedded code. This control requires whitelist-based sanitization that strips scripting and active elements.
+
+## Why This Matters
+
+A "harmless" uploaded avatar or icon can become stored XSS when a browser renders an SVG with a `<script>` or an `onload` handler. Because SVG sits at the boundary between images and documents, blacklist filters are easily bypassed (namespaces, entity encoding, `<use>` references). Only a parser-aware allowlist reliably neutralizes it.
+
+## Main Security Requirement
+
+> Verify that user-supplied Scalable Vector Graphics (SVG) scriptable content is validated or sanitized to contain only tags and attributes (such as draw graphics) that are safe for the application, e.g., do not contain scripts and foreignObject.
+
+## Common Failure Patterns
+
+- Accepting SVG uploads and serving them verbatim from the same origin.
+- Checking file extension or MIME type only, without sanitizing content.
+- Stripping `<script>` tags but leaving `onload="…"` or `<a href="javascript:…">`.
+- Allowing `<foreignObject>`, `<use xlink:href>`, or external references.
+- Sanitizing with an HTML sanitizer that ignores SVG-specific rules.
+
+## Secure Implementation
+
+Prefer rasterizing user SVG to a neutral bitmap, or strip it to a drawing-only allowlist with a dedicated SVG sanitizer:
+
+```python
+# Best option: render to PNG server-side, then discard the SVG.
+from cairosvg import svg2png
+svg2png(bytestring=user_svg, write_to="avatar.png")
+```
+
+When vector output must be kept, sanitize with an SVG-aware allowlist that disables scripting:
+
+```text
+Allow tags:   svg, g, path, rect, circle, ellipse, line, polyline, polygon, text
+Allow attrs:  viewBox, width, height, x, y, fill, stroke, d, points, rx, ry
+Block:        script, foreignObject, use, image, animate, on* handlers
+```
+
+Always serve sanitized SVG with restrictive headers (`Content-Disposition`, `X-Content-Type-Options: nosniff`) or from an isolated domain.
+
+## Key Rules
+
+- Prefer converting SVG to a flat image; avoid rendering it inline where possible.
+- Sanitize with an SVG-aware allowlist, not an HTML one.
+- Remove `<script>`, event handlers, `<foreignObject>`, and external references.
+- Serve verified SVG from a separate, cookie-less origin.
+- Validate the XML structure and reject unexpected namespaces.
+
+## Checklist for Code Review
+
+- Are user SVGs sanitized with an SVG-specific allowlist before serving?
+- Are `<script>`, `on*` attributes, `<foreignObject>`, and `javascript:` URLs removed?
+- Is SVG served from an isolated origin or with restrictive headers?
+- Would rasterizing the SVG (converting to PNG) be a simpler, safer option here?
+- Are external entity and namespace attacks blocked during parsing?

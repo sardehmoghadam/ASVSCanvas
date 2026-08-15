@@ -24,6 +24,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that data being passed to a potentially dangerous context is sanitized beforehand to enforce safety measures, such as only allowing characters which are safe for this context and trimming input which is too long.
+Before untrusted data is handed to a sink that interprets it — a filesystem path, a command line, a log viewer, a shell, a URL or an XML/HTML parser — the application reduces it to a safe form: keep only characters that are harmless for that context and reject or truncate everything else. Sanitization here is context-specific allowlisting plus length limits, applied immediately before use.
+
+## Why This Matters
+
+Many components interpret characters differently than the application expects. A filename with `\`, `..`, or control characters can escape a directory; log entries with ANSI escape codes can forge log lines or exploit terminal emulators; overlong values break downstream parsers or exhaust buffers. Allowing only context-safe characters neutralizes these problems before the sink sees the data.
+
+## Main Security Requirement
+
+> Verify that data being passed to a potentially dangerous context is sanitized beforehand to enforce safety measures, such as only allowing characters which are safe for this context and trimming input which is too long.
+
+## Common Failure Patterns
+
+- Passing raw input to filesystem APIs, logs, shells, or URLs.
+- Blacklisting a few "bad" characters instead of allowlisting safe ones.
+- Truncating bytes without regard for multibyte characters (splitting UTF-8 sequences).
+- Relying on the sink to handle hostile or overlong data.
+- Sanitizing once globally instead of per-context, right before each dangerous use.
+
+## Secure Implementation
+
+Allowlist per context and cap lengths:
+
+```python
+import re
+
+# Safe for a filename: letters, digits, dot, dash, underscore only.
+def safe_filename(name: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]", "", name)
+    return cleaned[:255]
+
+# Safe for a log line: strip control chars that terminals interpret.
+def safe_log(line: str) -> str:
+    return "".join(ch for ch in line if ch.isprintable() or ch in "\n\t")[:4000]
+```
+
+For structured contexts (URLs, paths, JSON), serialize with the appropriate API instead of sanitizing strings by hand.
+
+## Key Rules
+
+- Sanitize immediately before the dangerous context, per-context.
+- Allowlist characters that are safe for that specific sink; do not blacklist.
+- Enforce a maximum length after sanitizing.
+- Preserve character integrity — never split multibyte sequences.
+- Prefer structured APIs (path join, URL builders, serializers) over string repair.
+
+## Checklist for Code Review
+
+- Is every dangerous sink preceded by context-specific sanitization?
+- Are character rules allowlists rather than blacklists?
+- Are length limits applied to sanitized output?
+- Is raw input ever written to logs, filesystems, shells, or URLs untouched?
+- Are filenames/paths derived from user data constrained to a safe character set?

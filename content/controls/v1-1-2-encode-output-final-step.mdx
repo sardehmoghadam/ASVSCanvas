@@ -24,6 +24,80 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application performs output encoding and escaping either as a final step before being used by the interpreter for which it is intended or by the interpreter itself.
+Output encoding converts data that could be interpreted as code or markup into a form an interpreter treats as plain data. The requirement is about *when* and *where* it happens: encoding must be the final transformation before untrusted data reaches an HTML parser, a JavaScript engine, a CSS parser, a URL parser, or a SQL engine.
+
+Encoding is always context-specific. The same attacker string neutralizes differently in each context:
+
+```text
+HTML text node  → &lt;script&gt;
+HTML attribute  → &quot;
+JavaScript      → \u003C
+URL             → %3C
+CSS             → \3C
+```
+
+## Why This Matters
+
+If encoding happens too early, the encoded value can be decoded again, stored, concatenated, or transformed in ways that restore the dangerous characters. If it happens too late, the interpreter has already parsed the malicious input.
+
+The most common mistake is encoding data when it enters the system and assuming it stays safe. A string encoded for HTML and stored in a database may later be placed inside a JavaScript string, where HTML entity encoding provides no protection at all. Attackers rely on this mismatch.
+
+## Main Security Requirement
+
+> Verify that the application performs output encoding and escaping either as a final step before being used by the interpreter for which it is intended or by the interpreter itself.
+
+In practice this means: keep the raw value as-is, build your safe structure (SQL query with placeholders, HTML template, JSON object), and let the framework encode the value at the moment it is interpolated.
+
+## Common Failure Patterns
+
+- **Encoding too early** — encoding on input, storing the encoded value, then re-encoding or decoding it later.
+- **Wrong context** — using HTML entity encoding inside a `<script>` block or an event handler such as `onclick`.
+- **Home-grown escaper** — a `replace(/</g, "&lt;")` loop that misses quotes, backslashes, or unicode escapes.
+- **Encoding the envelope, not the value** — quoting the surrounding delimiter but not the data inside it.
+- **Trusting earlier safety** — assuming a value that was "safe" in one context is still safe in another.
+
+## Secure Implementation
+
+Use a templating engine or library that understands the context instead of string concatenation. React escapes text nodes automatically:
+
+```jsx
+function Comment({ text }) {
+  // React auto-escapes text nodes for the HTML context.
+  return <p>{text}</p>;
+}
+```
+
+Use a verified encoder for other contexts:
+
+```javascript
+import { encodeForHTML, encodeForJavaScript } from "owasp-esapi-js";
+
+const html = `<div>${encodeForHTML(user.name)}</div>`;
+const script = `const name = "${encodeForJavaScript(user.name)}";`;
+```
+
+For SQL, bind variables rather than building strings:
+
+```javascript
+// Safe: the driver encodes values for the SQL interpreter.
+await db.query("SELECT * FROM users WHERE name = $1", [user.name]);
+```
+
+## Key Rules
+
+- Encode at the output boundary, never at input.
+- Choose the encoder for the exact target context (HTML, attribute, JS, CSS, URL, SQL).
+- Prefer a framework or library that escapes automatically.
+- Never re-encode or double-encode; encoding is not idempotent.
+- Store the raw value; encode only when rendering.
+
+## Checklist for Code Review
+
+- Is every sink (SQL, HTML, JS, CSS, URL, command line) matched with a context-correct encoder?
+- Are values encoded at the point of use rather than at input or storage?
+- Are template engines configured for auto-escaping?
+- Is there any manual string concatenation carrying untrusted data?
+- Does any UI code use a "raw HTML" escape hatch without prior sanitization?
+- Is encoding applied once and never reversed before the interpreter runs?

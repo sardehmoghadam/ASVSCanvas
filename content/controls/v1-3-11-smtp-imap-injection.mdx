@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application sanitizes user input before passing to mail systems to protect against SMTP or IMAP injection.
+SMTP and IMAP are line-oriented, text-based protocols. Mail *headers* are terminated by CRLF (`\r\n`), so any untrusted value placed into a header or envelope can be used to inject extra headers (e.g., `Bcc:`), add recipients, or alter message content. This control requires stripping or escaping CR/LF — and validating addresses — before handing data to a mail system.
+
+## Why This Matters
+
+An attacker who can control a `Subject`, `From`, or address field and inject a newline can add `Bcc:` recipients and turn the application into a spam relay. Email header injection also enables phishing (forged headers) and, via crafted addresses, can abuse the MTA. Because the server usually sees only "a string", the safeguard must be explicit before the mail API gets the data.
+
+## Main Security Requirement
+
+> Verify that the application sanitizes user input before passing to mail systems to protect against SMTP or IMAP injection.
+
+## Common Failure Patterns
+
+- Concatenating user input into raw `Subject:` / `From:` header strings.
+- Letting file names or free-text fields flow into headers without stripping CR/LF.
+- Validating addresses with a regex instead of a mail library/normalizer.
+- Building MIME messages by hand instead of using an email library.
+- Allowing user input to choose recipient addresses without an allowlist.
+
+## Secure Implementation
+
+Use an email library and validate/sanitize header values:
+
+```python
+import smtplib, re
+from email.message import EmailMessage
+from email.utils import formataddr
+
+def clean_header(value: str) -> str:
+    # Remove header-injection delimiters, then limit length.
+    return re.sub(r"[\r\n]", "", value)[:200]
+
+msg = EmailMessage()
+msg["Subject"] = clean_header(subject)
+msg["From"] = formataddr(("Support", "no-reply@example.com"))
+msg["To"] = recipient  # must be validated against an allowlist/verified list
+
+smtplib.SMTP("localhost").send_message(msg)
+```
+
+For IMAP commands, the same rule applies: never interpolate untrusted values into command strings; strip CR/LF and rely on library methods.
+
+## Key Rules
+
+- Strip or reject CR (`\r`) and LF (`\n`) from every header value and address.
+- Build messages with an email library (MIME), not raw string headers.
+- Validate recipient addresses (format + allowlist/confirmation) before sending.
+- Keep the "from"/"reply-to" addresses fixed, never user-controlled.
+- Apply length limits to all mail-related fields.
+
+## Checklist for Code Review
+
+- Are CR/LF characters removed or rejected from all header values?
+- Are messages constructed via an email library rather than raw `Subject:`/`To:` strings?
+- Are recipient addresses validated and drawn from allowlisted/user-verified data?
+- Is the sender address fixed rather than user-supplied?
+- Are IMAP interactions using library APIs with sanitized, length-limited inputs?

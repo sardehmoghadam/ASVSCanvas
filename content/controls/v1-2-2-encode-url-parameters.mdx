@@ -24,6 +24,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that when dynamically building URLs, untrusted data is encoded according to its context (e.g., URL encoding or base64url encoding for query or path parameters). Ensure that only safe URL protocols are permitted (e.g., disallow javascript: or data:).
+When a URL is built from untrusted data, the data must be percent-encoded for its location (query parameter vs. path segment) and the URL's scheme must be restricted to a safe allowlist. This prevents two attacks at once: URL injection, where an attacker adds or overrides parameters, and scheme abuse, where `javascript:` or `data:` URLs execute code when the user clicks the link.
+
+## Why This Matters
+
+A URL is a structured string. Untrusted data can contain `&`, `=`, `?`, `#`, or `%` characters that change the URL's structure, letting an attacker inject extra query parameters, alter the path, or truncate the URL and append their own. Separately, if the scheme itself comes from user input, an attacker can supply `javascript:alert(1)` and turn a harmless link into script execution.
+
+Both problems are prevented the same way: encode the data for the URL context and validate the scheme against an allowlist.
+
+## Main Security Requirement
+
+> Verify that when dynamically building URLs, untrusted data is encoded according to its context (e.g., URL encoding or base64url encoding for query or path parameters). Ensure that only safe URL protocols are permitted (e.g., disallow javascript: or data:).
+
+## Common Failure Patterns
+
+- Concatenating user input into a URL without `encodeURIComponent`, allowing `&x=…` parameter injection.
+- Using `encodeURI` (which leaves `?`, `&`, `#` intact) instead of `encodeURIComponent` for a scalar value.
+- Accepting a user-supplied scheme and allowing `javascript:`, `data:`, `vbscript:`, or protocol-relative `//` URLs.
+- Percent-encoding the whole URL and double-encoding values that are already encoded.
+- Encoding a query value but not the path segment, or vice versa.
+
+## Secure Implementation
+
+Encode each part for its context and build URLs with a URL constructor:
+
+```javascript
+const base = "https://example.com/search";
+const url = new URL(base);
+url.searchParams.set("q", userQuery); // encodes the value automatically
+
+// Validate the protocol anywhere a user-controlled URL is used.
+const allowed = new Set(["http:", "https:"]);
+const target = new URL(userUrl);
+if (!allowed.has(target.protocol)) {
+  throw new Error("Unsupported protocol");
+}
+```
+
+For path segments, use the path-safe encoder and never trust raw input:
+
+```javascript
+const id = encodeURIComponent(userId); // for a query value
+const segment = userPath.split("/").map(encodeURIComponent).join("/"); // path
+```
+
+## Key Rules
+
+- Use `encodeURIComponent` for single query values and path segments; never `encodeURI`.
+- Build URLs with the platform URL API instead of string concatenation.
+- Allowlist protocols (`http`, `https`, and only others you actually need) and reject the rest.
+- Reject or normalize protocol-relative (`//`) and backslash-prefixed URLs.
+
+## Checklist for Code Review
+
+- Is every interpolated URL component (%) encoded with the correct encoder?
+- Are query parameters built through `URLSearchParams` or an equivalent API?
+- Is a user-controlled scheme validated against an allowlist before use?
+- Are `javascript:`, `data:`, and other active schemes explicitly rejected?
+- Are redirect targets validated with the same URL rules as links?

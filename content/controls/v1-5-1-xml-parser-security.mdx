@@ -25,6 +25,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application configures XML parsers to use a restrictive configuration and that unsafe features such as resolving external entities are disabled to prevent XML eXternal Entity (XXE) attacks.
+XML parsers have powerful, rarely needed features: Document Type Definitions (DTDs), external entity resolution, and XInclude. XXE attacks abuse these to read local files, make SSRF requests, or trigger denial of service. This control requires configuring every XML parser with a hard, restrictive default: DTDs and external entities disabled, entity expansion limits, and no external resolution.
+
+## Why This Matters
+
+A document such as `<!DOCTYPE x [<!ENTITY e SYSTEM "file:///etc/passwd">]><x>&e;</x>` makes the parser open local files and embed their contents. XXE has been exploited against APIs, document converters, and SOAP/office formats for over a decade. Because defaults are permissive in many parsers, "I used a standard parser" is not protection — explicit hardening is.
+
+## Main Security Requirement
+
+> Verify that the application configures XML parsers to use a restrictive configuration and that unsafe features such as resolving external entities are disabled to prevent XML eXternal Entity (XXE) attacks.
+
+## Common Failure Patterns
+
+- Accepting XML with DTDs/`<!DOCTYPE>` enabled.
+- Leaving external entity resolution on (the default in many parsers).
+- Forgetting XInclude/external schema resolution in addition to entities.
+- Hardening only one parser while another path (SOAP, SVG, XSLT) stays permissive.
+- Ignoring entity-expansion / "billion laughs" limits (denial of service).
+
+## Secure Implementation
+
+Harden the parser to disallow DTDs and external entities:
+
+```java
+import javax.xml.parsers.DocumentBuilderFactory;
+
+DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+f.setFeature("http://xml.org/sax/features/external-general-entities", false);
+f.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+f.setXIncludeAware(false);
+f.setExpandEntityReferences(false);
+```
+
+```python
+import defusedxml.ElementTree as ET   # hardened stdlib parser
+tree = ET.parse(uploaded_xml)         # blocks DTDs/entities by default
+```
+
+For high-risk inputs prefer a JSON or non-XML interchange format; if XML is unavoidable, use the hardened parser (`defusedxml`, `lxml` with `resolve_entities=False`) and set expansion limits.
+
+## Key Rules
+
+- Disable DTDs, external entities, and XInclude on every XML parser.
+- Use a hardened parser library rather than relying on defaults.
+- Set limits for entity expansion and input/document size.
+- Apply the same rules to JSON-in-XML, SOAP, SVG, and XSLT processors.
+- Prefer non-XML formats for untrusted data when possible.
+
+## Checklist for Code Review
+
+- Is `disallow-doctype-decl` (or equivalent) set everywhere XML is parsed?
+- Are external general/parameter entities disabled?
+- Is XInclude and external schema resolution off?
+- Are entity-expansion and size limits enforced?
+- Are secondary XML paths (SOAP, SVG, XSLT, office formats) hardened identically?

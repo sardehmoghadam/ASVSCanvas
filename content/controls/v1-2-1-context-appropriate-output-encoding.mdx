@@ -24,6 +24,68 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that output encoding for an HTTP response, HTML document, or XML document is relevant for the context required, such as encoding the relevant characters for HTML elements, HTML attributes, HTML comments, CSS, or HTTP header fields, to avoid changing the message or document structure.
+This control requires that output encoding matches the *specific* location in the response where untrusted data lands. "Context" means the exact spot in a document: an HTML element body, an attribute value, a comment, a CSS rule, an HTTP header, or XML text.
+
+Each context has different dangerous characters and a different escape scheme. Encoding for the wrong context leaves the structure open to being rewritten by an attacker.
+
+## Why This Matters
+
+A single `replace` of angle brackets cannot protect an application that writes user data into many kinds of places. If data is placed inside an `onclick="…"` attribute or a `<style>` block, the HTML escaping done elsewhere is irrelevant; the attacker needs only quotes, backslashes, or a closing tag to break out.
+
+Context mismatch is how many "we already encode output" applications still get XSS. Correct encoding keeps the document structure intact so untrusted data can never become markup or code.
+
+## Main Security Requirement
+
+> Verify that output encoding for an HTTP response, HTML document, or XML document is relevant for the context required, such as encoding the relevant characters for HTML elements, HTML attributes, HTML comments, CSS, or HTTP header fields, to avoid changing the message or document structure.
+
+## Common Failure Patterns
+
+- A single generic `htmlspecialchars`-style routine applied to every context, including JavaScript and CSS.
+- Placing untrusted data into attribute values without encoding double or single quotes, then failing to quote attributes at all.
+- Injecting data into inline `<script>` or `onclick` handlers where HTML encoding cannot help.
+- Forgetting to encode when writing HTTP response headers, enabling header injection.
+- Encoding XML text with HTML rules, breaking entities or CDATA semantics.
+
+## Secure Implementation
+
+Match the encoder to the context. The OWASP Java Encoder, for example, exposes a distinct method per sink:
+
+```java
+import org.owasp.encoder.Encode;
+
+// HTML element body
+out.print(Encode.forHtml(userData));
+
+// HTML attribute (quoted)
+out.print(Encode.forHtmlAttribute(userData));
+
+// JavaScript within an HTML page
+out.print(Encode.forJavaScript(userData));
+
+// CSS style value
+out.print(Encode.forCssString(userData));
+```
+
+Header construction must be handled by the framework, not by concatenation:
+
+```java
+// Safe: the servlet API rejects CR/LF sequences.
+response.setHeader("X-Client", value);
+```
+
+## Key Rules
+
+- Identify the precise sink before writing data: element, attribute, comment, CSS, JS, header, or XML.
+- Use a distinct encoder function per context; avoid "one encoder for everything".
+- Always quote attribute values and encode for the attribute context.
+- Treat HTTP headers and XML as separate contexts with their own escaping rules.
+
+## Checklist for Code Review
+
+- Is untrusted data ever written into `<script>`, event handlers, or `<style>` without a JS/CSS-specific encoder?
+- Are all HTML attributes quoted and encoded with an attribute-aware encoder?
+- Are response headers set through framework APIs rather than string concatenation?
+- Does the code distinguish HTML, attribute, CSS, JS, and XML contexts explicitly?
+- Are non-ASCII and character-set (encoding) mismatches handled consistently?

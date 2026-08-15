@@ -24,6 +24,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that LaTeX processors are configured securely (such as not using the "--shell-escape" flag) and an allowlist of commands is used to prevent LaTeX injection attacks.
+LaTeX injection arises when user input is compiled as LaTeX, letting an attacker execute TeX commands. TeX is programmable — commands can read and write files, and with `--shell-escape` enabled they can run arbitrary OS commands. This control requires compiling untrusted content with a locked-down processor: no shell escape, a restricted command allowlist, and containment of the compiler.
+
+## Why This Matters
+
+LaTeX has primitives such as `\input{/etc/passwd}`, `\openout`, and `\write18{...}`. With shell escape enabled, `\immediate\write18{rm -rf …}` runs an OS command. Even without it, an attacker may read files from the host and embed them in the rendered PDF. Services that render user uploads (résumés, reports, math) are prime targets.
+
+## Main Security Requirement
+
+> Verify that LaTeX processors are configured securely (such as not using the "--shell-escape" flag) and an allowlist of commands is used to prevent LaTeX injection attacks.
+
+## Common Failure Patterns
+
+- Compiling user content with `pdflatex --shell-escape` (or `-enable-write18`).
+- Running the compiler as a privileged user on the main host, with access to the filesystem.
+- Letting user content `\input` or `\include` arbitrary paths.
+- Failing to restrict dangerous primitives (`\write18`, `\openin`, `\openout`, `\input`).
+- Rendering untrusted content without rewrite rules to block command sequences.
+
+## Secure Implementation
+
+Compile without shell escape in an isolated, least-privileged environment:
+
+```python
+import subprocess
+
+# No --shell-escape, and run as a restricted unprivileged user.
+subprocess.run(
+    ["pdflatex", "-no-shell-escape", "-interaction=batchmode", "input.tex"],
+    user="latex",  # dedicated account, no shell
+    check=True,
+)
+```
+
+Sandbox the compiler with containers or system call filters, and rewrite/token-scan the input. A common defense is to tokenize and drop dangerous commands before compilation:
+
+```python
+FORBIDDEN = {"\\write18", "\\input", "\\include", "\\openin", "\\openout"}
+for token in FORBIDDEN:
+    content = content.replace(token, "\\detokenize{" + token + "}")
+```
+
+Prefer engines and SGML-style converters that disable TeX's filesystem primitives entirely, and treat the generated artifacts (PDF/HTML) as untrusted output.
+
+## Key Rules
+
+- Never compile untrusted LaTeX with shell escape enabled.
+- Restrict or neutralize filesystem primitives (`\input`, `\include`, `\openin`, `\write18`).
+- Sandbox the compiler (container, unprivileged user, sealed filesystem).
+- Apply an allowlist of permitted commands/packages rather than a blacklist only.
+- Limit resource use (run time, output size) to blunt DoS via pathological documents.
+
+## Checklist for Code Review
+
+- Is shell escape (`--shell-escape` / `-enable-write18`) definitively disabled?
+- Are dangerous TeX primitives neutralized before compilation?
+- Does the renderer run sandboxed with no access to the production filesystem?
+- Is there an allowlist of permitted commands/packages in addition to blocking dangerous ones?
+- Are time and output-size limits enforced on compilation jobs?

@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application protects against LDAP injection vulnerabilities, or that specific security controls to prevent LDAP injection have been implemented.
+LDAP injection happens when untrusted input is embedded into an LDAP query string, letting an attacker alter the filter, switch to a different base DN, or change the meaning of the query. This control requires the same discipline used for SQL: treat LDAP filters as structured queries and never build them by string concatenation, or escape every untrusted value with the LDAP filter escaping rules.
+
+## Why This Matters
+
+LDAP is used for authentication and authorization. An injected filter such as `(|(password=*)(objectClass=*))` or a crafted wildcard can bypass a password check or enumerate directory entries. Because LDAP often gates access control, an injection here can mean authentication bypass or privilege escalation, not just data leakage.
+
+## Main Security Requirement
+
+> Verify that the application protects against LDAP injection vulnerabilities, or that specific security controls to prevent LDAP injection have been implemented.
+
+## Common Failure Patterns
+
+- Concatenating user input into a filter: `"(uid=" + username + ")"`.
+- Escaping only a few characters or escaping for the wrong syntax (DN vs. filter).
+- Letting user input control the base DN or scope of the search.
+- Injecting `*` wildcards and `()` grouping characters verbatim.
+- Reusing a SQL-escaping routine for LDAP data.
+
+## Secure Implementation
+
+Use a library that escapes filter values per RFC 4515. In Java with the UnboundID LDAP SDK:
+
+```java
+import com.unboundid.ldap.sdk.Filter;
+
+String filter = Filter.createEqualityFilter("uid", username).toString();
+```
+
+Dynamic filters, when truly required, must escape the five filter metacharacters plus the value's syntax:
+
+```text
+\  →  5c     *  →  2a     (  →  28     )  →  29     NUL  →  00     /  →  2f
+```
+
+Prefer a framework binding that constructs filters, and a dedicated service account that has only the directory permissions the application needs.
+
+## Key Rules
+
+- Never concatenate untrusted data into LDAP filters or DNs.
+- Escape filter values per RFC 4515 using a well-tested LDAP library.
+- Use a distinct escaping rule for DN values (escaping differs from filter escaping).
+- Keep user input out of base DN and scope decisions.
+- Bind to the directory with a least-privilege account.
+
+## Checklist for Code Review
+
+- Are LDAP filters built through library constructors rather than string concatenation?
+- Are untrusted values escaped with the correct LDAP filter escaping, not SQL escaping?
+- Are DN values escaped with DN-specific rules?
+- Can user input select or modify the base DN, search scope, or attributes?
+- Is the directory connection bound with a restricted service account?
