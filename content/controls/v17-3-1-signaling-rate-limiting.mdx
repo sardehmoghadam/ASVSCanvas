@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the signaling server is able to continue processing legitimate incoming signaling messages during a flood attack. This should be achieved by implementing rate limiting at the signaling level.
+Signaling — the messages that set up and tear down calls (SIP, proprietary JSON over WebSocket, etc.) — is an attractive target because each message is comparatively expensive and stateful. This control requires the signaling server to rate-limit inbound messages so that a flood from attackers (or runaway clients) does not prevent legitimate users from establishing and maintaining calls.
+
+## Why This Matters
+
+A signaling flood can exhaust connection slots, CPU, or memory, turning a cheap packet storm into a total outage of call setup. Rate limiting at the signaling level protects availability by bounding how much work any one sender can demand, so legitimate traffic continues to be processed during the flood.
+
+## Main Security Requirement
+
+> Verify that the signaling server is able to continue processing legitimate incoming signaling messages during a flood attack. This should be achieved by implementing rate limiting at the signaling level.
+
+## Common Failure Patterns
+
+- **No rate limits** — any client can send unbounded signaling traffic.
+- **Global limits only** — a flood from one source drains a shared budget used by everyone.
+- **Per-IP limits without tenant/identity** — legitimate users behind NAT are over-throttled (or attackers with many IPs slip through).
+- **Limits after parsing** — expensive work is done before the message is rejected.
+- **Blocking rejection** — the server drops legitimate traffic instead of shedding gracefully.
+
+## Secure Implementation
+
+Apply layered, per-identity rate limits before expensive handling.
+
+```text
+Signaling rate-limit design:
+
+1. Limit messages per connection/session (short window) at the edge.
+2. Limit per authenticated user/tenant, not just per IP (accounts for NAT).
+3. Reject over-limit traffic early — before routing, dialog creation, or parsing.
+4. Shed (drop or back-pressure) rather than block unrelated sessions.
+5. Alert when limits trip, and auto-tune thresholds from baseline traffic.
+```
+
+## Key Rules
+
+- Rate-limit per connection and per authenticated identity (belt and braces).
+- Enforce limits before expensive parsing and state creation.
+- Shed excess without blocking legitimate sessions sharing the infrastructure.
+- Distinguish a flood (lots of small messages) from normal bursts from real users.
+- Monitor and alert on rate-limit hits as a signal of an attack.
+
+## Checklist for Code Review
+
+- Are per-session and per-user rate limits in place?
+- Are limits applied before expensive message handling?
+- Does the server continue to serve legitimate users during a flood?
+- Do rejections shed load without blocking unrelated sessions?
+- Are rate-limit events monitored and alerted?

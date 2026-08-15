@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if a token issuer uses the same private key for issuing tokens to different audiences, the issued tokens contain an audience restriction that uniquely identifies the intended audiences. This will prevent a token from being reused with an unintended audience. If the audience identifier is dynamically provisioned, the token issuer must validate these audiences in order to make sure that they do not result in audience impersonation.
+When a single issuer signs tokens for several different audiences with the same private key, the only thing separating "token for API A" from "token for API B" is the audience claim. This control requires that such tokens always carry a unique `aud` restriction, so a token issued to one audience cannot be replayed to another.
+
+## Why This Matters
+
+Sharing a signing key across audiences is common (cheap, operationally simpler), but it widens the blast radius: every consumer that trusts the key would, absent an audience check, accept tokens minted for every other consumer. The `aud` claim re-establishes the boundary. If audiences are provisioned dynamically, the issuer must validate them to stop an attacker from registering a look-alike audience that impersonates a legitimate one.
+
+## Main Security Requirement
+
+> Verify that, if a token issuer uses the same private key for issuing tokens to different audiences, the issued tokens contain an audience restriction that uniquely identifies the intended audiences. This will prevent a token from being reused with an unintended audience. If the audience identifier is dynamically provisioned, the token issuer must validate these audiences in order to make sure that they do not result in audience impersonation.
+
+## Common Failure Patterns
+
+- **Shared key, no `aud`** — any consumer accepts any token from the shared issuer.
+- **Ambiguous audience names** — two tenants register the same `aud` string.
+- **Attacker-registered audience** — a malicious party provisions an audience value that matches a victim service.
+- **No recipient-side `aud` enforcement** — the consumer never checks the claim.
+
+## Secure Implementation
+
+Mint `aud`-scoped tokens, and validate audience at both issuance and consumption.
+
+```javascript
+// Issuer side — every token declares its intended audience(s)
+const accessToken = await new SignJWT({ scope: "orders:read" })
+  .setProtectedHeader({ alg: "HS256", typ: "at+jwt" })
+  .setIssuer("https://auth.example.com")
+  .setAudience("orders-api")  // unique, non-ambiguous audience
+  .setExpirationTime("10m")
+  .sign(secret);
+```
+
+```javascript
+// Consumer side — accept only tokens intended for this service
+const { payload } = await jwtVerify(token, secret, {
+  issuer: "https://auth.example.com",
+  audience: "orders-api",
+});
+```
+
+## Key Rules
+
+- Prefer a unique signing key per audience; when sharing, always set a unique `aud`.
+- Make audience identifiers namespaced and unambiguous (e.g. `urn:svc:orders-api`).
+- Validate audience at the issuer when audiences are self-registered, to prevent impersonation.
+- Enforce the audience check on every consumer.
+
+## Checklist for Code Review
+
+- Does a shared signing key always pair with a unique `aud` claim?
+- Are audience identifiers unique and namespaced, with no collisions?
+- If audiences are dynamically provisioned, does the issuer validate them?
+- Do all consumers enforce the matching audience check?
+- Is there a path to move toward per-audience keys over time?

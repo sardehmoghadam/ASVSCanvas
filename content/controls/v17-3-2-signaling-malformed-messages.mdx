@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the signaling server is able to continue processing legitimate signaling messages when encountering malformed signaling message that could cause a denial of service condition. This could include implementing input validation, safely handling integer overflows, preventing buffer overflows, and employing other robust error-handling techniques.
+Signaling messages are attacker-controlled input. This control requires the signaling server to keep operating when it receives malformed messages — by validating input, handling integer overflow safely, preventing buffer overflows, and using robust error handling — rather than crashing or wedging a connection.
+
+## Why This Matters
+
+Signaling parsers sit at the edge of the untrusted network and are written in performance-sensitive languages. Malformed lengths, missing fields, and oversized values have historically produced the most damaging bugs: buffer overflows (memory corruption) and integer overflows (logic errors that lead to abuse). A single malformed message must be inconsequential to the server, not a remote crash or code-execution vector.
+
+## Main Security Requirement
+
+> Verify that the signaling server is able to continue processing legitimate signaling messages when encountering malformed signaling message that could cause a denial of service condition. This could include implementing input validation, safely handling integer overflows, preventing buffer overflows, and employing other robust error-handling techniques.
+
+## Common Failure Patterns
+
+- **Trusting length fields** — allocating or copying based on an unvalidated value.
+- **Integer overflow in size math** — `count * itemSize` wraps to a small buffer.
+- **Missing bounds checks** — reads/writes past the message buffer.
+- **Uncaught parser exceptions** — one malformed message drops the whole connection or process.
+- **No fuzzing** — parser robustness is never actually tested with hostile input.
+
+## Secure Implementation
+
+Validate before allocation, bound arithmetic, and fail gracefully per connection.
+
+```c
+// Illustrative: safe parsing of a signaling field with a length prefix
+bool parse_field(const uint8_t *msg, size_t msg_len, size_t *off, buffer_t *out) {
+    if (*off + 4 > msg_len) return false;                 // bounds check
+    uint32_t field_len;
+    memcpy(&field_len, msg + *off, 4);
+    field_len = ntohl(field_len);
+    *off += 4;
+    if (field_len > MAX_FIELD_LEN) return false;          // reject oversized fields
+    if (*off + field_len > msg_len) return false;         // no over-read
+    if (!buffer_append(out, msg + *off, field_len)) return false;
+    *off += field_len;
+    return true;
+}
+// On false: discard this message, log/count, and keep the session alive.
+```
+
+## Key Rules
+
+- Treat every signaling message as untrusted; validate fields and lengths first.
+- Verify arithmetic and bounds before any allocation or memory copy.
+- Reject malformed messages early — drop and continue, never crash the process.
+- Isolate failures per connection/session so others are unaffected.
+- Fuzz the signaling parser continuously and fix any crash found.
+
+## Checklist for Code Review
+
+- Are length/field values validated before allocation or copy?
+- Is size arithmetic checked for integer overflow?
+- Are all reads and writes bounds-checked against the buffer size?
+- Does a malformed message fail gracefully per session without crashing the server?
+- Is the parser covered by fuzzing in CI?

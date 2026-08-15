@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the media server is not susceptible to the ClientHello Race Condition vulnerability in Datagram Transport Layer Security (DTLS) by checking if the media server is publicly known to be vulnerable or by performing the race condition test.
+DTLS handshakes are sensitive to timing — the server must allocate and manage state as ClientHello messages arrive, often from several candidates. The ClientHello race-condition vulnerability is a specific weakness where a second, racing ClientHello during the handshake, or an early renegotiation, is processed improperly: it can let an attacker replace, rekey, or disrupt a session that is already in progress.
+
+This control requires confirming that the media server is not affected — either because it is not running a known-vulnerable version, or by actually exercising the race-condition test.
+
+## Why This Matters
+
+A race in DTLS handshake handling can corrupt the cryptographic state an established media session depends on — allowing session hijack, renegotiation into weaker parameters, or denial of service. Because the weakness is timing-dependent, it won't show up in a plain functional test; it needs either a version check against published advisories or an explicit race test.
+
+## Main Security Requirement
+
+> Verify that the media server is not susceptible to the ClientHello Race Condition vulnerability in Datagram Transport Layer Security (DTLS) by checking if the media server is publicly known to be vulnerable or by performing the race condition test.
+
+## Common Failure Patterns
+
+- **Outdated media libraries** — running a DTLS stack with a known handshake-race advisory.
+- **No version/advisory tracking** — the team cannot state which DTLS stack or version is deployed.
+- **Incomplete candidate handling** — racing ClientHello across ICE candidates not serialized properly.
+- **Only functional testing** — no race-specific or version-based verification performed.
+
+## Secure Implementation
+
+Establish the dependency version and, where practical, run the race test.
+
+```text
+Verification steps:
+
+1. Identify the exact DTLS stack and version the media server uses
+   (e.g. OpenSSL, BoringSSL, MbedTLS, or a vendor SDK) — keep a software bill of materials.
+2. Check published advisories/CVEs for that stack and the media server product.
+3. If the stack has a fixed release and you are below it — upgrade.
+4. If no public finding exists, perform the ClientHello race-condition test
+   (concurrent/duplicate handshakes per session) and confirm the server rejects
+   or ignores the redundant handshake without altering the existing session.
+```
+
+## Key Rules
+
+- Maintain a software bill of materials (SBOM) for the media server and its DTLS stack.
+- Track advisories for every crypto/media library in use.
+- Prefer an up-to-date, patched DTLS stack and upgrade promptly on fix releases.
+- Where version state is unknown, run the race-condition test explicitly.
+- Treat handshake handling as a concurrency-sensitive component — serialize per session.
+
+## Checklist for Code Review
+
+- Is the DTLS stack/version known and inventoried?
+- Has the server been checked against public advisories for this vulnerability?
+- If a fixed release exists, is the server running it?
+- Is per-session handshake state handled safely under concurrent ClientHello messages?
+- If no advisory covers the stack, has the race-condition test been performed?

@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the Datagram Transport Layer Security (DTLS) certificate is checked against the Session Description Protocol (SDP) fingerprint attribute, terminating the media stream if the check fails, to ensure the authenticity of the media stream.
+In WebRTC the DTLS handshake is bound to the session it came from using a certificate **fingerprint** carried in the SDP `a=fingerprint` attribute. The fingerprint is exchanged over the trusted signaling channel. This control requires the media server to compare the DTLS certificate presented during the handshake against the fingerprint from the SDP, and to terminate the media stream if they do not match.
+
+## Why This Matters
+
+The SDP fingerprint is what ties the (possibly untrusted) media path to the authenticated signaling path. Without checking it, an attacker who can intercept or race the media connection can substitute their own DTLS certificate and transparently man-in-the-middle the media — reading or injecting audio/video — even though the remote peer appears authenticated at the signaling layer. The fingerprint check closes that gap.
+
+## Main Security Requirement
+
+> Verify that the Datagram Transport Layer Security (DTLS) certificate is checked against the Session Description Protocol (SDP) fingerprint attribute, terminating the media stream if the check fails, to ensure the authenticity of the media stream.
+
+## Common Failure Patterns
+
+- **Fingerprint never compared** — the DTLS handshake completes with whoever answers.
+- **String-only comparison over the wrong field** — comparing the certificate blob instead of the SHA-256 fingerprint.
+- **Ignoring verification errors** — logging a mismatch but keeping the stream up.
+- **Case/format inconsistencies** — fingerprint hex compared case-sensitively or with colons mishandled.
+- **Checking only one side** — the check is skipped for the server or the client leg.
+
+## Secure Implementation
+
+Compute the peer certificate's fingerprint and compare it, constant-time, with the SDP value.
+
+```text
+Verification procedure:
+
+1. Parse the SDP answer/offer and extract a=fingerprint:<hash> <hex>.
+2. After the DTLS handshake, obtain the peer's leaf certificate.
+3. Compute the certificate's SHA-256 fingerprint.
+4. Compare it with the SDP fingerprint (case-insensitive, format-normalized,
+   preferably in constant time).
+5. On mismatch — terminate the media stream and tear down the session.
+```
+
+## Key Rules
+
+- Always compare the peer DTLS certificate fingerprint against the SDP attribute.
+- Use the correct hash algorithm named in the attribute (typically `sha-256`).
+- Fail closed: any mismatch must terminate the stream, never merely log.
+- Normalize case/separators before comparing; prefer constant-time comparison.
+- Apply the check to every leg, on both sides of the connection.
+
+## Checklist for Code Review
+
+- Is the DTLS certificate fingerprint verified against `a=fingerprint` on every session?
+- Is the correct hash algorithm used for the comparison?
+- Does a mismatch terminate the stream (fail closed)?
+- Is the comparison robust to case and separator formatting?
+- Is the check performed on both client and server legs?

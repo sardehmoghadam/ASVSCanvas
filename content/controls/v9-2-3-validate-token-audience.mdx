@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the service only accepts tokens which are intended for use with that service (audience). For JWTs, this can be achieved by validating the aud claim against an allowlist defined in the service.
+The **audience** (`aud` in a JWT) states who the token is meant for. This control requires the receiving service to check that it is an intended recipient, by comparing the `aud` claim against an allowlist the service defines — and rejecting tokens that name a different (or no) audience.
+
+## Why This Matters
+
+Without audience validation, a token minted for one service can be replayed against another service that trusts the same issuer. In microservice or multi-tenant setups, a token issued for Service A might grant access to Service B if B happily accepts any token signed by the shared identity provider. Auditing applies this restriction.
+
+## Main Security Requirement
+
+> Verify that the service only accepts tokens which are intended for use with that service (audience). For JWTs, this can be achieved by validating the aud claim against an allowlist defined in the service.
+
+## Common Failure Patterns
+
+- **No `aud` check** — any token from the issuer is accepted, regardless of intended recipient.
+- **Single-value string comparison** — `aud` can be an array; comparing with `===` fails to match a legitimate audience.
+- **Lenient matching** — accepting tokens with no `aud` claim at all.
+- **Hard-coding another service's audience** — accepting tokens clearly minted for a different API.
+
+## Secure Implementation
+
+Validate `aud` against the service's own allowlist and reject missing or foreign audiences.
+
+```javascript
+// Node.js with `jose`
+import { jwtVerify } from "jose";
+
+const secret = new TextEncoder().encode(process.env.TOKEN_HMAC_SECRET);
+
+const { payload } = await jwtVerify(token, secret, {
+  algorithms: ["HS256"],
+  issuer: "https://auth.example.com",
+  audience: "api.example.com", // allowlist for this service
+  // `jwtVerify` rejects tokens whose aud does not include this value
+});
+```
+
+## Key Rules
+
+- Define a per-service audience allowlist; reject unknown or missing audiences.
+- Validate `aud` at the same time (same call) as signature, issuer, and expiration.
+- Remember `aud` may be an array — use library support, not naive string equality.
+- Give each distinct API or service its own audience identifier.
+
+## Checklist for Code Review
+
+- Does every service validate `aud` against its own allowlist?
+- Are missing or foreign `aud` values rejected?
+- Does the validation handle array-form `aud` correctly?
+- Is audience checked together with issuer, signature, and expiry in a single verification step?
+- Are audiences named consistently and uniquely across services?

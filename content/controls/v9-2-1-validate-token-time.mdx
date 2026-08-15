@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if a validity time span is present in the token data, the token and its content are accepted only if the verification time is within this validity time span. For example, for JWTs, the claims nbf and exp must be verified.
+If a token carries time-bound claims — like a JWT `nbf` (not before) and `exp` (expires at) — the server must check the current verification time against those bounds and reject the token if it has not yet become valid or has already expired.
+
+## Why This Matters
+
+Expiry and not-before claims limit how long a stolen or leaked token can be replayed. If they are ignored, a token remains usable forever. Attackers commonly collect tokens from logs or compromised clients, and a long-lived or never-expiring token maximizes the window for abuse.
+
+## Main Security Requirement
+
+> Verify that, if a validity time span is present in the token data, the token and its content are accepted only if the verification time is within this validity time span. For example, for JWTs, the claims nbf and exp must be verified.
+
+## Common Failure Patterns
+
+- **`exp` never checked** — expired tokens keep working.
+- **`nbf` never checked** — tokens issued for future use are accepted early.
+- **Numeric string mismatches** — comparing a claim against a non-numeric type incorrectly.
+- **Excessive clock skew** — accepting tokens that are minutes or hours out of bounds.
+- **Timeless tokens** — issuing tokens with no expiry at all.
+
+## Secure Implementation
+
+Leverage built-in claim validation in the library, and keep tokens short-lived.
+
+```javascript
+// Node.js with `jose`
+import { jwtVerify } from "jose";
+
+const secret = new TextEncoder().encode(process.env.TOKEN_HMAC_SECRET);
+
+const { payload } = await jwtVerify(token, secret, {
+  algorithms: ["HS256"],
+  // `jwtVerify` enforces exp/nbf automatically; add a small explicit skew
+  clockTolerance: 30,
+});
+```
+
+```java
+// Java with jjwt
+Claims claims = Jwts.parser()
+    .verifyWith(signingKey)
+    .clockSkewSeconds(30)
+    .build()
+    .parseSignedClaims(token)
+    .getPayload();
+// jjwt throws ExpiredJwtException / PrematureJwtException when out of bounds
+```
+
+## Key Rules
+
+- Always issue tokens with an `exp` (and `nbf` where a future activation makes sense).
+- Keep lifetimes as short as the workflow allows; use refresh tokens for renewal.
+- Allow only a small, explicit clock skew (e.g. 30–60 seconds).
+- Reject tokens with missing or malformed time claims rather than treating them as valid.
+- Evaluate the time check against a trusted server clock.
+
+## Checklist for Code Review
+
+- Is `exp` enforced on every verification path, including background/async handlers?
+- Is `nbf` enforced where present?
+- Is clock skew bounded and explicitly configured?
+- Do malformed or missing time claims cause rejection?
+- Are token lifetimes short, with a defined renewal mechanism?

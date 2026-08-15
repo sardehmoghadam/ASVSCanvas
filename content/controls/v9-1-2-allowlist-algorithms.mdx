@@ -25,6 +25,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that only algorithms on an allowlist can be used to create and verify self-contained tokens, for a given context. The allowlist must include the permitted algorithms, ideally only either symmetric or asymmetric algorithms, and must not include the None algorithm. If both symmetric and asymmetric must be supported, additional controls will be needed to prevent key confusion.
+Tokens carry an algorithm identifier (for example, the `alg` header in a JWT) so the receiver knows how to verify them. That identifier must never be trusted blindly. This control requires that only an explicit allowlist of algorithms be accepted for a given context — and that `none` (unsigned) never be accepted.
+
+## Why This Matters
+
+Algorithm confusion is one of the most reliable ways to forge tokens. If a server accepts whatever algorithm the token declares, an attacker can switch from a public-key algorithm to an HMAC one and sign the token with the public key (which they can download). Enforcing a strict algorithm allowlist closes the door on `none`, on downgrade attacks, and on key-type confusion between symmetric and asymmetric modes.
+
+## Main Security Requirement
+
+> Verify that only algorithms on an allowlist can be used to create and verify self-contained tokens, for a given context. The allowlist must include the permitted algorithms, ideally only either symmetric or asymmetric algorithms, and must not include the None algorithm. If both symmetric and asymmetric must be supported, additional controls will be needed to prevent key confusion.
+
+## Common Failure Patterns
+
+- **Trusting the `alg` header** — the verifier uses the algorithm the token declares.
+- **Allowing `none`** — an unsigned token passes as valid.
+- **Mixing key families** — the same verifier accepts both `RS256` and `HS256`, enabling the public-key-as-HMAC-secret attack.
+- **Weak algorithms in the allowlist** — e.g. `HS256` with a guessable secret, or legacy `RSASSA-PKCS1` padding choices.
+
+## Secure Implementation
+
+Pass an explicit algorithm allowlist to the verification library; never derive it from the token.
+
+```javascript
+// Node.js with `jose`
+import { jwtVerify } from "jose";
+
+const secret = new TextEncoder().encode(process.env.TOKEN_HMAC_SECRET);
+
+const { payload } = await jwtVerify(token, secret, {
+  algorithms: ["HS256"], // only what this service expects
+});
+```
+
+```java
+// Java with jjwt — the algorithm comes from the key type you pass, not the token
+JwtParser parser = Jwts.parser()
+    .verifyWith(hmacSecretKey) // selecting an HMAC key pins the algorithm family
+    .build();
+
+Jws<Claims> jws = parser.parseSignedClaims(token); // rejects unsigned/downgraded tokens
+```
+
+## Key Rules
+
+- Maintain a short, context-specific allowlist of algorithms.
+- Prefer a single key type (all symmetric or all asymmetric) per service.
+- If both families are unavoidable, validate the algorithm and key type together to prevent key confusion.
+- Reject `none`, and reject any token whose `alg` is not on the allowlist.
+
+## Checklist for Code Review
+
+- Is the algorithm chosen by server configuration, not by the token?
+- Is `none` explicitly rejected?
+- Does each verification path pair the expected algorithm with the expected key type?
+- Are secrets strong enough for the chosen HMAC algorithm (e.g. ≥256 bits for `HS256`)?
+- Are deprecated or experimental algorithms kept off the allowlist?

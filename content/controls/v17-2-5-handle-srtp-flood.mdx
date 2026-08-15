@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the media server is able to continue processing incoming media traffic during a flood of Secure Real-time Transport Protocol (SRTP) packets from legitimate users.
+A flood differs from ordinary congestion: a large number of legitimate-looking SRTP packets arrive at once, overwhelming the media server. This control requires the server to keep processing real media traffic during such a flood — shedding or policing excess load while preserving genuine streams.
+
+## Why This Matters
+
+SRTP packets are authenticated, so an attacker with a valid session can still flood packets that pass authentication. The goal is availability under load: the server must not fall over, and legitimate users must continue to hold their calls. This means admission control, per-stream policing, and graceful degradation instead of global failure.
+
+## Main Security Requirement
+
+> Verify that the media server is able to continue processing incoming media traffic during a flood of Secure Real-time Transport Protocol (SRTP) packets from legitimate users.
+
+## Common Failure Patterns
+
+- **No per-stream rate limit** — one stream's flood starves all others.
+- **Unbounded queues** — buffering the flood consumes memory to exhaustion.
+- **CPU-bound media loop** — the flood monopolizes processing for shared threads.
+- **Global failure** — a single overloaded component takes down unrelated calls.
+- **No priority for established streams** — new flood traffic competes equally with stable calls.
+
+## Secure Implementation
+
+Apply per-stream policing and shed excess load while prioritizing established sessions.
+
+```text
+Flood-resilience design:
+
+1. Limit packets per session (policer/dropper) so one stream can't saturate the server.
+2. Use bounded queues; drop rather than buffer when limits are hit.
+3. Prioritize established, lower-rate streams over suspicious new/excess traffic.
+4. Scale processing independently (per-stream workers, backpressure).
+5. Alert operations when aggregate or per-stream rates exceed thresholds.
+```
+
+## Key Rules
+
+- Enforce a per-session media rate limit and drop excess packets.
+- Keep buffers bounded — shed load instead of consuming unbounded memory.
+- Preserve service for established calls while limiting rogue streams.
+- Isolate overload so it cannot cascade across the media plane.
+- Monitor rate, drops, and headroom to detect floods early.
+
+## Checklist for Code Review
+
+- Is there a per-session rate limit for SRTP traffic?
+- Are ingress buffers bounded, with graceful shedding?
+- Do established streams retain priority during a flood?
+- Can overload on one stream cascade to others?
+- Are flood conditions surfaced through monitoring and alerts?

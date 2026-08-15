@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that Secure Real-time Transport Protocol (SRTP) authentication is checked at the media server to prevent Real-time Transport Protocol (RTP) injection attacks from leading to either a Denial of Service condition or audio or video media insertion into media streams.
+SRTP protects media packets with encryption and an **authentication tag**, and the receiver must verify that tag (and the anti-replay sequence) on every packet. This control requires the media server to actually perform that check before treating an incoming packet as part of the media stream.
+
+## Why This Matters
+
+The authentication tag distinguishes a genuine packet from injected garbage. If the server forwards or processes packets without verifying it, an attacker who can reach the media port can inject RTP — either to degrade the call into a denial of service (conflicting sequence numbers, junk media) or to splice in crafted audio or video. Encryption is confidentiality; the auth tag is what prevents injection.
+
+## Main Security Requirement
+
+> Verify that Secure Real-time Transport Protocol (SRTP) authentication is checked at the media server to prevent Real-time Transport Protocol (RTP) injection attacks from leading to either a Denial of Service condition or audio or video media insertion into media streams.
+
+## Common Failure Patterns
+
+- **Auth tag never verified** — the server decrypts and forwards blindly.
+- **Replay protection disabled** — old captured packets are accepted out of order or replayed.
+- **Auth-tag-only check with a weak profile** — 32-bit tags give low forgery resistance.
+- **Disparate protection between endpoints** — the client uses SRTP, but the server bridge re-encrypts or mixes without re-authenticating.
+- **Failure to drop on tag mismatch** — mismatches are logged but the packet still flows.
+
+## Secure Implementation
+
+Enable SRTP authentication on every leg and reject any packet that fails verification.
+
+```text
+Media-path requirements for every SRTP leg:
+
+1. Negotiate an authenticated protection profile
+   (e.g. SRTP_AES128_CM_HMAC_SHA1_80 — never SRTP_NULL, avoid *_SHA1_32).
+2. Verify the authentication tag before decryption and forwarding.
+3. Enforce replay protection (sequence number + replay window).
+4. Drop packets that fail authentication — do not forward, bridge, or mix them.
+5. Apply the same rule on transcoding/mixing paths, not just the initial leg.
+```
+
+## Key Rules
+
+- Authenticate SRTP on every leg (client↔server and server↔server).
+- Verify the auth tag and replay window before any packet is processed or relayed.
+- Drop failed packets immediately and count them for monitoring.
+- Prefer 80-bit auth tags over 32-bit where supported.
+- Keep authentication uniform across mixing, recording, and transcoding paths.
+
+## Checklist for Code Review
+
+- Is the SRTP auth tag verified before decryption and forwarding?
+- Is replay protection enabled on every leg?
+- Are failed-authentication packets dropped (never bridged/mixed/recorded)?
+- Does the chosen profile provide adequate authentication (not just encryption)?
+- Are auth failures counted and alertable?

@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the media server is configured to use and support approved Datagram Transport Layer Security (DTLS) cipher suites and a secure protection profile for the DTLS Extension for establishing keys for the Secure Real-time Transport Protocol (DTLS-SRTP).
+Two configuration surfaces matter for WebRTC media security:
+
+1. **DTLS cipher suites** — the algorithms used to negotiate the DTLS session that authenticates the peer and keys the media.
+2. **DTLS-SRTP protection profile** — the algorithms used for the SRTP session itself (the `use_srtp` extension), which establishes the SRTP master keys.
+
+This control requires the media server to use only approved cipher suites and a secure protection profile.
+
+## Why This Matters
+
+Cipher configuration determines whether media encryption is actually strong. Legacy suites (RSA key exchange, CBC ciphers, weak MACs) are vulnerable to known attacks, and weak SRTP profiles can allow offline decryption or bit-flip injection. Negotiation flaws can also allow a client and server to "agree" on a null or export-grade protection profile.
+
+## Main Security Requirement
+
+> Verify that the media server is configured to use and support approved Datagram Transport Layer Security (DTLS) cipher suites and a secure protection profile for the DTLS Extension for establishing keys for the Secure Real-time Transport Protocol (DTLS-SRTP).
+
+## Common Failure Patterns
+
+- **Legacy TLS/DTLS versions enabled** — DTLS 1.0 / TLS 1.0 or 1.1 left on.
+- **CBC or RSA-key-exchange suites** — weak padding and lack of forward secrecy.
+- **`SRTP_NULL` or `SRTP_AES128_CM_HMAC_SHA1_32`** — no confidentiality or a trivially weak 32-bit auth tag.
+- **No minimum version and no maximum** — the server negotiates whatever the client offers.
+
+## Secure Implementation
+
+Pin a modern, allow-listed cipher configuration.
+
+```text
+Example DTLS target configuration:
+
+DTLS versions:      DTLS 1.2 (min), DTLS 1.3 where supported
+Cipher suites:      TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+                    TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+
+SRTP protection:    SRTP_AES128_CM_HMAC_SHA1_80
+                    (or SRTP_AEAD_AES_256_GCM in DTLS 1.3 / RFC 7714 deployments)
+
+Disabled:           SRTP_NULL, *_HMAC_SHA1_32, CBC suites, RSA key exchange
+```
+
+## Key Rules
+
+- Allow-list modern AEAD cipher suites; disable CBC and static-RSA key exchange.
+- Enforce a minimum DTLS version and negotiate only approved SRTP profiles.
+- Reject sessions that end up on a disallowed profile (fail closed).
+- Re-test the configuration after library or platform upgrades.
+- Prefer ECDHE key exchange for forward secrecy.
+
+## Checklist for Code Review
+
+- Is DTLS 1.0 / TLS 1.0–1.1 disabled?
+- Are only AEAD suites allowed (no CBC, no static RSA)?
+- Is the SRTP protection profile allow-listed, with null/32-bit-auth profiles rejected?
+- Does negotiation fail closed when no approved suite/profile is mutually supported?
+- Is the cipher configuration validated programmatically (e.g. `sslscan`-style checks)?

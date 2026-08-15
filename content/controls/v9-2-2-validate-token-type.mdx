@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the service receiving a token validates the token to be the correct type and is meant for the intended purpose before accepting the token contents. For example, only access tokens can be accepted for authorization decisions and only ID Tokens can be used for proving user authentication.
+Different tokens have different jobs. An **access token** authorizes access to a resource; an **ID token** proves who the user is; a **refresh token** mints new access tokens. This control requires that the service reject a token being used for a purpose it was not issued for.
+
+## Why This Matters
+
+Using the wrong token type is a classic source of privilege and identity confusion. An ID token is meant for the client application that initiated the login, not for the API the client calls. If an API accepts ID tokens as access tokens, an attacker who manages to obtain or mint an ID token intended for a different audience can use it to call the API. Confusing token roles also undermines revocation and scope semantics.
+
+## Main Security Requirement
+
+> Verify that the service receiving a token validates the token to be the correct type and is meant for the intended purpose before accepting the token contents. For example, only access tokens can be accepted for authorization decisions and only ID Tokens can be used for proving user authentication.
+
+## Common Failure Patterns
+
+- **Accepting ID tokens as access tokens** — an API treats a user-identity token as authorization.
+- **Accepting access tokens for login** — using a resource-scoped token to establish an authenticated session.
+- **Refresh tokens sent to a resource server** — exposing long-lived credentials to the wrong party.
+- **No type claim checked** — the `typ` header or `token_type` is never validated.
+
+## Secure Implementation
+
+Check the token's declared type and only proceed for the intended purpose.
+
+```javascript
+// Node.js — reject non-access tokens at the resource server
+import { jwtVerify } from "jose";
+
+const expectedAudience = "api.example.com";
+const expectedType = "at+jwt"; // RFC 9068 access token type
+
+const { payload } = await jwtVerify(token, secret, {
+  algorithms: ["HS256"],
+  audience: expectedAudience,
+  typ: expectedType, // rejects ID tokens or other token types
+});
+
+// `payload` is now trusted as an access token for this API
+```
+
+## Key Rules
+
+- Access tokens → authorization decisions only.
+- ID tokens → authentication assertions, consumed by the initiating client.
+- Refresh tokens → token endpoint only, never sent to resource servers.
+- Validate the token type claim (`typ`/`token_type`) where the format supports it.
+- Combine type checks with audience, issuer, and scope validation.
+
+## Checklist for Code Review
+
+- Does the resource server accept only access tokens?
+- Is the ID token consumed only by the intended relying party?
+- Are refresh tokens restricted to the authorization server's token endpoint?
+- Is the token type validated alongside audience, issuer, and scope?
+- Are there explicit rejections, not silent fallbacks, when the type is wrong?

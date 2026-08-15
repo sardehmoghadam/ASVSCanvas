@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the media server is able to continue processing incoming media traffic when encountering malformed Secure Real-time Transport Protocol (SRTP) packets.
+Media arrives as a stream of UDP packets, and a small number of them will be malformed — truncated, corrupted, or with invalid fields. This control requires the media server to treat a malformed SRTP packet as a normal, discardable event and keep processing the rest of the stream without crashing, stalling, or degrading the call.
+
+## Why This Matters
+
+Media processing is on the real-time critical path in untrusted, high-throughput conditions. If one malformed packet can throw an uncaught exception, panic, or wedge a parsing loop, an attacker who can spray a few bad packets across many streams can take down the entire media plane. Resilience to malformed input is basic availability hygiene for any packet-processing component.
+
+## Main Security Requirement
+
+> Verify that the media server is able to continue processing incoming media traffic when encountering malformed Secure Real-time Transport Protocol (SRTP) packets.
+
+## Common Failure Patterns
+
+- **Uncaught exceptions in the parse path** — one bad packet crashes the worker.
+- **Trusting on-wire lengths** — buffer over-read/over-write from a crafted length field.
+- **Tight coupling** — a single stream's error tears down unrelated sessions.
+- **Blocking on a defective packet** — retry loops or unbounded buffering.
+- **No isolation between packet handler and service health.**
+
+## Secure Implementation
+
+Parse defensively, drop bad packets, and isolate failures per stream.
+
+```c
+// Conceptual packet ingress (illustrative):
+void on_packet(buffer_t *pkt) {
+    if (srtp_parse(pkt) != OK) {
+        // Log/count, then discard — never crash the media loop
+        stats_inc_dropped_malformed();
+        buffer_release(pkt);
+        return;
+    }
+    // Validate lengths and sequence before any memory access
+    if (!srtp_authenticate(pkt)) { buffer_release(pkt); return; }
+    process_media(pkt);
+}
+```
+
+## Key Rules
+
+- Treat packet parsing as untrusted input: validate lengths and fields before use.
+- Catch and contain parse errors per stream; never let one packet kill the process.
+- Use separate buffers/threads so a defective stream can't corrupt another.
+- Count dropped-malformed packets and alert on abnormally high rates.
+- Fuzz the SRTP parser as part of routine testing.
+
+## Checklist for Code Review
+
+- Is the SRTP parser hardened against malformed/truncated input?
+- Are length fields validated before memory access (no over-reads/over-writes)?
+- Is error handling per-stream and non-fatal to the process and other calls?
+- Are malformed packets counted, with alerting for spikes?
+- Is the parser included in fuzz testing?

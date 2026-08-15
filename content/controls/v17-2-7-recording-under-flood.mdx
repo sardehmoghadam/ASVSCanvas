@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that any audio or video recording mechanisms associated with the media server are able to continue processing incoming media traffic during a flood of Secure Real-time Transport Protocol (SRTP) packets from legitimate users.
+Recording is often a separate subsystem that taps or buffers media from the media server. This control requires those recording mechanisms to keep capturing and writing media reliably even while the media server is under a flood of legitimate-looking SRTP traffic.
+
+## Why This Matters
+
+Recording often has compliance obligations (call recording, financial services, contact centers). If the recorder is the first component to degrade under load — dropping frames, losing audio, or crashing — the organization loses exactly the evidence it is required to retain. The recorder must be isolated, buffered, and back-pressured so a flood on the live path does not corrupt the recorded stream.
+
+## Main Security Requirement
+
+> Verify that any audio or video recording mechanisms associated with the media server are able to continue processing incoming media traffic during a flood of Secure Real-time Transport Protocol (SRTP) packets from legitimate users.
+
+## Common Failure Patterns
+
+- **Shared, unbounded buffers** — flood traffic evicts or corrupts recording buffers.
+- **Recording inline on the live path** — recording work causes head-of-line blocking for media.
+- **Single-threaded recorder** — one slow write stalls all recorded streams.
+- **No prioritization** — a flood starves recording of CPU or I/O.
+- **Recording fails silently** — dropped frames go unnoticed until an audit.
+
+## Secure Implementation
+
+Decouple recording from the live path and give it bounded, prioritized buffering.
+
+```text
+Recording resilience design:
+
+1. Tap media into a per-stream, bounded buffer — shed excess without corrupting
+   the already-recorded bytes.
+2. Write to the recorder asynchronously, behind backpressure, not inline.
+3. Assign recorder I/O budget independent of the media-forwarding path.
+4. Prioritize recorded streams so flood shedding hits live forwarding first.
+5. Monitor recorded-frame loss and alert on any drop below policy thresholds.
+```
+
+## Key Rules
+
+- Isolate recording buffers from the live media path.
+- Use bounded buffers and asynchronous writes with backpressure.
+- Give recording a dedicated, guaranteed resource budget.
+- Prioritize the recorded stream during overload rather than treating it as expendable.
+- Instrument frame loss and surface it to operations immediately.
+
+## Checklist for Code Review
+
+- Can a media flood corrupt or evict recording buffers?
+- Is recording decoupled from the live forwarding path?
+- Does the recorder have a dedicated CPU/I/O budget under load?
+- Is recorded-frame loss measured and alerted?
+- Are recording integrity and continuity verified after a flood event?

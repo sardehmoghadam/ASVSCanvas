@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the Traversal Using Relays around NAT (TURN) service is not susceptible to resource exhaustion when legitimate users attempt to open a large number of ports on the TURN server.
+Each TURN allocation consumes server resources: a relay address, ports, and per-allocation state. Even a **legitimate** user can consume many ports. This control requires the TURN server to survive that pressure — enforcing quotas and limits so a single (or a few) authenticated users cannot exhaust the server's capacity.
+
+## Why This Matters
+
+Availability is the concern here, not authentication. If each user can open an unbounded number of allocations and each allocation asks for many ports, a handful of clients can drive CPU, memory, and port exhaustion — taking down calls for everyone else. The server must constrain allocation count and port counts per user, per realm, and per session.
+
+## Main Security Requirement
+
+> Verify that the Traversal Using Relays around NAT (TURN) service is not susceptible to resource exhaustion when legitimate users attempt to open a large number of ports on the TURN server.
+
+## Common Failure Patterns
+
+- **No per-user allocation limit** — one account can allocate all relay capacity.
+- **No per-allocation port limit** — a single allocation can request an enormous port range.
+- **Allocations never expire** — idle allocations hold ports and state indefinitely.
+- **Limits enforced only on new users** — quotas can be bypassed via re-authentication or multiple sessions.
+- **No monitoring** — exhaustion is noticed only after the outage.
+
+## Secure Implementation
+
+Configure the TURN server with explicit quotas and lifetimes.
+
+```text
+Example TURN server policy (coturn-style):
+
+# Bound each user's total allocations
+max-allocations = 4
+
+# Limit ports granted per allocation
+max-ports-per-allocation = 16
+
+# Reap idle allocations and cap absolute lifetime
+allocation-lifetime = 1800
+max-lifetime = 3600
+```
+
+## Key Rules
+
+- Enforce a per-user and per-realm allocation quota.
+- Limit the number of ports/reservations granted per allocation and per user.
+- Give allocations a finite lifetime and reclaim idle ones.
+- Apply quotas consistently across authentication methods and reconnect attempts.
+- Monitor allocation counts and alert on disproportionate usage.
+
+## Checklist for Code Review
+
+- Is there a per-user allocation limit?
+- Is there a per-allocation (and aggregate per-user) port limit?
+- Do allocations expire or get reclaimed when idle?
+- Are quotas enforced across reconnect and multi-session scenarios?
+- Is unusual allocation/port usage visible to operations via monitoring and alerts?

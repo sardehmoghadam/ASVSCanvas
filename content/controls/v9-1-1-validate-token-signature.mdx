@@ -25,6 +25,76 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that self-contained tokens are validated using their digital signature or MAC to protect against tampering before accepting the token contents.
+A self-contained token (such as a JWT, JWS, or PASETO) carries its own claims and is sent back by the client on later requests. Because the client can read and resend the token, the server must never trust its contents unless it can prove the token was issued by a trusted party and has not been altered since.
+
+This control requires that every self-contained token be verified cryptographically — with a digital signature (asymmetric, e.g. RS256/ES256) or a MAC (symmetric, e.g. HS256) — before any claim inside it is used.
+
+## Why This Matters
+
+If a server accepts an unsigned or incorrectly verified token, an attacker can forge tokens with arbitrary claims. For example, they could change a `role` claim from `user` to `admin`, escalate a user ID, or extend an expiry. Signature verification is the only barrier between "the client says it is" and "the server knows it is".
+
+## Main Security Requirement
+
+> Verify that self-contained tokens are validated using their digital signature or MAC to protect against tampering before accepting the token contents.
+
+## Common Failure Patterns
+
+- **Signature not verified at all** — the server decodes the token and trusts the payload.
+- **Algorithm confusion** — the server lets the token header pick the algorithm, so an attacker can switch `RS256` to `HS256` and sign using the public key as an HMAC secret.
+- **Wrong key** — the server verifies with an attacker-supplied key (for example, from a `jwk` header) instead of a trusted issuer key.
+- **`none` algorithm accepted**, making the token trivially forgeable.
+- **Decode mistaken for verify** — `base64url` decoding is not verification.
+
+## Secure Implementation
+
+Verify the signature with a pinned algorithm and a trusted key.
+
+```javascript
+// Node.js using `jose` — no algorithm guessing, no "none"
+import { jwtVerify } from "jose";
+
+const secret = new TextEncoder().encode(process.env.TOKEN_HMAC_SECRET);
+
+try {
+  const { payload } = await jwtVerify(token, secret, {
+    issuer: "https://auth.example.com",
+    algorithms: ["HS256"], // allowlist; never read from the token
+  });
+  // Only now trust `payload`
+} catch {
+  // Reject: invalid signature, algorithm, or issuer
+}
+```
+
+```java
+// Java using jjwt — pin the expected algorithm and key
+JwtParser parser = Jwts.parser()
+    .verifyWith(signingKey) // trusted key only
+    .requireIssuer("https://auth.example.com")
+    .build();
+
+try {
+    Jws<Claims> jws = parser.parseSignedClaims(token); // throws on bad signature
+    Claims claims = jws.getPayload();
+} catch (JwtException e) {
+    // Reject the token — fail closed
+}
+```
+
+## Key Rules
+
+- Always verify the signature/MAC before reading or acting on any claim.
+- Use a trusted, pre-configured key for the issuer — never one taken from the token.
+- Pin algorithms to an allowlist; never allow `none`.
+- Use a library that separates "decode" from "verify", and always call verify.
+- Fail closed: any verification exception must reject the token.
+
+## Checklist for Code Review
+
+- Is the token verified cryptographically on every request, not merely decoded?
+- Is the verification key sourced from trusted server configuration, not from the token?
+- Is the expected algorithm pinned (allowlist) rather than read from the token header?
+- Does every verification failure lead to an explicit rejection, with no partial use of claims?
+- Are tokens short-lived and correctly scoped to limit the impact of any future bypass?

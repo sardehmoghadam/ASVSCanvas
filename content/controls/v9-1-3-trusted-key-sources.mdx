@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that key material that is used to validate self-contained tokens is from trusted pre-configured sources for the token issuer, preventing attackers from specifying untrusted sources and keys. For JWTs and other JWS structures, headers such as jku, x5u, and jwk must be validated against an allowlist of trusted sources.
+A token can tell the receiver where to fetch a verification key or embed the key directly. JWTs do this through headers such as `jku` (a JWKS URL), `x5u` (a certificate URL), or `jwk` (an inline key). This control says the server must ignore those pointers unless the source is on a trusted allowlist, and must otherwise use keys it already has, pre-configured per issuer.
+
+## Why This Matters
+
+If a server fetches a key from whatever URL or inline `jwk` the token supplies, an attacker simply hosts their own public key and signs a token that the server will then accept. Trusting attacker-supplied key material is equivalent to trusting the attacker's signatures. Key material must come from configuration under your control — never from the token itself.
+
+## Main Security Requirement
+
+> Verify that key material that is used to validate self-contained tokens is from trusted pre-configured sources for the token issuer, preventing attackers from specifying untrusted sources and keys. For JWTs and other JWS structures, headers such as jku, x5u, and jwk must be validated against an allowlist of trusted sources.
+
+## Common Failure Patterns
+
+- **Blindly following `jku`/`x5u`** — fetching keys from an attacker-controlled location.
+- **Accepting inline `jwk`** — letting the token define its own verification key.
+- **No source allowlist** — any URL the token names is treated as legitimate.
+- **Missing issuer binding** — keys are accepted for the wrong issuer or tenant.
+
+## Secure Implementation
+
+Resolve keys from local, pre-registered configuration keyed by issuer — not from token headers.
+
+```javascript
+// Node.js — key lookup happens against a trusted store, never the token
+import { jwtVerify } from "jose";
+
+function getKeyForIssuer(issuer) {
+  // Pre-registered per issuer/tenant, loaded from a secure vault or trust store,
+  // never from the jku/x5u/jwk header of the incoming token.
+  return jwksByIssuer[issuer];
+}
+
+const { payload } = await jwtVerify(token, getKeyForIssuer(iss), {
+  issuer: iss,
+  audience: "api.example.com",
+  algorithms: ["RS256"],
+});
+```
+
+## Key Rules
+
+- Treat `jku`, `x5u`, and `jwk` as untrusted hints, never as instructions.
+- If you must follow a `jku`/`x5u` pointer, validate it against a strict allowlist of URLs.
+- Bind keys to the issuer (and tenant); don't share one key set across unrelated issuers.
+- Cache and pin fetched keys by `kid`; refuse tokens with unknown or mismatched key IDs.
+
+## Checklist for Code Review
+
+- Are verification keys loaded from server configuration, not from token headers?
+- Is there a strict allowlist if any external key URL is ever followed?
+- Is key material scoped to the correct issuer and tenant?
+- Is the `kid` resolved and pinned, with unknown `kid` values rejected?
+- Are key fetches done over TLS with certificate validation?

@@ -24,6 +24,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the Traversal Using Relays around NAT (TURN) service only allows access to IP addresses that are not reserved for special purposes (e.g., internal networks, broadcast, loopback). Note that this applies to both IPv4 and IPv6 addresses.
+A TURN server relays traffic on behalf of clients that cannot connect directly. The client asks the TURN server to allocate an address and forward packets to a destination it names. This control requires the TURN server to refuse destinations that are reserved for special purposes — internal networks, loopback, link-local, broadcast, and multicast ranges — for both IPv4 and IPv6.
+
+## Why This Matters
+
+A TURN relay that forwards to any destination is effectively an open proxy. An attacker can use it to reach internal, non-routable services that should never be accessible from outside — a server-side request forgery (SSRF) primitive built into your media infrastructure. Because TURN is designed to relay arbitrary UDP (and sometimes TCP), leaving reserved ranges reachable turns the media server into a network pivot.
+
+## Main Security Requirement
+
+> Verify that the Traversal Using Relays around NAT (TURN) service only allows access to IP addresses that are not reserved for special purposes (e.g., internal networks, broadcast, loopback). Note that this applies to both IPv4 and IPv6 addresses.
+
+## Common Failure Patterns
+
+- **No destination filtering** — the relay forwards to any IP the client names.
+- **IPv4-only checks** — IPv6 loopback (`::1`), link-local (`fe80::/10`), or ULA (`fc00::/7`) are left open.
+- **Partial blocklists** — filtering `127.0.0.0/8` but forgetting `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, and multicast ranges.
+- **Filtering after allocation** — the check happens too late or can be bypassed with a different request type.
+
+## Secure Implementation
+
+Deny-by-default on destination ranges, applied before any relay allocation is honored.
+
+```text
+Denied destination ranges (non-exhaustive):
+
+IPv4:
+  0.0.0.0/8        "this network"
+  10.0.0.0/8        RFC 1918 private
+  127.0.0.0/8       loopback
+  169.254.0.0/16    link-local
+  172.16.0.0/12     RFC 1918 private
+  192.168.0.0/16    RFC 1918 private
+  224.0.0.0/4       multicast
+  240.0.0.0/4       reserved
+
+IPv6:
+  ::1/128           loopback
+  ::/128            unspecified
+  fe80::/10         link-local
+  fc00::/7          unique local (private)
+  ff00::/8          multicast
+```
+
+## Key Rules
+
+- Apply a **deny list of reserved ranges** (or an allow list where feasible) to every relay request.
+- Cover IPv4 and IPv6 equally; test both families explicitly.
+- Evaluate the destination before granting an allocation or forwarding packets.
+- Log and alert on attempts to reach reserved ranges — they are a strong attack signal.
+- Keep the reserved-range list current (RFC 1918, RFC 5735, RFC 6890, RFC 4291).
+
+## Checklist for Code Review
+
+- Are reserved ranges blocked for both IPv4 and IPv6?
+- Is the check applied before allocation/relay, not after?
+- Are loopback, link-local, private, multicast, and unspecified ranges all covered?
+- Is there a fallback deny-by-default for ranges not explicitly tested?
+- Do reach-attempts to reserved ranges produce alerts?

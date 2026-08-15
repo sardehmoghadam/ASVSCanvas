@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the key for the Datagram Transport Layer Security (DTLS) certificate is managed and protected based on the documented policy for management of cryptographic keys.
+WebRTC media is encrypted with DTLS, and the media server authenticates itself to peers using a DTLS certificate and its private key. If that private key is compromised, an attacker can impersonate the server and intercept media. This control requires the DTLS certificate's private key to be managed and protected under the organization's documented cryptographic key-management policy.
+
+## Why This Matters
+
+Media servers are Internet-facing and often run on shared infrastructure, auto-scaled containers, or third-party cloud. If the private key is embedded in images, stored in a world-readable file, hard-coded in configs, or lacks rotation and access controls, a single compromise lets an attacker stand up a fake bridge and decrypt or inject media traffic. Key hygiene on the media plane is just as critical as on the web plane.
+
+## Main Security Requirement
+
+> Verify that the key for the Datagram Transport Layer Security (DTLS) certificate is managed and protected based on the documented policy for management of cryptographic keys.
+
+## Common Failure Patterns
+
+- **Self-signed cert with the private key committed to source control** or baked into images.
+- **No rotation** — one long-lived key validated forever.
+- **Excessive file permissions** — private key readable by any process or user.
+- **Key logging** — private keys accidentally written to logs or backups without protection.
+- **No ownership policy** — no defined custodian, lifecycle, or revocation procedure.
+
+## Secure Implementation
+
+Keep DTLS private keys in a secrets store and scope file access strictly.
+
+```text
+Recommended practices:
+
+1. Generate keys on the server or in a managed KMS/HSM — never in the browser context.
+2. Store the private key in a secrets manager (Vault, KMS, AWS Secrets Manager).
+3. Mount the key read-only, with permissions limited to the media process user.
+4. Rotate the certificate before expiry and track the key's complete lifecycle.
+5. Use separate keys per environment (dev/staging/prod).
+6. Revoke and reissue immediately on any suspected exposure.
+```
+
+## Key Rules
+
+- Follow the organization's key-management policy for generation, storage, rotation, and revocation.
+- Never commit private keys to source control or embed them in images/configuration.
+- Restrict file permissions and use a secrets manager where available.
+- Rotate certificates on a defined schedule and on suspicion of compromise.
+- Keep an inventory of all media-plane keys and their owners.
+
+## Checklist for Code Review
+
+- Is the DTLS private key stored in a secrets manager or with strict, least-privilege file permissions?
+- Is the key excluded from source control, images, logs, and backups?
+- Is there a documented rotation schedule and a revocation path?
+- Are keys separated per environment?
+- Does a key-management policy exist, and is this key covered by it?
