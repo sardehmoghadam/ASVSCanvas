@@ -4,7 +4,7 @@ import { CategoryCard } from "@/components/cards";
 import { SearchBox } from "@/components/search-box";
 import { Button } from "@/components/ui/button";
 import { categories } from "@/content/categories";
-import { getControlsByCategory } from "@/content/controls";
+import { getAllControls } from "@/lib/content/loader";
 
 const learningFeatures = [
   {
@@ -25,6 +25,15 @@ const learningFeatures = [
 ];
 
 export default function Home() {
+  // Count published MDX controls per chapter (server-side, build time).
+  const allControls = getAllControls();
+  const countByChapter = new Map<string, number>();
+  for (const entry of allControls) {
+    const chapterId = entry.frontmatter.chapter.id;
+    countByChapter.set(chapterId, (countByChapter.get(chapterId) ?? 0) + 1);
+  }
+  const totalControls = allControls.length;
+
   return (
     <div>
       <section className="relative overflow-hidden border-b border-border">
@@ -56,7 +65,7 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-border p-5"><ShieldCheck className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">12</p><p className="text-sm text-muted-foreground">security chapters</p></div>
+              <div className="rounded-2xl border border-border p-5"><ShieldCheck className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">{categories.length}</p><p className="text-sm text-muted-foreground">security chapters</p></div>
               <div className="rounded-2xl border border-border p-5"><LockKeyhole className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">5.0.0</p><p className="text-sm text-muted-foreground">current ASVS version</p></div>
             </div>
           </div>
@@ -87,11 +96,11 @@ export default function Home() {
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Choose a security chapter</h2>
-            <p className="mt-2 max-w-3xl text-muted-foreground">Follow the official ASVS 5.0.0 structure and turn each topic into practical secure development skills.</p>
+            <p className="mt-2 max-w-3xl text-muted-foreground">Follow the official ASVS 5.0.0 structure — {totalControls} controls across {categories.length} chapters — and turn each topic into practical secure development skills.</p>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category) => <CategoryCard key={category.id} category={category} count={getControlsByCategory(category.id, category.asvsVersion).length} />)}
+          {categories.map((category) => <CategoryCard key={category.id} category={category} count={countByChapter.get(category.id) ?? 0} />)}
         </div>
       </section>
     </div>

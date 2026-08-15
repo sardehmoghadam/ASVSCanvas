@@ -1,16 +1,36 @@
-import { SearchBox } from "@/components/search-box";
-import { ControlCard } from "@/components/cards";
-import { controls } from "@/content/controls";
+import { Suspense } from "react";
+import { SearchClient } from "@/components/search-client";
+import { buildSearchIndex } from "@/lib/search";
+
+export const metadata = {
+  title: "Search",
+};
 
 export default function SearchPage() {
+  const entries = buildSearchIndex();
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="text-4xl font-bold tracking-tight">Search</h1>
-      <p className="mt-3 text-muted-foreground">Placeholder UI for a future static search index powered by tags, titles, summaries, and references.</p>
-      <div className="mt-8"><SearchBox /></div>
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
-        {controls.map((control) => <ControlCard key={control.slug} control={control} />)}
+      <p className="mt-3 text-muted-foreground">
+        Search the full ASVS 5.0.0 catalog across titles, summaries, tags, chapters, sections,
+        levels, and references.
+      </p>
+      <div className="mt-8">
+        <Suspense fallback={<SearchFallback />}>
+          <SearchClient entries={entries} />
+        </Suspense>
       </div>
     </div>
+  );
+}
+
+function SearchFallback() {
+  return (
+    <input
+      disabled
+      placeholder="Loading search…"
+      className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-sm outline-none"
+    />
   );
 }
