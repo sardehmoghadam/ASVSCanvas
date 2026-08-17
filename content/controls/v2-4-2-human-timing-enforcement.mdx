@@ -25,6 +25,75 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that business logic flows require realistic human timing, preventing excessively rapid transaction submissions.
+This control requires business flows to enforce realistic human timing — a minimum interval between submissions that no real person could beat. A transfer, order, or comment posted within milliseconds of the previous one is almost certainly automated.
+
+Unlike generic rate limiting, this is specific to *business logic* flows: it detects "too fast to be human" on individual transactional steps.
+
+## Why This Matters
+
+Rate limits can be tuned high enough to allow legitimate batch work, which bots then use at full speed. Timing enforcement targets the thing bots cannot easily fake: humans are slow. Requiring a realistic delay per transaction frustrates automation without blocking normal users.
+
+It works alongside rate limiting to stop "excessively rapid transaction submissions" on sensitive flows.
+
+## Main Security Requirement
+
+> Verify that business logic flows require realistic human timing, preventing excessively rapid transaction submissions.
+
+The measure is "realistic human timing" — the enforcement must reflect what a human can actually do, not a fixed token-bucket threshold.
+
+## Common Failure Patterns
+
+- **No floor** — only an upper rate limit, so a burst of valid-speed calls still passes.
+- **Constant-only floors** — a fixed interval that a script can trivially sleep past.
+- **Per-IP timing** — defeated by distributing requests across IPs.
+- **Timing on reads, not writes** — slowing down reads but not the actions that matter.
+
+## Secure Implementation
+
+Require a minimum elapsed time since the user's last business action, tracked per identity:
+
+```javascript
+const MIN_TRANSACTION_INTERVAL_MS = 2000; // realistic human minimum
+
+async function submitTransfer(userId, transfer) {
+  const last = await db.get(`last_action:${userId}`);
+  const now = Date.now();
+
+  if (last && now - last < MIN_TRANSACTION_INTERVAL_MS) {
+    throw new Error("Transfer submitted too quickly");
+  }
+
+  await db.set(`last_action:${userId}`, now);
+  await processTransfer(transfer);
+}
+```
+
+Increase the required interval for higher-value or irreversible actions:
+
+```python
+INTERVALS = {"comment": 5.0, "order": 10.0, "wire_transfer": 30.0}
+
+def enforce_timing(user_id: str, action: str) -> None:
+    floor = INTERVALS.get(action, 2.0)
+    last = cache.get(f"last:{user_id}:{action}")
+    if last and (time.monotonic() - last) < floor:
+        raise TooFast("Please wait before submitting again")
+    cache.set(f"last:{user_id}:{action}", time.monotonic())
+```
+
+## Key Rules
+
+- Enforce a minimum interval on transactional business flows.
+- Key timing state per identity (and action), not merely per IP.
+- Scale the floor to the action's value and irreversibility.
+- Combine with rate limiting — timing alone is not a complete control.
+
+## Checklist for Code Review
+
+- Is a minimum interval enforced on business-logic submissions?
+- Is the timing state keyed per user and per action?
+- Does the floor reflect realistic human capability?
+- Are high-value or irreversible actions assigned a larger minimum?
+- Is timing combined with other anti-automation controls?

@@ -24,6 +24,67 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that expectations for business logic limits and validations are documented, including both per-user and globally across the application.
+This control documents the limits that apply to business logic: how many times a user may perform an action, the maximum amounts or quantities involved, and the global capacity of the system.
+
+Limits are recorded in two scopes:
+
+- **Per-user** — e.g., "a user may submit 5 refunds per day".
+- **Global** — e.g., "the system processes at most 10,000 redemption codes total".
+
+## Why This Matters
+
+Business logic flaws often exploit missing limits. If a discount coupon can be applied without a documented cap, an attacker can stack it arbitrarily. If a limit exists only per-user, many accounts can still drain the resource everyone shares.
+
+Documenting the limits *before* implementation forces the business to state the rules explicitly, which is the first defense against abuse.
+
+## Main Security Requirement
+
+> Verify that expectations for business logic limits and validations are documented, including both per-user and globally across the application.
+
+Both scopes matter: per-user limits prevent a single actor from abusing a capability, while global limits protect shared resources from exhaustion.
+
+## Common Failure Patterns
+
+- **Unbounded actions** — no stated maximum for retries, redemptions, or balance changes.
+- **Per-user only** — individual caps exist but there is no global ceiling, so many accounts drain a shared quota.
+- **Limits in the client** — an input `max` or JS check that the server never re-validates.
+- **Ambiguous units** — "a limit" documented without units (per day? per account? lifetime?).
+
+## Secure Implementation
+
+Encode limits as configuration the service enforces, so both scopes can be reviewed in one place:
+
+```javascript
+const LIMITS = {
+  refund: { perUserPerDay: 5, globalPerDay: 500 },
+  couponRedemption: { perUserTotal: 3, globalTotal: 10_000 },
+  apiKeyCreation: { perUserTotal: 10 },
+};
+
+async function enforceLimit(scope, action) {
+  const limit = LIMITS[action]?.[scope];
+  if (!limit) throw new Error(`No documented limit for ${action}.${scope}`);
+
+  const used = await countUsage(action, scope);
+  if (used >= limit) {
+    throw new Error(`Limit exceeded for ${action} (${scope}): ${limit}`);
+  }
+}
+```
+
+## Key Rules
+
+- Document every business operation's limits in both per-user and global scope.
+- State units explicitly: per day, per account, total, per IP, etc.
+- Enforce limits server-side; treat client-side limits as UX only.
+- Fail closed when a limit lookup is missing or unconfigured.
+
+## Checklist for Code Review
+
+- Does every state-changing operation have documented per-user and global limits?
+- Are the units of each limit unambiguous?
+- Is the limit enforced on the server and checked before the resource is consumed?
+- Does the code fail closed if a limit is not configured?
+- Are counters updated atomically to avoid race-based bypass?

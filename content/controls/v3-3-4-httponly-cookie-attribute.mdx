@@ -24,6 +24,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that if the value of a cookie is not meant to be accessible to client-side scripts (such as a session token), the cookie must have the HttpOnly attribute set and the same value (e.g. session token) must only be transferred to the client via the Set-Cookie header field.
+A session token — or any value the page's own JavaScript does not need to read — must be hidden from scripts. Setting the `HttpOnly` attribute keeps `document.cookie` from revealing the value, so even if an XSS bug lets an attacker run script on the page, they cannot steal the session. The token must also reach the client only through the `Set-Cookie` response header, never echoed into HTML, JSON, or JavaScript variables.
+
+## Why This Matters
+
+Session hijacking is the most damaging consequence of XSS. If the session cookie is readable by script, one injection is a full account takeover. `HttpOnly` plus strict `Set-Cookie`-only delivery caps the blast radius: the attacker gets script execution but not a copy of the session identifier.
+
+## Main Security Requirement
+
+> Verify that if the value of a cookie is not meant to be accessible to client-side scripts (such as a session token), the cookie must have the HttpOnly attribute set and the same value (e.g. session token) must only be transferred to the client via the Set-Cookie header field.
+
+In practice this means the session token appears exactly once — in the `Set-Cookie` header — and never in response bodies.
+
+## Common Failure Patterns
+
+- **`HttpOnly` omitted** — the session cookie readable by `document.cookie`.
+- **Token in response body** — echoing the session id into JSON, HTML, or a `<script>` block for debugging.
+- **Token in URL** — passing the session value as a query parameter, which leaks into logs and referrers.
+- **Rotation gap** — the token is protected, but never rotated, so a stolen-value window persists.
+
+## Secure Implementation
+
+Set the attribute and keep the token out of the body:
+
+```javascript
+res.setHeader("Set-Cookie", "__Host-sid=" + token + "; Path=/; Secure; HttpOnly; SameSite=Lax");
+// no res.send({ session: token }) — never return the token to script
+```
+
+For web APIs, identify the session via the cookie instead of a body field:
+
+```javascript
+app.get("/api/profile", (req, res) => {
+  const user = resolveUser(req.cookies["__Host-sid"]); // HttpOnly cookie
+  res.json({ user: user.publicProfile }); // no token in the response
+});
+```
+
+## Key Rules
+
+- Set `HttpOnly` on session tokens and any value scripts do not need.
+- Deliver the token exclusively via `Set-Cookie`; never in HTML, JSON, or JS variables.
+- Never place session tokens in URLs or as query parameters.
+- Rotate the session identifier on privilege change and periodically.
+
+## Checklist for Code Review
+
+- Is `HttpOnly` set on the session and any script-nonessential cookies?
+- Does any response body, template, or script echo the session/token value?
+- Are tokens kept out of URLs, logs, and referrer headers?
+- Is the session identifier rotated on login and privilege changes?

@@ -25,6 +25,73 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that anti-automation controls are in place to protect against excessive calls to application functions that could lead to data exfiltration, garbage-data creation, quota exhaustion, rate-limit breaches, denial-of-service, or overuse of costly resources.
+This control requires anti-automation protection for application functions that are expensive or dangerous when called excessively. The threat is not a single valid request but thousands of them, whether scripted by bots or by replaying requests.
+
+The requirement names the harms to prevent: data exfiltration, garbage-data creation, quota exhaustion, rate-limit breaches, denial-of-service, and overuse of costly resources.
+
+## Why This Matters
+
+A single `GET /api/search` or `POST /api/sms/send` is cheap and legitimate; ten million of them are not. Attackers automate endpoints to scrape data, inflate metrics, exhaust third-party quotas (SMS, email, storage), or drive the application into a denial-of-service state.
+
+Rate limiting and anti-automation are the difference between "the endpoint works" and "the endpoint is a money pit".
+
+## Main Security Requirement
+
+> Verify that anti-automation controls are in place to protect against excessive calls to application functions that could lead to data exfiltration, garbage-data creation, quota exhaustion, rate-limit breaches, denial-of-service, or overuse of costly resources.
+
+The scope is "application functions" broadly — any behavior automation could abuse, not just login.
+
+## Common Failure Patterns
+
+- **Anonymous unlimited calls** — endpoints reachable without auth, rate, or quota.
+- **Naive counters** — counting per IP or per key but resetting trivially or allowing IP rotation.
+- **Limits after the costly work** — rate-checking only after the email/SMS/query is already sent.
+- **No cost ceiling** — third-party integrations left uncapped, so an attacker can run up the bill.
+
+## Secure Implementation
+
+Apply a layered throttle at the service edge and inside cost-bearing operations:
+
+```javascript
+import rateLimit from "express-rate-limit";
+
+const searchLimiter = rateLimit({
+  windowMs: 60_000,     // per minute...
+  limit: 30,            // ...30 searches
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.get("/api/search", searchLimiter, async (req, res) => {
+  // Guard the costly path before doing the work.
+  res.json(await search(req.query.q));
+});
+```
+
+For per-account or per-key quotas, enforce atomically:
+
+```javascript
+async function sendSms(userId, body) {
+  const budget = await db.atomicDecrement(`sms_budget:${userId}`, 1);
+  if (budget < 0) throw new Error("SMS quota exhausted");
+  await smsProvider.send(body); // only reached while budget remains
+}
+```
+
+## Key Rules
+
+- Rate-limit and quota all functions that cost money, computation, or can leak data.
+- Place the limit before the expensive work, not after.
+- Key limits per identity (user, API key, tenant) in addition to per IP.
+- Make counters atomic and windows fixed to resist reset and rotation.
+- Cap third-party usage so an attacker cannot inflate external costs.
+
+## Checklist for Code Review
+
+- Do search, send, create, and export endpoints have rate limits or quotas?
+- Is the limit enforced before the costly operation?
+- Are limits keyed per identity, not only per IP?
+- Are counters atomic and windows resistant to evasion?
+- Is there a cap on third-party (SMS, email, storage) consumption?

@@ -24,6 +24,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all HTTP responses that initiate a document rendering (such as responses with Content-Type text/html), include the Cross-Origin-Opener-Policy header field with the same-origin directive or the same-origin-allow-popups directive as required. This prevents attacks that abuse shared access to Window objects, such as tabnabbing and frame counting.
+The `Cross-Origin-Opener-Policy` (COOP) header controls whether a document's window is isolated from cross-origin windows. Setting `same-origin` (or `same-origin-allow-popups` when you must open popups) breaks the shared `Window` reference between your page and an attacker's page, so the attacker can no longer reach back into your window once navigation has occurred.
+
+## Why This Matters
+
+Tabnabbing relies on a page you opened keeping a reference to your original window so it can rewrite it into a phishing look-alike after you leave. Frame counting and related side channels similarly abuse cross-window access to probe what a user can see or fetch. COOP severs that reference, neutralizing the attack at the browser level.
+
+## Main Security Requirement
+
+> Verify that all HTTP responses that initiate a document rendering (such as responses with Content-Type text/html), include the Cross-Origin-Opener-Policy header field with the same-origin directive or the same-origin-allow-popups directive as required. This prevents attacks that abuse shared access to Window objects, such as tabnabbing and frame counting.
+
+In practice this means the header is set on every document response, choosing `same-origin-allow-popups` only when the app genuinely opens cross-origin popups.
+
+## Common Failure Patterns
+
+- **Header absent** — windows remain reachable across origins, leaving tabnabbing possible.
+- **`unsafe-none`** — explicitly requesting the old vulnerable behavior.
+- **Set only on select routes** — documents without the header keep the shared reference.
+- **Ignoring popup needs** — choosing `same-origin` and breaking legitimate cross-origin popups instead of selecting `same-origin-allow-popups`.
+
+## Secure Implementation
+
+Set COOP globally on document responses:
+
+```javascript
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  next();
+});
+```
+
+If your app opens cross-origin popups, relax only as needed:
+
+```text
+Cross-Origin-Opener-Policy: same-origin-allow-popups
+```
+
+## Key Rules
+
+- Send COOP on every document (text/html) response.
+- Default to `same-origin`; use `same-origin-allow-popups` only for real popup requirements.
+- Avoid `unsafe-none`.
+- Combine with COEP/CORP where cross-origin isolation is required.
+
+## Checklist for Code Review
+
+- Is `Cross-Origin-Opener-Policy` present on all document responses?
+- Is a `same-origin`/`same-origin-allow-popups` directive chosen deliberately?
+- Are there any `unsafe-none` values remaining?
+- Does the choice match the app's popup and isolation requirements?

@@ -24,6 +24,69 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that business logic limits are implemented per the application's documentation to avoid business logic flaws being exploited.
+This control implements the per-user and global limits documented in V2.1.3. Where V2.1.3 requires the *documentation* of limits, this control requires the code to *enforce* them.
+
+A documented rule like "a user may redeem 3 codes, and the system 10,000 total" must actually be checked before each redemption, on every path that reaches it.
+
+## Why This Matters
+
+Documented but unenforced limits provide no protection. Attackers automate the exact operations a limit was meant to constrain: mass coupon redemption, balance-transfer looping, referral-credit abuse, or ticket purchases well beyond policy.
+
+Limits are also where logic flaws live: a check placed after the side effect, or counted non-atomically, can be bypassed with parallel requests.
+
+## Main Security Requirement
+
+> Verify that business logic limits are implemented per the application's documentation to avoid business logic flaws being exploited.
+
+The implementation must match the documentation — no looser, no wider, no alternative path without the same check.
+
+## Common Failure Patterns
+
+- **Limits only documented** — the rule exists on a wiki but is not in code.
+- **Check after the action** — counting usage only *after* the resource is granted.
+- **Race conditions** — read-then-write counters that allow two requests to pass the same limit.
+- **One path enforced** — the web flow checks the limit but a "bulk" or "admin" endpoint does not.
+
+## Secure Implementation
+
+Enforce the limit atomically *before* granting the resource:
+
+```javascript
+async function redeemCoupon(userId, couponId) {
+  const withinLimit = await db.transaction(async (tx) => {
+    const row = await tx.lock(`SELECT used FROM redemptions WHERE user_id = $1`, [userId]);
+    if (row.used >= USER_LIMIT) return false;
+    await tx.run(`UPDATE redemptions SET used = used + 1 WHERE user_id = $1`, [userId]);
+    return true;
+  });
+
+  if (!withinLimit) throw new Error("Daily redemption limit reached");
+  // ... issue the coupon
+}
+```
+
+Use a database-level guard for the global ceiling:
+
+```sql
+-- Insert only while the global total stays under the documented cap.
+INSERT INTO redemptions (coupon_id, user_id)
+SELECT $1, $2
+WHERE (SELECT COUNT(*) FROM redemptions) < 10000; -- global limit
+```
+
+## Key Rules
+
+- Implement every documented limit, per-user and global, in code.
+- Check the limit before the side effect, not after.
+- Update counters atomically (transaction, lock, or single statement).
+- Apply the same limit to every entry point, including bulk and internal APIs.
+
+## Checklist for Code Review
+
+- Are all documented limits reflected in code?
+- Is the limit checked before the action is performed?
+- Are counters updated atomically to prevent race bypass?
+- Do bulk, admin, and API paths enforce the same limits?
+- Does the code fail closed when a limit is undefined?

@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that messages received by the postMessage interface are discarded if the origin of the message is not trusted, or if the syntax of the message is invalid.
+`postMessage` lets one window send data to another, and any page may deliver a message to your handler. This control requires the receiver to treat every message as untrusted until two checks pass: the sender's `origin` must be on an allowlist, and the message payload must match the expected shape and type. Anything else is discarded.
+
+## Why This Matters
+
+A `message` event's `data` and `origin` are both supplied by the sender and trivially spoofable. If the receiver acts on a message without verifying `event.origin`, any site the user has open can inject commands or data into your page — a classic cross-site scripting and privilege-escalation vector.
+
+## Main Security Requirement
+
+> Verify that messages received by the postMessage interface are discarded if the origin of the message is not trusted, or if the syntax of the message is invalid.
+
+In practice this means an explicit origin allowlist plus strict schema validation in every `message` handler.
+
+## Common Failure Patterns
+
+- **No origin check** — accepting `event.data` from any sender.
+- **Substring origin matching** — `event.origin.includes("example.com")` admitting `example.com.evil.net`.
+- **No schema validation** — trusting `data.type` or `data.value` without checking types/values.
+- **Using wildcard target** — sending with `targetOrigin: "*"` so responses go anywhere.
+
+## Secure Implementation
+
+Validate origin and shape before acting:
+
+```javascript
+const TRUSTED_ORIGINS = new Set(["https://app.example.com", "https://partner.example.com"]);
+
+window.addEventListener("message", (event) => {
+  if (!TRUSTED_ORIGINS.has(event.origin)) return; // discard unknown senders
+
+  const data = event.data;
+  if (typeof data !== "object" || data === null) return;
+  if (data.type !== "ping" || typeof data.value !== "string") return; // schema check
+
+  handlePing(data.value);
+});
+```
+
+When sending, never use a wildcard target origin:
+
+```javascript
+iframe.contentWindow.postMessage({ type: "ping" }, "https://app.example.com");
+```
+
+## Key Rules
+
+- Allowlist and verify `event.origin` in every message handler.
+- Validate the message schema (types, fields, value ranges) before use.
+- Discard anything unexpected; never act first and validate later.
+- Avoid `targetOrigin: "*"` when sending sensitive data.
+
+## Checklist for Code Review
+
+- Does every `message` handler verify the sender's origin against an allowlist?
+- Is the origin comparison exact (not substring/suffix)?
+- Is the payload schema validated before it is consumed?
+- Are `postMessage` sends using an explicit target origin rather than `*`?

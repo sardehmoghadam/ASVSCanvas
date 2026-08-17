@@ -24,6 +24,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application behaves as documented (such as warning the user or blocking access) if the browser used to access the application does not support the expected security features.
+When a user's browser cannot provide a security feature the application depends on — CSP, HSTS, secure contexts, or another required mechanism — the application must act exactly as its own documentation says it will: ordinarily warn the user or block access. This closes the loop on the documentation requirement (V3.1.1) by making the stated fallback behavior real and enforced.
+
+## Why This Matters
+
+Documented fallback behavior is worthless if the code does not implement it. If a feature is missing and the app silently continues, the user operates in a weaker security mode with no awareness and no way to protect themselves. Enforcing the documented warn/block keeps degraded sessions from becoming unmonitored, insecure sessions.
+
+## Main Security Requirement
+
+> Verify that the application behaves as documented (such as warning the user or blocking access) if the browser used to access the application does not support the expected security features.
+
+In practice this means feature detection at startup or on each relevant action, wired to the exact behavior the documentation promises.
+
+## Common Failure Patterns
+
+- **Documentation only** — the behavior is written down but never coded.
+- **Silent degradation** — the app proceeds without the feature and without informing the user.
+- **Server-side only checks** — assuming the client supports the feature without client-side detection.
+- **Mismatched fallback** — the code blocks where the doc promised a warning (or vice versa).
+
+## Secure Implementation
+
+Detect support and enforce the documented behavior:
+
+```javascript
+function assertSecurityFeatures() {
+  if (!window.isSecureContext) {
+    showBlockingPage("This application requires a secure context.");
+    return false;
+  }
+  if (!supportsNonceCSP()) {
+    showWarning("Some protections are unavailable in this browser.");
+  }
+  return true;
+}
+```
+
+Keep the documented behavior and the code in lockstep:
+
+```text
+Feature not supported  -> documented action  -> code path
+HTTPS unavailable       -> block access        -> showBlockingPage()
+CSP without nonces      -> warn user           -> showWarning()
+```
+
+## Key Rules
+
+- Implement the fallback behavior promised in the security documentation.
+- Detect missing features in the client and act immediately.
+- Warn or block per the documented policy — do not silently continue.
+- Keep the documented behavior and the implementing code in sync.
+
+## Checklist for Code Review
+
+- Does the code implement the fallback the documentation describes?
+- Is feature detection present where required security features are relied upon?
+- Are degraded sessions either warned or blocked, never continued silently?
+- Do documented behaviors match the actual warn/block decisions in code?

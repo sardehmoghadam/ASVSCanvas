@@ -25,6 +25,79 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that business logic level locking mechanisms are used to ensure that limited quantity resources (such as theater seats or delivery slots) cannot be double-booked by manipulating the application's logic.
+This control requires locking for limited-quantity resources — anything that cannot be issued more times than it exists. Theater seats, delivery slots, concert tickets, and product stock are the canonical examples.
+
+The lock must be at the business-logic level so two users cannot both claim the final seat by "manipulating the application's logic" (replaying, racing, or interleaving requests).
+
+## Why This Matters
+
+Limited resources are a race condition by definition: two requests read "1 seat left" and both proceed. Without atomic locking, the resource is double-booked, and the loser of the race later discovers the slot was never really theirs.
+
+Attackers actively exploit this — submitting parallel requests, or scripting the same action many times, to oversell or to grab a scarce resource unfairly.
+
+## Main Security Requirement
+
+> Verify that business logic level locking mechanisms are used to ensure that limited quantity resources (such as theater seats or delivery slots) cannot be double-booked by manipulating the application's logic.
+
+"Business logic level" means the lock guards the whole claim flow, not just a single counter update.
+
+## Common Failure Patterns
+
+- **Check-then-act** — reading stock, then writing a booking in a separate step.
+- **Last-write-wins** — two bookings both write the same slot, each overwriting the other.
+- **No uniqueness constraint** — the database allows two rows for the same seat + event.
+- **Lock outside the transaction** — releasing early, or holding a lock that other steps ignore.
+
+## Secure Implementation
+
+Make the claim itself atomic so the final unit cannot be issued twice:
+
+```sql
+-- Atomically claim a seat only while one is actually free.
+UPDATE seats
+SET    status = 'booked', booking_ref = $1
+WHERE  event_id = $2
+  AND  seat_id  = $3
+  AND  status   = 'available';
+-- Zero affected rows => someone else claimed it (or it does not exist).
+```
+
+Wrap the full booking flow in a transaction and lock the scarce rows:
+
+```javascript
+async function bookSeat(eventId, seatId, userId) {
+  const tx = await db.begin();
+  try {
+    await tx.run(`SELECT 1 FROM seats WHERE event_id = $1 AND seat_id = $2 FOR UPDATE`,
+      [eventId, seatId]);
+    const claimed = await tx.run(`
+      UPDATE seats SET status = 'booked', user_id = $1
+      WHERE event_id = $2 AND seat_id = $3 AND status = 'available'`,
+      [userId, eventId, seatId]);
+
+    if (claimed.changes === 0) throw new Error("Seat unavailable");
+
+    await tx.commit();
+  } catch (err) {
+    await tx.rollback();
+    throw err;
+  }
+}
+```
+
+## Key Rules
+
+- Guard scarce-resource claims with an atomic conditional write.
+- Add a database constraint that enforces uniqueness of the booked slot.
+- Hold the lock for the entire claim flow, and release cleanly on failure.
+- Treat "zero rows affected" as the signal that the resource is gone.
+
+## Checklist for Code Review
+
+- Is the final unit claimed with an atomic conditional update?
+- Is there a unique constraint preventing double-booking of the same slot?
+- Is the claim performed inside a transaction with proper locking?
+- Does the code treat a failed claim as unavailable rather than retrying blindly?
+- Are seats/slots validated against the actual resource, not a client value?

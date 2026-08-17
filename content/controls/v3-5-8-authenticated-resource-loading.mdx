@@ -25,6 +25,69 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that authenticated resources (such as images, videos, scripts, and other documents) can be loaded or embedded on behalf of the user only when intended. This can be accomplished by strict validation of the Sec-Fetch-* HTTP request header fields to ensure that the request did not originate from an inappropriate cross-origin call, or by setting a restrictive Cross-Origin-Resource-Policy HTTP response header field to instruct the browser to block returned content.
+A user's authenticated assets — profile pictures, private documents, generated files — should render only when your app (or an approved embedder) requests them, not when any site plants an `<img>` or `<script>` pointing at them. This control enforces that with `Sec-Fetch-*` request validation, or by sending `Cross-Origin-Resource-Policy` to make the browser refuse to load the content cross-origin.
+
+## Why This Matters
+
+Cookies ride along on resource loads, so an authenticated image or document is fetchable by any page the user visits unless the server says no. That enables cross-origin data leakage and, worse, attacks where an attacker's page triggers a privileged resource load on the victim's behalf.
+
+## Main Security Requirement
+
+> Verify that authenticated resources (such as images, videos, scripts, and other documents) can be loaded or embedded on behalf of the user only when intended. This can be accomplished by strict validation of the Sec-Fetch-* HTTP request header fields to ensure that the request did not originate from an inappropriate cross-origin call, or by setting a restrictive Cross-Origin-Resource-Policy HTTP response header field to instruct the browser to block returned content.
+
+In practice this means every authenticated resource endpoint either checks `Sec-Fetch-Site`/`Sec-Fetch-Dest` or returns a restrictive `Cross-Origin-Resource-Policy`.
+
+## Common Failure Patterns
+
+- **No cross-origin guard** — authenticated resources served to any origin that asks.
+- **Wildcard CORP** — `Cross-Origin-Resource-Policy: cross-origin` defeating the protection.
+- **`Sec-Fetch` checks skipped** — validating them on pages but not on resource endpoints.
+- **Credentials on public CDN** — routing authenticated content through a CDN without origin checks.
+
+## Secure Implementation
+
+Return a restrictive resource policy on authenticated resources:
+
+```javascript
+app.get("/files/:id", requireAuth, (req, res) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+  res.sendFile(fileFor(req.params.id));
+});
+```
+
+Or validate the fetch context before serving:
+
+```javascript
+function requireSameSiteFetch(req, res, next) {
+  const site = req.get("Sec-Fetch-Site");
+  const mode = req.get("Sec-Fetch-Mode");
+  if (!(site === "same-origin" || site === "same-site")) {
+    return res.status(403).end(); // block cross-origin resource loads
+  }
+  if (mode === "navigate") return res.status(403).end(); // resource load only
+  next();
+}
+```
+
+For approved cross-origin embedders, name them explicitly:
+
+```text
+Cross-Origin-Resource-Policy: cross-origin
+# plus validate Sec-Fetch-Site against an allowlist, never a blind wildcard
+```
+
+## Key Rules
+
+- Apply `Cross-Origin-Resource-Policy: same-origin` (or `same-site`) to authenticated resources.
+- Never send `cross-origin` as a blanket value.
+- Validate `Sec-Fetch-*` on resource endpoints, not only document routes.
+- Ensure CDNs/proxies preserve the CORP header end-to-end.
+
+## Checklist for Code Review
+
+- Do authenticated resource endpoints set a restrictive `Cross-Origin-Resource-Policy`?
+- Are `Sec-Fetch-Site`/`Sec-Fetch-Dest` validated on resource loads?
+- Is any `cross-origin` CORP value restricted to a named allowlist?
+- Are credentialed responses kept out of unguarded CDN/proxy paths?

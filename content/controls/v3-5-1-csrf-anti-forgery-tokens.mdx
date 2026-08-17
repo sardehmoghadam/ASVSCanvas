@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the application does not rely on the CORS preflight mechanism to prevent disallowed cross-origin requests to use sensitive functionality, these requests are validated to ensure they originate from the application itself. This may be done by using and validating anti-forgery tokens or requiring extra HTTP header fields that are not CORS-safelisted request-header fields. This is to defend against browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).
+A CSRF attack drives a victim's browser to submit a state-changing request the victim never intended. If the app does not rely on CORS preflight to block cross-origin requests, it must instead prove each sensitive request originated from its own UI — typically with a per-session, unpredictable anti-forgery token, or by requiring a custom header that a cross-site form cannot send.
+
+## Why This Matters
+
+Browsers attach session cookies automatically to a request regardless of which site triggered it. That makes any cookie-authenticated action forgeable unless the server demands proof of origin. An anti-forgery token or a non-safelisted header is that proof: it cannot be supplied by a simple cross-site form or link, so the forged request fails.
+
+## Main Security Requirement
+
+> Verify that, if the application does not rely on the CORS preflight mechanism to prevent disallowed cross-origin requests to use sensitive functionality, these requests are validated to ensure they originate from the application itself. This may be done by using and validating anti-forgery tokens or requiring extra HTTP header fields that are not CORS-safelisted request-header fields. This is to defend against browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).
+
+In practice this means every state-changing endpoint either is covered by CORS preflight or validates a token, and never trusts the cookie alone.
+
+## Common Failure Patterns
+
+- **Cookie-only trust** — accepting the session cookie as proof without a token or origin check.
+- **Token not bound to session** — a fixed or predictable value that an attacker can forge.
+- **GET for state changes** — actions that fire on link/image loads, bypassing token flows.
+- **Token checked inconsistently** — validated on some endpoints, skipped on others.
+
+## Secure Implementation
+
+Bind the token to the session and validate it per request:
+
+```javascript
+function validateCsrf(req, res, next) {
+  const expected = req.session.csrfToken;
+  const provided = req.get("X-CSRF-Token");
+  if (!provided || !timingSafeEqual(expected, provided)) {
+    return res.status(403).end();
+  }
+  next();
+}
+
+app.post("/transfer", validateCsrf, handleTransfer);
+```
+
+Alternative: accept only a custom, non-safelisted header (no token needed):
+
+```javascript
+app.post("/api/transfer", (req, res) => {
+  if (req.get("X-Requested-With") !== "AppFrontend") {
+    return res.status(403).end(); // cross-site forms cannot set this header
+  }
+  handleTransfer(req, res);
+});
+```
+
+## Key Rules
+
+- Protect every state-changing route with a token or a non-CORS-safelisted header check.
+- Generate a fresh, unpredictable token bound to the authenticated session.
+- Compare tokens with a constant-time equality check.
+- Never allow state changes via safe methods (GET/HEAD/OPTIONS).
+
+## Checklist for Code Review
+
+- Does each sensitive endpoint validate a token or require a non-safelisted header?
+- Is the token unpredictable and tied to the session/user?
+- Is the comparison timing-safe?
+- Are any state changes reachable via GET/HEAD/OPTIONS?
+- Is the protection applied uniformly, not just on "important" forms?

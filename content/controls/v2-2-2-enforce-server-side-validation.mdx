@@ -24,6 +24,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application is designed to enforce input validation at a trusted service layer. While client-side validation improves usability and should be encouraged, it must not be relied upon as a security control.
+This control requires input validation to run at a trusted service layer, not in the browser. The client may still validate to improve usability, but the server (or an equally trusted API layer) is the only place validation can actually protect the application.
+
+## Why This Matters
+
+Client-side validation runs on a machine the attacker fully controls. Any `required`, `minlength`, `pattern`, or JavaScript check can be removed, replayed, or bypassed with a direct request to the API. If the server trusts the client to have done the work, the validation effectively does not exist.
+
+The browser is an untrusted boundary. The service layer is the real security boundary.
+
+## Main Security Requirement
+
+> Verify that the application is designed to enforce input validation at a trusted service layer. While client-side validation improves usability and should be encouraged, it must not be relied upon as a security control.
+
+The requirement explicitly blesses client-side validation as a *usability* feature while forbidding it as a *security* control.
+
+## Common Failure Patterns
+
+- **Client-only checks** — a `<form>` with `required` and `pattern` and no server-side counterpart.
+- **Trusting hidden fields** — trusting a client-supplied `price`, `role`, or `isAdmin` value.
+- **Server reuses client logic** — copy-pasting the same loosened rules server-side "for parity".
+- **Skipping non-browser clients** — validating only requests from the web UI and not the mobile app or API.
+
+## Secure Implementation
+
+Keep a friendly check in the client, then re-validate entirely on the server:
+
+```jsx
+// Browser: helpful, but not security.
+<input required minLength={6} maxLength={40} type="email" />
+```
+
+```javascript
+// Server: the real enforcement.
+app.post("/signup", (req, res) => {
+  const email = String(req.body.email ?? "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) {
+    return res.status(400).json({ error: "invalid email" });
+  }
+  // ... persist
+});
+```
+
+## Key Rules
+
+- Duplicate every client-side check at a trusted service layer.
+- Treat the browser (and any JSON payload it sends) as attacker-controlled.
+- Never trust client-supplied identity, price, role, or permission fields.
+- Validate at the API boundary so *all* clients (web, mobile, integrations) are covered.
+
+## Checklist for Code Review
+
+- Does the server validate every field the client validates?
+- Are hidden fields and derived values recomputed on the server?
+- Are API and mobile clients subject to the same server-side checks?
+- Is there any path that depends on the client having validated first?

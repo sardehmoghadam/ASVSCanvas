@@ -24,6 +24,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that cookies have the Secure attribute set, and if the __Host- prefix is not used for the cookie name, the __Secure- prefix must be used for the cookie name.
+Cookies that carry sensitive state — session tokens, preferences, anti-CSRF values — must only travel over encrypted connections. The `Secure` attribute tells the browser to send the cookie exclusively over HTTPS. On top of that, the cookie *name* must advertise that guarantee with a prefix: `__Host-` for host-only cookies, or `__Secure-` when the cookie is not host-scoped.
+
+## Why This Matters
+
+A cookie without `Secure` is sent over plain HTTP, where a network attacker can steal it and hijack the session. The modern prefix scheme (`__Host-` / `__Secure-`) makes the browser itself reject a cookie whose attributes contradict the name, so a misplaced cookie cannot silently downgrade security. This turns cookie hygiene from a convention into an enforceable browser rule.
+
+## Main Security Requirement
+
+> Verify that cookies have the Secure attribute set, and if the `__Host-` prefix is not used for the cookie name, the `__Secure-` prefix must be used for the cookie name.
+
+In practice this means every session-bearing cookie is both `Secure` and named with the appropriate prefix unless it is deliberately host-shared.
+
+## Common Failure Patterns
+
+- **Missing `Secure`** — cookies set without the attribute, sent in cleartext on HTTP.
+- **Default infrastructure** — the framework sets cookies, but `Secure` is not enabled in production config.
+- **Wrong prefix** — using `__Host-` on a cookie that also sets `Domain`, which browsers reject outright.
+- **Prefix-free sensitive cookies** — secure sessions that rely on neither prefix, so misconfiguration is undetectable.
+
+## Secure Implementation
+
+Set the attribute and the prefix explicitly when creating the cookie:
+
+```javascript
+// Host-only session cookie.
+res.setHeader("Set-Cookie", "__Host-sid=" + token + "; Path=/; Secure; HttpOnly; SameSite=Lax");
+
+// Cookie that must be shared with subdomains.
+res.setHeader("Set-Cookie", "__Secure-pref=" + value + "; Domain=example.com; Path=/; Secure; HttpOnly; SameSite=Lax");
+```
+
+In a framework, set secure defaults in one place:
+
+```javascript
+// Express with helmet + cookie settings
+app.use(helmet());
+res.cookie("__Host-sid", token, {
+  secure: true,
+  httpOnly: true,
+  sameSite: "lax",
+  path: "/",
+});
+```
+
+## Key Rules
+
+- Set `Secure` on every non-trivial cookie at creation time.
+- Name host-only cookies `__Host-`; use `__Secure-` only where a broader scope is intended.
+- Never set the `Domain` attribute on a `__Host-` cookie (browsers reject it).
+- Enable cookies over HTTPS only; do not rely on insecure fallback endpoints.
+
+## Checklist for Code Review
+
+- Is `Secure` set on all session and sensitive cookies?
+- Do cookie names use `__Host-` / `__Secure-` appropriately?
+- Are any `__Host-` cookies incorrectly assigning a `Domain` attribute?
+- Does the application listen on plain HTTP anywhere that could receive `/ deliver cookies?
+- Is the `Secure` flag set by shared middleware rather than per-handler ad hoc?

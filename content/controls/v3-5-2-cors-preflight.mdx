@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the application relies on the CORS preflight mechanism to prevent disallowed cross-origin use of sensitive functionality, it is not possible to call the functionality with a request which does not trigger a CORS-preflight request. This may require checking the values of the Origin and Content-Type request header fields or using an extra header field that is not a CORS-safelisted header-field.
+Some applications defend against cross-origin misuse by relying on the browser's CORS preflight: a cross-site caller must first get permission via an `OPTIONS` request before a "non-simple" request is sent. This control requires that the defense cannot be bypassed — every sensitive endpoint must demand a request that forces a CORS preflight, so an attacker's cross-origin call is blocked before it runs.
+
+## Why This Matters
+
+Preflight is only triggered for "non-simple" requests — ones outside the CORS-safelisted method/header/content-type envelope. If a sensitive endpoint accepts an ordinary `GET` or `POST` with a simple content type and no custom headers, a cross-origin attacker can hit it with no preflight at all, defeating the scheme. Ensuring every sensitive route requires a non-simple request keeps the preflight guard meaningful.
+
+## Main Security Requirement
+
+> Verify that, if the application relies on the CORS preflight mechanism to prevent disallowed cross-origin use of sensitive functionality, it is not possible to call the functionality with a request which does not trigger a CORS-preflight request. This may require checking the values of the Origin and Content-Type request header fields or using an extra header field that is not a CORS-safelisted header-field.
+
+In practice this means enforcing a non-simple header or content type (and rejecting absent/invalid `Origin`) on every sensitive route.
+
+## Common Failure Patterns
+
+- **Simple-request acceptance** — sensitive routes reachable via `GET` or form-encoded `POST`, which never preflight.
+- **Header not actually required** — an "optional" custom header that the attacker can simply omit.
+- **Wrong content type check** — accepting `text/plain` or form types that are CORS-safelisted.
+- **Ignoring `Origin`** — processing cross-origin requests regardless of the browser's stated origin.
+
+## Secure Implementation
+
+Require a non-safelisted header on every sensitive endpoint:
+
+```javascript
+app.post("/api/transfer", (req, res) => {
+  if (req.get("X-Custom-Header") !== "present") {
+    return res.status(403).end(); // enforces a non-simple, preflighted request
+  }
+  handleTransfer(req, res);
+});
+```
+
+Or require a non-safelisted content type and reject unexpected origins:
+
+```javascript
+function requirePreflight(req, res, next) {
+  const origin = req.get("Origin");
+  const contentType = req.get("Content-Type") || "";
+  const allowed = origin === "https://app.example.com" && contentType === "application/json";
+  if (!allowed) return res.status(403).end();
+  next();
+}
+```
+
+## Key Rules
+
+- Verify sensitive routes cannot be reached by simple requests.
+- Require a non-safelisted header or content type that forces preflight.
+- Validate `Origin` explicitly; do not ignore it.
+- Ensure the browser sends the preflight for the exact methods in use.
+
+## Checklist for Code Review
+
+- Can any sensitive route be triggered by a simple (non-preflighted) request?
+- Is the preflight-forcing header genuinely required, not optional?
+- Are `Origin` and `Content-Type` validated on sensitive routes?
+- Do CORS server settings actually deny cross-origin access by default?

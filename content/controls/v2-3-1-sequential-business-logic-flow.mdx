@@ -24,6 +24,77 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application will only process business logic flows for the same user in the expected sequential step order and without skipping steps.
+This control requires multi-step business flows to be processed only in their intended order, for the same user, with no step skipped. A checkout of *cart → shipping → payment → confirm* must never let a user jump straight from *cart* to *confirm*.
+
+"Same user" means the steps belong to one session/identity; a flow started by one account cannot be completed by another without a proper handoff.
+
+## Why This Matters
+
+Flows that allow skipping steps let attackers bypass gates. Skipping payment confirmation to reach a fulfilment step, or jumping past an ID check to reach a higher-privilege screen, turns step ordering into an access-control problem.
+
+Server-side state is what makes ordering enforceable — the client's idea of "current step" is just a suggestion.
+
+## Main Security Requirement
+
+> Verify that the application will only process business logic flows for the same user in the expected sequential step order and without skipping steps.
+
+Order, ownership, and completeness are all enforced: sequential, for the same user, without skipping.
+
+## Common Failure Patterns
+
+- **Trusting the client step** — the browser reports `step=3` and the server believes it.
+- **Stateless steps** — each step validates in isolation, so the order can be replayed arbitrarily.
+- **Reusable tokens** — a step-completion token that can be submitted for any later step.
+- **Missing ownership check** — a flow finished by a different user than the one who started it.
+
+## Secure Implementation
+
+Hold flow state on the server and require the expected *previous* step before advancing:
+
+```javascript
+const FLOW = ["cart", "shipping", "payment", "confirm"];
+
+function advance(userId, currentStep, requestedStep) {
+  const idx = FLOW.indexOf(requestedStep);
+  const currentIdx = FLOW.indexOf(currentStep);
+  // Reject skips, reorderings, and unknown steps.
+  if (idx < 0 || idx > currentIdx + 1) {
+    throw new Error("Invalid step transition");
+  }
+  // Each step belongs to the user who reached it.
+  if (!flowBelongsTo(userId)) {
+    throw new Error("Flow ownership mismatch");
+  }
+  transitionTo(userId, FLOW[idx]);
+}
+```
+
+Persist the current step server-side so the client cannot fast-forward:
+
+```python
+@app.post("/checkout/step")
+def checkout_step(user_id, requested_step):
+    flow = get_flow(user_id)
+    allowed = next_steps(flow.current)          # from server state
+    if requested_step not in allowed:
+        abort(400, "Step out of sequence")
+    flow.advance(requested_step)
+    commit(flow)
+```
+
+## Key Rules
+
+- Keep the authoritative current step in server-side state.
+- Allow only the defined next step (no skips, no reordering, no repeats).
+- Bind every step to the identity that started the flow.
+- Validate on the server when transitioning, never when rendering.
+
+## Checklist for Code Review
+
+- Is the current step stored server-side and bound to the user?
+- Does the code reject any step other than the permitted next one?
+- Are step-completion tokens single-use and non-forgeable?
+- Can a flow started by one user be completed by another?
+- Are bypass attempts logged or rate-limited?

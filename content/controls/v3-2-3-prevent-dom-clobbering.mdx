@@ -25,6 +25,67 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application avoids DOM clobbering when using client-side JavaScript by employing explicit variable declarations, performing strict type checking, avoiding storing global variables on the document object, and implementing namespace isolation.
+DOM clobbering tricks the page into resolving a JavaScript identifier from an attacker-controlled HTML element (often via `id` or `name`) instead of the intended variable or document property. This control requires preventing that ambiguity: declare variables explicitly, type-check values, keep your own state out of the global/document namespace, and isolate your code from DOM-named globals.
+
+## Why This Matters
+
+A single attacker-influenced element such as `<form id="config">` can overwrite the global `config` your script expects, leading to logic bypass, injection, or access to unintended DOM nodes. The fix is cheap and structural, but if the code silently trusts globals, the flaw is hard to spot in review.
+
+## Main Security Requirement
+
+> Verify that the application avoids DOM clobbering when using client-side JavaScript by employing explicit variable declarations, performing strict type checking, avoiding storing global variables on the document object, and implementing namespace isolation.
+
+In practice this means: no implicit globals, defensive type validation on anything read from `window`/`document`, and scoping app code inside modules or a dedicated namespace.
+
+## Common Failure Patterns
+
+- **Implicit globals** — assigning to an undeclared name that an attacker can shadow with an element `id`.
+- **Trusting `document.forms.x` / named elements** — reading element properties without checking they are the expected type.
+- **No type checks** — calling `.value` or `.submit()` on an object the DOM replaced with an unrelated element.
+- **Polluting `window`/`document`** — storing configuration or state on the global object where elements can collide.
+
+## Secure Implementation
+
+Declare everything explicitly and check types before use:
+
+```javascript
+"use strict";
+
+const config = Object.freeze(getConfig()); // local, not window.config
+
+function getConfig() {
+  const raw = window.DEFAULT_CONFIG;
+  if (typeof raw !== "object" || raw === null) {
+    throw new Error("Config clobbered or missing");
+  }
+  return raw;
+}
+```
+
+Isolate your app namespace and validate named-element lookups:
+
+```javascript
+const App = (function () {
+  const tokenField = document.getElementById("csrf-token");
+  if (!(tokenField instanceof HTMLInputElement)) {
+    throw new Error("Unexpected DOM node type");
+  }
+  return { token: tokenField.value };
+})();
+```
+
+## Key Rules
+
+- Always declare variables (`const`/`let`) under strict mode; never rely on implicit globals.
+- Namespace application code; do not store app state on `window` or `document`.
+- Validate the type of anything resolved from the DOM before using it.
+- Prefer `getElementById` / `querySelector` over implicit named-element globals.
+
+## Checklist for Code Review
+
+- Does strict mode prevent implicit globals, and are all variables declared?
+- Is any app state stored on `window` or `document` where an element `id`/`name` could collide?
+- Are DOM-resolved values type-checked before method or property access?
+- Does the code avoid relying on named-element `document.*` properties?

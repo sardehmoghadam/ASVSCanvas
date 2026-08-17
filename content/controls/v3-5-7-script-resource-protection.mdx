@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that data requiring authorization is not included in script resource responses, like JavaScript files, to prevent Cross-Site Script Inclusion (XSSI) attacks.
+JavaScript files are loaded with `<script>` tags, which browsers fetch cross-origin without the same-origin policy blocking *execution*. This control requires that no authorization-protected data — tokens, account details, session state — ever be embedded in a script resource response, because script contents can be read by an attacker's page through XSSI techniques.
+
+## Why This Matters
+
+Because scripts load cross-origin, attackers have historically harvested JSON-in-JavaScript and variable assignments from script files. Embedding user-specific or privileged data in a `.js` response hands it to any site that can guess the URL. The safe pattern is to keep script resources static and generic, delivering per-user data only through authenticated, CORS-protected APIs.
+
+## Main Security Requirement
+
+> Verify that data requiring authorization is not included in script resource responses, like JavaScript files, to prevent Cross-Site Script Inclusion (XSSI) attacks.
+
+In practice this means script bundles contain no secrets or per-user data; dynamic values come from authenticated JSON endpoints.
+
+## Common Failure Patterns
+
+- **Data in a global variable** — `var user = {"token": ...}` inside a script file.
+- **Per-user script endpoints** — a URL that returns a script customized with account data.
+- **Secrets in source** — API keys, tokens, or IDs baked into static JavaScript.
+- **Authorization via script** — serving "protected" pages as JavaScript that checks nothing on the server.
+
+## Secure Implementation
+
+Keep script bundles static and fetch data separately:
+
+```javascript
+// main.js — contains no secrets, only logic.
+const state = await (await fetch("/api/session", { credentials: "same-origin" })).json();
+boot(state);
+```
+
+Serve the data endpoint with authorization and anti-XSSI protections:
+
+```javascript
+app.get("/api/session", requireAuth, (req, res) => {
+  res.set("Content-Type", "application/json");
+  res.json({ userId: req.user.id }); // never in a .js file
+});
+```
+
+## Key Rules
+
+- Keep script resources free of secrets, tokens, and per-user data.
+- Deliver dynamic data via authenticated JSON APIs, not script files.
+- Never generate JavaScript containing user-specific content.
+- Protect any JSON endpoint against XSSI (prefix it, require CORS, or serve `application/json`).
+
+## Checklist for Code Review
+
+- Do any `.js` resources contain tokens, keys, or user data?
+- Are there per-user or auth-dependent script responses?
+- Is dynamic data fetched from authenticated APIs instead of embedded in scripts?
+- Are JSON endpoints guarded against script-tag inclusion (content type, no JSONP)?

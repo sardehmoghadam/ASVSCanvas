@@ -25,6 +25,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the web application uses the frame-ancestors directive of the Content-Security-Policy header field for every HTTP response to ensure that it cannot be embedded by default and that embedding of specific resources is allowed only when necessary. Note that the X-Frame-Options header field, although supported by browsers, is obsolete and may not be relied upon.
+Clickjacking works by framing your UI inside an attacker's page and tricking the victim into clicking without seeing the real target. The CSP `frame-ancestors` directive tells the browser which origins may embed the page. The requirement is a deny-by-default posture: block embedding unless a specific resource must be embedded, and use `frame-ancestors` rather than the obsolete `X-Frame-Options`.
+
+## Why This Matters
+
+`X-Frame-Options` supports only `DENY`/`SAMEORIGIN`/`ALLOW-FROM` and, critically, `ALLOW-FROM` is effectively unsupported in modern browsers — making it useless for allowlisting a partner. `frame-ancestors` supports rich, reliable allowlists and lives alongside the rest of the CSP. Relying on the legacy header leaves an allowlist gap an attacker can exploit.
+
+## Main Security Requirement
+
+> Verify that the web application uses the `frame-ancestors` directive of the Content-Security-Policy header field for every HTTP response to ensure that it cannot be embedded by default and that embedding of specific resources is allowed only when necessary. Note that the X-Frame-Options header field, although supported by browsers, is obsolete and may not be relied upon.
+
+In practice this means `frame-ancestors` on every response, defaulting to `'none'` or `'self'` and opening only named, needed origins.
+
+## Common Failure Patterns
+
+- **No frame protection** — the page is freely embeddable and clickjackable.
+- **Reliance on `X-Frame-Options`** — using the obsolete header, especially `ALLOW-FROM`, instead of CSP.
+- **Overly broad ancestors** — allowlisting `*` or an untrusted domain that re-opens embedding.
+- **Applied on a subset** — protecting the home route but leaving high-value actions unprotected.
+
+## Secure Implementation
+
+Default-deny and allow only when required:
+
+```text
+Content-Security-Policy: frame-ancestors 'none'
+```
+
+For a page a trusted partner must embed:
+
+```text
+Content-Security-Policy: frame-ancestors 'self' https://partner.example.com
+```
+
+Set it globally in middleware:
+
+```javascript
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
+  next();
+});
+```
+
+## Key Rules
+
+- Emit `frame-ancestors` on every response; default to `'none'` or `'self'`.
+- Treat `X-Frame-Options` as obsolete; do not rely on it for allowlisting.
+- Enumerate allowed frame ancestors explicitly; never use `*`.
+- Keep the CSP header centralized so new routes inherit the protection.
+
+## Checklist for Code Review
+
+- Is `frame-ancestors` present on every response, or at least every document?
+- Is the allowlist minimal and explicit (no `*`, no untrusted hosts)?
+- Is the code free of reliance on `X-Frame-Options` for allowlisting?
+- Is the directive applied centrally rather than per-route hop?

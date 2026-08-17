@@ -24,6 +24,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that HTTP requests to sensitive functionality use appropriate HTTP methods such as POST, PUT, PATCH, or DELETE, and not methods defined by the HTTP specification as safe such as HEAD, OPTIONS, or GET. Alternatively, strict validation of the Sec-Fetch-* request header fields can be used to ensure that the request did not originate from an inappropriate cross-origin call, a navigation request, or a resource load (such as an image source) where this is not expected.
+Actions that change state — transfers, deletions, purchases — must arrive via unsafe methods (`POST`, `PUT`, `PATCH`, `DELETE`), never via "safe" methods (`GET`, `HEAD`, `OPTIONS`). Safe methods can be triggered by links, images, and other passive loads, which is exactly how many forged requests are delivered. As an alternative, the server can strictly validate the `Sec-Fetch-*` headers to confirm the request came from a legitimate context.
+
+## Why This Matters
+
+If a state change is wired to a `GET`, an attacker can trigger it with an `<img src=".../delete-all">` or an emailed link — no JavaScript, no preflight, no friction. Keeping side effects on unsafe methods (and/or validating `Sec-Fetch-*`) blocks passive request forgery at its root.
+
+## Main Security Requirement
+
+> Verify that HTTP requests to sensitive functionality use appropriate HTTP methods such as POST, PUT, PATCH, or DELETE, and not methods defined by the HTTP specification as safe such as HEAD, OPTIONS, or GET. Alternatively, strict validation of the Sec-Fetch-* request header fields can be used to ensure that the request did not originate from an inappropriate cross-origin call, a navigation request, or a resource load (such as an image source) where this is not expected.
+
+In practice this means: `GET` is read-only everywhere, and `Sec-Fetch-*` checks are applied where origin/method discipline is not sufficient.
+
+## Common Failure Patterns
+
+- **State change on `GET`** — endpoints doing mutation in response to a read method.
+- **`Sec-Fetch` ignored** — failing to check `Sec-Fetch-Site`, `Sec-Fetch-Mode`, or `Sec-Fetch-Dest`.
+- **Inconsistent method usage** — a mix where some handlers mutate on `GET` "for convenience".
+- **Overly broad method accept** — routes that accept any verb, including `GET`.
+
+## Secure Implementation
+
+Restrict routes to unsafe methods and reject others:
+
+```javascript
+app.get("/accounts/:id", readAccount);           // read-only
+app.post("/accounts/:id/transfer", transferFunds); // state change via POST only
+app.route("/accounts/:id")
+  .post(updateAccount)
+  .delete(deleteAccount)
+  .all((req, res) => res.status(405).end());       // reject anything else
+```
+
+Strictly validate `Sec-Fetch-*` for cross-origin and navigation contexts:
+
+```javascript
+function validateSecFetch(req, res, next) {
+  const site = req.get("Sec-Fetch-Site");
+  const mode = req.get("Sec-Fetch-Mode");
+  if (site === "cross-site" || (site !== "same-origin" && mode === "navigate")) {
+    return res.status(403).end();
+  }
+  next();
+}
+```
+
+## Key Rules
+
+- Keep `GET`/`HEAD`/`OPTIONS` free of side effects.
+- Use `POST`/`PUT`/`PATCH`/`DELETE` for all state-changing operations.
+- Reject unexpected methods with 405 instead of ignoring them.
+- Validate `Sec-Fetch-*` when origin/method discipline is insufficient.
+
+## Checklist for Code Review
+
+- Are there any state-changing operations reachable via `GET`/`HEAD`/`OPTIONS`?
+- Do routes reject disallowed methods explicitly (405)?
+- Are `Sec-Fetch-*` headers validated for navigation and cross-origin contexts?
+- Is the choice between method discipline and `Sec-Fetch-*` validation deliberate?

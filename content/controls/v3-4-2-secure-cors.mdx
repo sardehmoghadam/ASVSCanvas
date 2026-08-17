@@ -24,6 +24,64 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header field is a fixed value by the application, or if the Origin HTTP request header field value is used, it is validated against an allowlist of trusted origins. When Access-Control-Allow-Origin: * needs to be used, verify that the response does not include any sensitive information.
+CORS grants cross-origin *readers* permission to read a response. The `Access-Control-Allow-Origin` header must not echo back every origin automatically. It should be either a single fixed, trusted origin or an origin taken from the request **after** checking it against an explicit allowlist. The wildcard `*` is only acceptable on responses that carry no sensitive data.
+
+## Why This Matters
+
+Naively reflecting the request's `Origin` into `Access-Control-Allow-Origin` lets any site in the world read the victim's data through the browser's credentials. The same flaw is how an attacker harvests private API responses that should be same-origin. Restricting the allowed origin list is the difference between "open to everyone" and "open to our frontends".
+
+## Main Security Requirement
+
+> Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header field is a fixed value by the application, or if the Origin HTTP request header field value is used, it is validated against an allowlist of trusted origins. When Access-Control-Allow-Origin: * needs to be used, verify that the response does not include any sensitive information.
+
+In practice: never trust `req.headers.origin` before comparing it to a static allowlist, and never combine wildcard with credentials.
+
+## Common Failure Patterns
+
+- **Reflected origin** — returning the request `Origin` value directly, opening the API to every site.
+- **Weak origin matching** — `endsWith("example.com")` matching `example.com.evil.net`.
+- **Wildcard with credentials** — `Access-Control-Allow-Origin: *` used together with credentialed requests.
+- **Wildcard on sensitive data** — public-read responses that still contain account or internal data.
+
+## Secure Implementation
+
+Validate against an allowlist before echoing any origin:
+
+```javascript
+const ALLOWED = new Set(["https://app.example.com", "https://admin.example.com"]);
+
+function handleCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+  // otherwise: omit the header entirely — no cross-origin read allowed.
+}
+```
+
+Use `*` only for genuinely public, non-sensitive endpoints:
+
+```text
+# Public, unauthenticated asset endpoint.
+Access-Control-Allow-Origin: *
+```
+
+## Key Rules
+
+- Reflect an origin only after an exact allowlist match.
+- Use a static, fixed origin where only one frontend is permitted.
+- Never send credentials with a wildcard origin.
+- Add `Vary: Origin` when the header depends on the request origin (for caches).
+- Treat `*` as valid only for responses with no sensitive information.
+
+## Checklist for Code Review
+
+- Is the origin validated against an exact allowlist before it is reflected?
+- Is any endpoint setting `Access-Control-Allow-Origin: *` on sensitive data?
+- Are wildcards ever combined with credentialed requests?
+- Is matching exact (no suffix/prefix tricks that admit attacker-controlled origins)?
+- Is `Vary: Origin` present for origin-dependent responses to avoid cache poisoning?

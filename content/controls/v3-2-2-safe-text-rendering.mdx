@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that content intended to be displayed as text, rather than rendered as HTML, is handled using safe rendering functions (such as createTextNode or textContent) to prevent unintended execution of content such as HTML or JavaScript.
+When an application places data into the DOM, it must decide whether that data is text or HTML. Data that is meant to be read as text must go through text-only sinks — `textContent`, `createTextNode()`, or a framework's auto-escaped interpolation — so that characters like `<`, `>`, and `&` are displayed literally instead of being parsed as markup.
+
+## Why This Matters
+
+Using an HTML sink (`innerHTML`, `insertAdjacentHTML`, `document.write`) for text is the canonical route to DOM-based XSS. If any user-influenced value reaches such a sink, an attacker injects `<img onerror=...>` or `<script>`. Choosing a text-only API removes the injection point entirely, making the vulnerability structurally impossible.
+
+## Main Security Requirement
+
+> Verify that content intended to be displayed as text, rather than rendered as HTML, is handled using safe rendering functions (such as createTextNode or textContent) to prevent unintended execution of content such as HTML or JavaScript.
+
+In practice this means: treat `innerHTML` and friends as forbidden for untrusted data, and default every interpolation to text.
+
+## Common Failure Patterns
+
+- **`innerHTML` for user data** — building markup from a name, comment, or file content.
+- **Mixing text and markup** — concatenating a snippet string that "sometimes" contains HTML.
+- **Wrong escape layer** — entity-encoding on the server but then re-inserting as HTML.
+- **Trusting `value` vs `textContent`** — relying on a setter that does not neutralize markup.
+
+## Secure Implementation
+
+Prefer the text-only DOM APIs:
+
+```javascript
+// Safe: assigns a text node, never parses markup.
+const el = document.getElementById("comment");
+el.textContent = userProvidedComment;
+```
+
+In React, interpolating a string is safe by default; only use the escape hatch deliberately:
+
+```jsx
+function Comment({ text }) {
+  return <p>{text}</p>; // auto-escaped
+}
+```
+
+If you must render HTML, sanitize with a purpose-built library first:
+
+```javascript
+import DOMPurify from "dompurify";
+element.innerHTML = DOMPurify.sanitize(userHtml, { USE_PROFILES: { html: true } });
+```
+
+## Key Rules
+
+- Default to `textContent` / `createTextNode` for all content that is text.
+- Treat `innerHTML`, `insertAdjacentHTML`, and `document.write` as dangerous sinks.
+- Rely on framework auto-escaping rather than hand-rolled escaping.
+- If raw HTML is unavoidable, sanitize with an allowlist before insertion.
+
+## Checklist for Code Review
+
+- Is every untrusted value rendered through a text-only sink?
+- Are there any `innerHTML` or `document.write` calls taking dynamic data?
+- Is the framework's auto-escaping left enabled (no dangerous raw-HTML options)?
+- Is any raw-HTML path preceded by allowlist sanitization?

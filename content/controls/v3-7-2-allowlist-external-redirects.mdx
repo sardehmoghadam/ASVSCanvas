@@ -24,6 +24,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application will only automatically redirect the user to a different hostname or domain (which is not controlled by the application) where the destination appears on an allowlist.
+When the application redirects a user to an external host it does not control, the target must come from an explicit allowlist of trusted destinations. Any redirect to a domain outside the application — whether from a user-supplied "next" URL, a link shortener, or a legacy endpoint — must be checked against that list before the redirect is issued.
+
+## Why This Matters
+
+Unvalidated redirects are the backbone of phishing and open-redirect attacks: a legitimate-looking URL from your domain bounces the victim to an attacker-controlled site that harvests credentials or tokens. An allowlist means the only places the app will actually send users are the ones you deliberately approved.
+
+## Main Security Requirement
+
+> Verify that the application will only automatically redirect the user to a different hostname or domain (which is not controlled by the application) where the destination appears on an allowlist.
+
+In practice this means a centralized redirect function that resolves the target and rejects anything whose host is not allowlisted.
+
+## Common Failure Patterns
+
+- **Arbitrary `next`/`url` parameters** — reflecting a user-provided destination straight into a `Location` header.
+- **No host extraction** — comparing raw strings and missing `//evil.com` tricks or encoded URLs.
+- **Baseless allowlists** — a wildcard or overly broad entry that admits attacker-controlled subdomains.
+- **Relative vs absolute confusion** — treating a protocol-relative or absolute URL as "internal".
+
+## Secure Implementation
+
+Centralize redirects and validate the destination host:
+
+```javascript
+const EXTERNAL_ALLOWLIST = new Set(["partner.example", "docs.example"]);
+
+function safeRedirect(target, fallback = "/") {
+  let url;
+  try {
+    url = new URL(target, "https://app.example");
+  } catch {
+    return fallback; // invalid URL
+  }
+  if (url.hostname === "app.example" || EXTERNAL_ALLOWLIST.has(url.hostname)) {
+    return url.href;
+  }
+  return fallback; // not allowlisted
+}
+```
+
+Use it for every outbound hop:
+
+```javascript
+app.get("/out", (req, res) => {
+  res.redirect(safeRedirect(req.query.to));
+});
+```
+
+## Key Rules
+
+- Route every external redirect through a single allowlist check.
+- Parse the URL and compare `hostname` exactly — never substring matching.
+- Allowlist exact hosts only; avoid wildcards unless scoped and justified.
+- Fall back to a safe default when the destination is not allowed.
+
+## Checklist for Code Review
+
+- Are all external redirects funneled through one allowlist-validating path?
+- Is the hostname compared exactly against the allowlist?
+- Are any user-controlled `next`/`url`/`redirect` values used directly in redirects?
+- Is a safe fallback used when a destination is rejected?

@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that application documentation states the expected security features that browsers using the application must support (such as HTTPS, HTTP Strict Transport Security (HSTS), Content Security Policy (CSP), and other relevant HTTP security mechanisms). It must also define how the application must behave when some of these features are not available (such as warning the user or blocking access).
+The application must have documented, unambiguous statements of which browser security features it depends on — HTTPS, HSTS, CSP, and other HTTP-level protections — and, just as importantly, what the application must do when a browser cannot provide them. This is as much a documentation control as an implementation one: the expected feature set and its fallback behavior must be written down so implementers and verifiers share the same baseline.
+
+## Why This Matters
+
+Browser security features are the application's outer defense layer. If a relied-upon feature goes missing silently — a browser that ignores CSP, a proxy that strips HSTS, TLS terminated early — the application runs in a weaker mode with no warning. Documenting both the requirements and the degradation behavior forces an explicit decision (warn or block) instead of leaving the gap undefined and unreviewable.
+
+## Main Security Requirement
+
+> Verify that application documentation states the expected security features that browsers using the application must support (such as HTTPS, HTTP Strict Transport Security (HSTS), Content Security Policy (CSP), and other relevant HTTP security mechanisms). It must also define how the application must behave when some of these features are not available (such as warning the user or blocking access).
+
+In practice this means a named, versioned document that lists each relied-upon feature alongside the exact degradation action, and code that actually enforces that action rather than only describing it.
+
+## Common Failure Patterns
+
+- **Undocumented assumptions** — relying on HSTS or CSP without ever stating it, so a misconfiguration goes unnoticed.
+- **No fallback defined** — the "what happens when unsupported" branch is left to each developer's guess.
+- **Documentation drift** — the doc describes features the app stopped using or omits newly added headers.
+- **Support matrix vs. security matrix** — recording which browsers are "supported" without recording which security features are required.
+
+## Secure Implementation
+
+A minimal feature matrix keeps the requirement testable:
+
+```text
+Feature | Required | Behavior when unavailable
+HTTPS   | yes      | block access (redirect + error page)
+HSTS    | yes      | warn user; do not persist session
+CSP     | yes      | warn user; disable dynamic features
+```
+
+Keep this matrix alongside the code and turn the degradation behavior into code paths with tests, not prose alone:
+
+```javascript
+if (!window.isSecureContext) {
+  showBlockingPage("This application requires HTTPS.");
+  return;
+}
+```
+
+## Key Rules
+
+- State each relied-upon security feature explicitly and version the document.
+- Pair every feature with a defined warn/block behavior when it is unavailable.
+- Keep the feature matrix in sync with the headers the app actually sends.
+- Distinguish "browser support" from "required security guarantee".
+- Enforce fallback paths in code and tests, not only in documentation.
+
+## Checklist for Code Review
+
+- Is there a document listing each required browser security feature?
+- Does every listed feature have a defined warn/block behavior when unavailable?
+- Is the feature matrix consistent with the actual response headers?
+- Does the doc distinguish browser support from required security guarantees?
+- Are fallback paths implemented and tested, rather than only described?

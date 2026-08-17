@@ -24,6 +24,68 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that input is validated to enforce business or functional expectations for that input. This should either use positive validation against an allow list of values, patterns, and ranges, or be based on comparing the input to an expected structure and logical limits according to predefined rules. For L1, this can focus on input which is used to make specific business or security decisions. For L2 and up, this should apply to all input.
+This control requires *positive* validation: accepting input only when it matches an allow list of values, patterns, and ranges, or when it matches a known expected structure and logical limits. It rejects everything that does not look like what the application actually expects.
+
+For level 1, the focus is inputs used to make business or security decisions. For level 2 and above, the same discipline applies to *all* input.
+
+## Why This Matters
+
+Deny-list (blocklist) validation tries to spot bad input, but attackers constantly find new ways to be bad. Allow-list validation flips the model: the application says exactly what good looks like and rejects the rest.
+
+This matters most where input drives security decisions — a role name, a flag, a price, an access level. Accepting "anything close" there can directly grant privileges or change business outcomes.
+
+## Main Security Requirement
+
+> Verify that input is validated to enforce business or functional expectations for that input. This should either use positive validation against an allow list of values, patterns, and ranges, or be based on comparing the input to an expected structure and logical limits according to predefined rules. For L1, this can focus on input which is used to make specific business or security decisions. For L2 and up, this should apply to all input.
+
+The two sanctioned approaches are an allow list, or matching a predefined structure and logical limits. "Looks mostly right" is not an option.
+
+## Common Failure Patterns
+
+- **Blocklist thinking** — rejecting a few known-bad strings instead of defining the allowed set.
+- **Loose patterns** — `^.{1,255}$` or `.*` that accept nearly anything.
+- **Lowering the bar for "edge cases"** — special-casing values that bypass the allow list.
+- **Validating only the happy path** — checking format but not range or logical limits.
+
+## Secure Implementation
+
+Prefer an allow list whenever the set of valid values is finite and known:
+
+```javascript
+const VALID_ROLES = new Set(["reader", "editor", "admin-viewer"]);
+
+function parseRole(input) {
+  return VALID_ROLES.has(input) ? input : null; // reject everything else
+}
+```
+
+When the value is open-ended, constrain its structure *and* its logical limits:
+
+```python
+import re
+
+def parse_quantity(raw: str) -> int | None:
+    if not re.fullmatch(r"\d{1,6}", raw):  # expected structure: digits only
+        return None
+    qty = int(raw)
+    if not (1 <= qty <= 1000):            # logical limits
+        return None
+    return qty
+```
+
+## Key Rules
+
+- Define an allow list, a strict pattern, and explicit ranges — never "reject bad things".
+- Anchor patterns with full-match semantics (`fullmatch`, `^...$`) so partial matches do not pass.
+- Validate inputs that drive security or business decisions at every level, and all input at L2+.
+- Return a generic rejection; do not leak why a specific value was refused.
+
+## Checklist for Code Review
+
+- Is validation positive (allow list / expected structure) rather than negative?
+- Are regexes anchored so the *entire* value must match?
+- Are ranges and logical limits enforced, not just types?
+- Are business- or security-decision inputs validated even at L1?
+- Does rejection leak no sensitive detail about the expected value?

@@ -24,6 +24,76 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application ensures that combinations of related data items are reasonable according to the pre-defined rules.
+This control implements the cross-field checks documented in V2.1.2. While V2.1.2 requires the *documentation* of combination rules, this control requires the application to *enforce* them.
+
+"Related data items" are fields that must make sense together — a ZIP code with a suburb, a country with a currency, a start date with an end date, a quantity with a unit of measure.
+
+## Why This Matters
+
+An inconsistency between related fields is often the crack attackers use. A payment request that pairs a currency-numeric code with the wrong exponent can mis-record an amount; an address with a mismatched suburb can bypass regional restrictions; an "end before start" date range can break accounting or access windows.
+
+Validating each field independently gives a false sense of safety, because the *relationship* was never checked.
+
+## Main Security Requirement
+
+> Verify that the application ensures that combinations of related data items are reasonable according to the pre-defined rules.
+
+The key phrase is "pre-defined rules" — the application enforces concrete, reviewable invariants, not ad-hoc guesses.
+
+## Common Failure Patterns
+
+- **Siloed validation** — each field is valid alone but no code ever compares them.
+- **Trusting one field's authority** — using the user-supplied country to choose the postal format without cross-checking.
+- **Race between checks** — validating the combination, then relying on that fact after the data can change.
+- **Ignoring derived values** — computing a total client-side and storing it without recomputing.
+
+## Secure Implementation
+
+Enforce the invariant at the service layer as an atomic check before persisting:
+
+```python
+import re
+
+def validate_order(shipping_country: str, shipping_postcode: str) -> None:
+    # Pre-defined rule: postcode must match the country's format.
+    formats = {
+        "US": r"^\d{5}(-\d{4})?$",
+        "CA": r"^[A-Z]\d[A-Z] \d[A-Z]\d$",
+        "GB": r"^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$",
+    }
+    pattern = formats.get(shipping_country)
+    if pattern is None:
+        raise ValueError(f"Unsupported country: {shipping_country}")
+    if not re.fullmatch(pattern, shipping_postcode):
+        raise ValueError("Postcode does not match shipping country")
+```
+
+For numeric relations, recompute rather than trust the client:
+
+```javascript
+function validateLineItems(items) {
+  // Pre-defined rule: line total = quantity * unit_price, recomputed.
+  for (const item of items) {
+    const expected = item.quantity * item.unit_price;
+    if (Math.abs(expected - item.line_total) > 0.01) {
+      throw new Error(`Line total mismatch for ${item.sku}`);
+    }
+  }
+}
+```
+
+## Key Rules
+
+- Centralize the invariants from V2.1.2 and enforce them at the service layer.
+- Recompute derived values (totals, checksums) rather than trusting client values.
+- Normalize before comparing to avoid format-based false mismatches.
+- Validate the combination atomically, just before the data is used or stored.
+
+## Checklist for Code Review
+
+- Is every documented cross-field rule actually enforced in code?
+- Are totals and derived values recomputed server-side?
+- Is normalization applied to both sides of each comparison?
+- Are combination checks performed just before the data is persisted or used?

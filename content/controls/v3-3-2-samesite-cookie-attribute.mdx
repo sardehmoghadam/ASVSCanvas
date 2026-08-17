@@ -24,6 +24,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that each cookie SameSite attribute value is set according to the purpose of the cookie, to limit exposure to user interface redress attacks and browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).
+Every cookie must declare a `SameSite` value that matches its job. `SameSite=Strict` or `SameSite=Lax` stops the browser from attaching the cookie to requests triggered by other sites, which blunts both CSRF and UI-redress (clickjacking) attacks. The value should be chosen deliberately per cookie: session cookies often `Lax`, state-changing sensitive cookies `Strict`, and cookies that must travel cross-site — meaning `SameSite=None` — require `Secure`.
+
+## Why This Matters
+
+Without a proper `SameSite` value, the browser happily sends your session cookie with a forged cross-site request, letting an attacker perform actions as the victim. A cookie labeled `None` still flows cross-site, so its use must be exceptional and paired with `Secure` plus explicit origin validation. Choosing the right value closes the CSRF hole at the browser layer.
+
+## Main Security Requirement
+
+> Verify that each cookie SameSite attribute value is set according to the purpose of the cookie, to limit exposure to user interface redress attacks and browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).
+
+In practice this means every `Set-Cookie` carries an explicit `SameSite` that matches intent — no silent defaults.
+
+## Common Failure Patterns
+
+- **Omitted `SameSite`** — legacy cookies falling back to lax/default behavior the team never reviewed.
+- **`SameSite=None` without `Secure`** — modern browsers reject the cookie, silently breaking (or weakening) the app.
+- **Wrong level for the risk** — a security-critical action cookie set to `Lax` when it needs `Strict`.
+- **Blanket `None`** — every cookie marked `None` "to make third-party stuff work", disabling the protection everywhere.
+
+## Secure Implementation
+
+Match each cookie to its purpose:
+
+```text
+Set-Cookie: __Host-session=<token>; Path=/; Secure; HttpOnly; SameSite=Lax
+Set-Cookie: __Host-action=1; Path=/; Secure; HttpOnly; SameSite=Strict
+Set-Cookie: locale=en; Path=/; Secure; SameSite=Lax
+```
+
+Only embeddable, cross-site integrations need `None`, and always with `Secure`:
+
+```text
+Set-Cookie: partner=abc; Secure; SameSite=None; Path=/
+```
+
+## Key Rules
+
+- Set `SameSite` explicitly on every cookie; never rely on a default.
+- Default new cookies to `Lax`; escalate to `Strict` for high-risk actions.
+- Use `SameSite=None` only where cross-site delivery is truly required, and pair it with `Secure`.
+- Document why each `None` cookie exists and how CSRF is otherwise prevented.
+
+## Checklist for Code Review
+
+- Does every cookie set an explicit, purpose-appropriate `SameSite` value?
+- Are any `SameSite=None` cookies missing `Secure`, causing rejection?
+- Are high-risk state changes covered by `Strict` or an anti-CSRF token?
+- Is there a justified list of cookies that intentionally use `None`?

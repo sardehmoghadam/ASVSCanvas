@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all HTTP responses contain an X-Content-Type-Options: nosniff header field. This instructs browsers not to use content sniffing and MIME type guessing for the given response, and to require the response Content-Type header field value to match the destination resource. For example, the response to a request for a style is only accepted if the response Content-Type is text/css. This also enables the use of the Cross-Origin Read Blocking (CORB) functionality by the browser.
+Browsers will sometimes "sniff" a response and guess its type when the declared `Content-Type` looks wrong. `X-Content-Type-Options: nosniff` disables that guessing, forcing the browser to honor the declared type. This is what lets a stylesheet response be accepted as a stylesheet only if it is actually sent as `text/css`, and it enables the browser's Cross-Origin Read Blocking defenses.
+
+## Why This Matters
+
+Content sniffing is how a file that is really HTML gets rendered as HTML even though the server called it something else — the mechanism behind many upload-XSS and content-confusion attacks. `nosniff` removes the browser's guesswork, so an attacker cannot smuggle executable content through a mismatched content type.
+
+## Main Security Requirement
+
+> Verify that all HTTP responses contain an X-Content-Type-Options: nosniff header field. This instructs browsers not to use content sniffing and MIME type guessing for the given response, and to require the response Content-Type header field value to match the destination resource. For example, the response to a request for a style is only accepted if the response Content-Type is text/css. This also enables the use of the Cross-Origin Read Blocking (CORB) functionality by the browser.
+
+In practice this is a single, static, always-on header applied by shared middleware or web-server config.
+
+## Common Failure Patterns
+
+- **Header absent** — default browsing continues to sniff responses.
+- **Only on HTML** — the header is missed on static files, uploads, and API error pages.
+- **Incorrect `Content-Type`** — pairing `nosniff` with a wrong type now breaks the resource (a signal the type was being guessed before).
+- **Proxy stripping** — an intermediary removes the token header.
+
+## Secure Implementation
+
+Apply it globally so no response escapes coverage:
+
+```javascript
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  next();
+});
+```
+
+And at the web server:
+
+```nginx
+add_header X-Content-Type-Options nosniff always;
+```
+
+## Key Rules
+
+- Send `X-Content-Type-Options: nosniff` on every response.
+- Always set an accurate `Content-Type` so `nosniff` does not break legitimate resources.
+- Set the header centrally; do not rely on per-endpoint opt-ins.
+- Verify it survives any proxy/CDN in front of the app.
+
+## Checklist for Code Review
+
+- Is `X-Content-Type-Options: nosniff` present on all responses?
+- Are response `Content-Type` values accurate for every route?
+- Is the header applied centrally rather than ad hoc?
+- Do static-file and upload responses also carry the header?

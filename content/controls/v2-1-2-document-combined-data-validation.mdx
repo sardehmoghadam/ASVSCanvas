@@ -24,6 +24,74 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application's documentation defines how to validate the logical and contextual consistency of combined data items, such as checking that suburb and ZIP code match.
+This control documents the rules for *cross-field* validation: checking that two or more data items are consistent with each other, not just valid on their own. A suburb and ZIP/postcode must refer to the same place; a date range must not end before it starts.
+
+The rules are written down so developers implement the same combinations consistently across the application.
+
+## Why This Matters
+
+Single-field validation catches malformed values, but many business rules only make sense across fields. An attacker can supply a real suburb with a mismatched ZIP code to bypass address checks, or a "from" date after a "to" date to confuse reporting, pricing, or access windows.
+
+Without a documented definition of "reasonable combined data", each developer invents their own interpretation — and the weakest interpretation becomes the security hole.
+
+## Main Security Requirement
+
+> Verify that the application's documentation defines how to validate the logical and contextual consistency of combined data items, such as checking that suburb and ZIP code match.
+
+The requirement is about the *documentation* of the consistency rules, so they can be reviewed, tested, and enforced uniformly.
+
+## Common Failure Patterns
+
+- **Isolated checks** — validating each field separately and never validating them together.
+- **Undefined relationships** — no written statement of which fields must agree (postcode vs suburb, country vs currency, age vs date of birth).
+- **Client-only consistency** — checking the combination in JavaScript but not re-checking server-side.
+- **Ambiguous normalization** — comparing a ZIP entered as "90210" against a stored "90210-1124", causing false mismatches.
+
+## Secure Implementation
+
+Document the combination rules as assertions the service layer evaluates:
+
+```javascript
+// Documented rule: postal code must belong to the stated suburb.
+const POSTCODE_REFERENCE = new Map([
+  ["Bondi", "2026"],
+  ["Surry Hills", "2010"],
+  ["Newtown", "2042"],
+]);
+
+function validateAddress({ suburb, postcode }) {
+  const expected = POSTCODE_REFERENCE.get(suburb);
+  if (expected === undefined) {
+    return { ok: false, reason: `Unknown suburb: ${suburb}` };
+  }
+  if (expected !== postcode) {
+    return { ok: false, reason: `Postcode ${postcode} does not match ${suburb}` };
+  }
+  return { ok: true };
+}
+```
+
+For ordered fields, validate the relationship directly:
+
+```python
+def validate_date_range(start: str, end: str) -> bool:
+    # Documented rule: start must be on or before end.
+    return parse(start) <= parse(end)
+```
+
+## Key Rules
+
+- Write down which fields must be consistent with each other.
+- Validate combinations at the trusted service layer, not just in the browser.
+- Normalize values before comparing (trim, case, format).
+- Return a specific, testable error for each inconsistent combination.
+
+## Checklist for Code Review
+
+- Are all documented cross-field rules implemented?
+- Do address, date-range, and other related fields get validated together?
+- Is combination validation performed server-side?
+- Are values normalized before comparison to avoid false mismatches?
+- Does each mismatch produce a clear, uniform error?

@@ -24,6 +24,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that HTTP responses include a Content-Security-Policy response header field which defines directives to ensure the browser only loads and executes trusted content or resources, in order to limit execution of malicious JavaScript. As a minimum, a global policy must be used which includes the directives object-src none and base-uri none and defines either an allowlist or uses nonces or hashes. For an L3 application, a per-response policy with nonces or hashes must be defined.
+A Content Security Policy is a browser-enforced allowlist that restricts where scripts, styles, images, and other resources may come from. At minimum the application must ship a global CSP containing `object-src 'none'` and `base-uri 'none'`, plus an allowlist **or** nonce/hash-based controls for scripts. At the highest assurance level, each response gets its own nonced or hashed policy.
+
+## Why This Matters
+
+CSP is the last line of defense against injected JavaScript. When an attacker finds an XSS bug, a strict CSP can stop the injected payload from executing at all, or from loading a remote exploit. The baseline `object-src 'none'` blocks legacy plugin object injection, and `base-uri 'none'` prevents attackers re-pointing relative URLs. Nonces and hashes let legitimate scripts run while breaking injected ones.
+
+## Main Security Requirement
+
+> Verify that HTTP responses include a Content-Security-Policy response header field which defines directives to ensure the browser only loads and executes trusted content or resources, in order to limit execution of malicious JavaScript. As a minimum, a global policy must be used which includes the directives object-src 'none' and base-uri 'none' and defines either an allowlist or uses nonces or hashes. For an L3 application, a per-response policy with nonces or hashes must be defined.
+
+In practice this means shipping the header on every HTML response, starting from a strict baseline and loosening deliberately.
+
+## Common Failure Patterns
+
+- **No CSP** — the header is simply absent, leaving injection free to run.
+- **`unsafe-inline` / `unsafe-eval` blanket** — directives that undo the whole point of the policy.
+- **Wildcard-heavy sources** — `script-src *` that allows any script from any host.
+- **HTTPS-only against safe allowlist** — a value that permits anything over https, effectively nothing blocked.
+- **Policy without reporting** — no visibility into violations, so breakage or bypass goes unnoticed.
+
+## Secure Implementation
+
+Start with a strict baseline and tighten:
+
+```text
+Content-Security-Policy: default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:
+```
+
+For a per-response nonce policy, generate a nonce per request:
+
+```javascript
+function render(req, res) {
+  const nonce = crypto.randomBytes(16).toString("base64");
+  res.setHeader("Content-Security-Policy",
+    `default-src 'self'; script-src 'self' 'nonce-${nonce}'; object-src 'none'; base-uri 'none'`);
+  res.send(renderTemplate({ nonce }));
+}
+```
+
+## Key Rules
+
+- Ship CSP on every HTML response; never go to production without one.
+- Always include `object-src 'none'` and `base-uri 'none'`.
+- Prefer nonces/hashes over allowlists for scripts.
+- Avoid `unsafe-inline` and `unsafe-eval`; justify any exception.
+- Enable violation reporting to catch both attacks and policy mistakes.
+
+## Checklist for Code Review
+
+- Is a CSP header present on every document response?
+- Does the policy include `object-src 'none'` and `base-uri 'none'`?
+- Are scripts restricted by allowlist, nonce, or hash?
+- Are there `unsafe-inline`/`unsafe-eval` values that should be removed?
+- Is report-to/report-uri configured for violation visibility?

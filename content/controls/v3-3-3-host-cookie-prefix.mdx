@@ -24,6 +24,51 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that cookies have the __Host- prefix for the cookie name unless they are explicitly designed to be shared with other hosts.
+The `__Host-` name prefix binds a cookie to the exact host that set it: it must be `Secure`, must not set a `Domain` attribute, and must use `Path=/`. Browsers enforce these constraints, so a cookie named `__Host-...` cannot be shadowed by a subdomain or read on a sibling host. Any cookie that is not deliberately meant to be shared across hosts should use this prefix.
+
+## Why This Matters
+
+Cookies without a scope lock are inherited by subdomains and can be set or overwritten by a less-trusted host — a classic session-fixation and cookie-injection vector. The `__Host-` prefix makes the browser reject contradictory attributes, so an attacker on `evil.example.com` cannot plant a cookie that `app.example.com` will later trust.
+
+## Main Security Requirement
+
+> Verify that cookies have the `__Host-` prefix for the cookie name unless they are explicitly designed to be shared with other hosts.
+
+In practice this means every host-scoped cookie gets the prefix, and any `Domain`-scoped cookie is an explicit, reviewed exception.
+
+## Common Failure Patterns
+
+- **Omitting the prefix** — a session cookie set without `__Host-`, inheriting overly broad scope.
+- **Prefix + `Domain`** — combining `__Host-` with a `Domain` attribute, which browsers reject.
+- **Ambiguous shared cookies** — marking a cookie shared just to avoid configuring the prefix correctly.
+- **Inconsistent paths** — `Path` values other than `/` that break the `__Host-` contract.
+
+## Secure Implementation
+
+Use the prefix for host-only cookies:
+
+```javascript
+res.setHeader("Set-Cookie", "__Host-sid=" + token + "; Path=/; Secure; HttpOnly; SameSite=Lax");
+```
+
+For a genuine cross-host need, name the cookie without the prefix and scope it deliberately:
+
+```javascript
+res.setHeader("Set-Cookie", "shared-theme=dark; Domain=example.com; Path=/; Secure; SameSite=Lax");
+```
+
+## Key Rules
+
+- Always prefix host-scoped cookies with `__Host-`.
+- Do not combine `__Host-` with the `Domain` attribute.
+- Keep `Path=/` for prefixed cookies.
+- Treat any non-prefixed, host-scoped cookie as an exception to be justified.
+
+## Checklist for Code Review
+
+- Do all host-scoped cookies carry the `__Host-` prefix?
+- Are any `__Host-` cookies also assigning a `Domain` or non-root path?
+- Is every `Domain`-scoped cookie backed by a documented sharing requirement?
+- Could any shared cookie be re-scoped to a single host to reclaim the prefix?

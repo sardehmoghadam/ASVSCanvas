@@ -25,6 +25,75 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that transactions are being used at the business logic level such that either a business logic operation succeeds in its entirety or it is rolled back to the previous correct state.
+This control requires business-level transactions: a logical operation made of several steps must either fully succeed or roll back to the previous correct state. There is no half-applied outcome.
+
+A transfer that debits one account and credits another must do both, or neither. "Business logic level" means the transaction spans the operation's own steps, not just a single SQL statement.
+
+## Why This Matters
+
+Partial application is where attackers and bugs create inconsistent state. A failure after debiting but before crediting destroys money; a purchase that reserves stock but never creates the order leaks inventory. When the system can end up in an "in-between" state, every such call is a potential logic exploit or data-integrity hole.
+
+## Main Security Requirement
+
+> Verify that transactions are being used at the business logic level such that either a business logic operation succeeds in its entirety or it is rolled back to the previous correct state.
+
+The guarantee is all-or-nothing at the *operation* level, not just the single-statement level.
+
+## Common Failure Patterns
+
+- **Step-by-step writes** — committing each step independently, so a mid-failure leaves partial state.
+- **Implicit commits** — DDL or autocommit settings that commit "helpful" intermediate state.
+- **Side effects outside the transaction** — sending an email or calling an API between steps, then failing to coordinate rollback.
+- **Swallowing failures** — catching an exception and continuing as though the earlier steps succeeded.
+
+## Secure Implementation
+
+Wrap the whole operation in one transaction so any failure rolls everything back:
+
+```javascript
+async function transferFunds(from, to, amount) {
+  const tx = await db.begin();
+  try {
+    const fromRow = await tx.lock(`SELECT balance FROM accounts WHERE id = $1`, [from]);
+    if (fromRow.balance < amount) throw new Error("Insufficient funds");
+
+    await tx.run(`UPDATE accounts SET balance = balance - $1 WHERE id = $2`, [amount, from]);
+    await tx.run(`UPDATE accounts SET balance = balance + $1 WHERE id = $2`, [amount, to]);
+
+    await tx.commit(); // all steps applied together
+  } catch (err) {
+    await tx.rollback(); // ...or none are
+    throw err;
+  }
+}
+```
+
+Keep remote side effects out of the atomic unit, or make them idempotent and compensatable:
+
+```python
+def place_order(order):
+    with db.transaction():               # atomic core
+        reserve_stock(order.items)
+        create_order(order)
+        apply_payment(order.total)
+
+    # side effects happen only after a successful commit
+    email_receipt(order.customer)        # idempotent / retried safely
+```
+
+## Key Rules
+
+- Bound every multi-step operation in a single transaction.
+- Never commit intermediate steps and pretend a later step "undoes" them.
+- Keep external side effects outside the transaction with retries/compensation.
+- Re-throw failures so the caller cannot continue in a half-applied state.
+
+## Checklist for Code Review
+
+- Is each multi-step operation wrapped in one transaction?
+- Are all writes committed together or all rolled back?
+- Are remote calls kept outside the atomic unit or made idempotent?
+- Is there any `catch` that continues execution after a failure?
+- Does rollback restore the previous correct state, not merely "mostly"?

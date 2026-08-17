@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a Strict-Transport-Security header field is included on all responses to enforce an HTTP Strict Transport Security (HSTS) policy. A maximum age of at least 1 year must be defined, and for L2 and up, the policy must apply to all subdomains as well.
+HSTS tells the browser: after the first visit, always use HTTPS for this site and refuse plain HTTP, converting any `http://` attempt into `https://` automatically. The control requires the `Strict-Transport-Security` header on **all** responses, a `max-age` of at least one year, and — at higher assurance levels — coverage of every subdomain via `includeSubDomains`.
+
+## Why This Matters
+
+The first plain-HTTP request in a session is the classic downgrade window that SSL stripping exploits. HSTS closes that window permanently by teaching the browser to refuse cleartext. Without `max-age` persistence and subdomain coverage, a single missed host reopens the downgrade path.
+
+## Main Security Requirement
+
+> Verify that a Strict-Transport-Security header field is included on all responses to enforce an HTTP Strict Transport Security (HSTS) policy. A maximum age of at least 1 year must be defined, and for L2 and up, the policy must apply to all subdomains as well.
+
+In practice this means the header is set globally (middleware / web-server level), not sprinkled across handlers, and includes a long-lived `max-age`.
+
+## Common Failure Patterns
+
+- **Only on some paths** — HSTS on the home page but missing on API or error responses.
+- **Too-short `max-age`** — an hour of coverage lets an attacker wait it out and strip again.
+- **Missing subdomain coverage** — child hosts still reachable over HTTP, leaking cookies or content.
+- **HSTS behind the TLS terminator** — proxy config that strips the header before the client sees it.
+
+## Secure Implementation
+
+Set it once for the whole origin, in middleware or at the web server:
+
+```javascript
+// Express middleware — applied to every response.
+app.use((req, res, next) => {
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  next();
+});
+```
+
+Equivalent at the web server:
+
+```nginx
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+```
+
+## Key Rules
+
+- Send the header on every response, including errors and redirects.
+- Use `max-age` of at least one year (31536000 seconds).
+- Understand that HSTS only protects repeat visits; keep a redirect from HTTP to HTTPS for the first one.
+- Add `includeSubDomains` when subdomains are part of the trust boundary.
+
+## Checklist for Code Review
+
+- Is `Strict-Transport-Security` set globally, covering every response?
+- Is `max-age` at least one year?
+- Does the policy include subdomains where required?
+- Does the proxy/TLS-terminator preserve the header end-to-end?
+- If `preload` is intended, is it compatible with the full HSTS requirements?

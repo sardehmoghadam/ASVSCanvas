@@ -24,6 +24,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that when the application writes a cookie, the cookie name and value length combined are not over 4096 bytes. Overly large cookies will not be stored by the browser and therefore not sent with requests, preventing the user from using application functionality which relies on that cookie.
+Browsers cap how much cookie data they store per domain, and an individual cookie whose name plus value exceeds roughly 4096 bytes is dropped entirely. This control requires the application to keep each cookie's combined name + value under that limit so that a cookie the application depends on is never silently discarded.
+
+## Why This Matters
+
+An oversized cookie fails in the worst possible way: the browser accepts nothing, sends nothing, and the user is left in a broken, half-authenticated state with no clear error. More subtly, a ballooning cookie can evict other cookies or spill sensitive data into every request. Staying within the limit keeps sessions reliable and request overhead bounded.
+
+## Main Security Requirement
+
+> Verify that when the application writes a cookie, the cookie name and value length combined are not over 4096 bytes. Overly large cookies will not be stored by the browser and therefore not sent with requests, preventing the user from using application functionality which relies on that cookie.
+
+In practice this means validating and bounding cookie values at write time instead of assuming the browser will store anything.
+
+## Common Failure Patterns
+
+- **Storing data in cookies** — serializing objects or shopping carts into a cookie until it exceeds the limit.
+- **No size guard** — values grow over time (long tokens, feature flags) and cross 4096 in production.
+- **Unbounded session claims** — loading the session cookie with roles, scope lists, and metadata.
+- **Silent failure** — the cookie is dropped but the app reports success, leaving a confusing broken state.
+
+## Secure Implementation
+
+Guard the size before setting the cookie and keep large data server-side:
+
+```javascript
+function setCookie(res, name, value, options) {
+  const combined = new TextEncoder().encode(name + "=" + value).length;
+  if (combined > 4096) {
+    throw new Error(`Cookie ${name} exceeds 4096 bytes (got ${combined})`);
+  }
+  res.cookie(name, value, options);
+}
+```
+
+Store anything beyond a session id server-side, and keep only the opaque handle in the cookie:
+
+```javascript
+// The cookie holds a small id; the cart stays in the session store.
+res.cookie("__Host-cart", cartId, { secure: true, httpOnly: true, sameSite: "lax" });
+```
+
+## Key Rules
+
+- Keep cookie name + value under 4096 bytes; enforce at write time.
+- Store application data server-side and put only an identifier in the cookie.
+- Encode and measure byte length (not character count) before sending.
+- Treat dropped cookies as a failure to be detected, not ignored.
+
+## Checklist for Code Review
+
+- Is each cookie's byte size bounded and checked before it is set?
+- Are only opaque identifiers stored in cookies, with data kept server-side?
+- Is byte length measured correctly for multi-byte (non-ASCII) values?
+- Would the app surface an error if the browser dropped an oversized cookie?

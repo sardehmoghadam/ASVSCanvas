@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that separate applications are hosted on different hostnames to leverage the restrictions provided by same-origin policy, including how documents or scripts loaded by one origin can interact with resources from another origin and hostname-based restrictions on cookies.
+The same-origin policy treats each scheme + host + port as an isolated trust boundary. This control requires that genuinely separate applications live on different hostnames, so the browser's built-in isolation — no cross-origin DOM access, no cross-origin cookie sharing by default — applies between them naturally.
+
+## Why This Matters
+
+If two applications share a hostname (for example `app.example.com/admin` and `app.example.com/widget`), a compromise in one leaks into the other: they share cookies, script contexts, and storage. Separating them by hostname forces an XSS or session bug in one to stay contained instead of cascading across all applications on the host.
+
+## Main Security Requirement
+
+> Verify that separate applications are hosted on different hostnames to leverage the restrictions provided by same-origin policy, including how documents or scripts loaded by one origin can interact with resources from another origin and hostname-based restrictions on cookies.
+
+In practice this means one app, one origin — and cross-app integration goes through explicit, reviewed mechanisms rather than shared cookies or DOM.
+
+## Common Failure Patterns
+
+- **Shared hostname** — multiple apps under one host, sharing a session cookie and storage.
+- **Implicit cookie sharing** — a `Domain`-scoped cookie that leaks across apps and subdomains.
+- **Path-based separation only** — using `/admin` vs `/app` as if the path were an origin boundary.
+- **Subdomain reuse without isolation** — assuming a different subdomain is automatically safe without cookie scoping review.
+
+## Secure Implementation
+
+Host distinct applications on distinct origins and keep cookies scoped:
+
+```text
+# Separate origins for separate apps
+https://shop.example.com
+https://admin.example.com
+https://docs.example.com
+```
+
+Configure cookies host-only (via `__Host-`) so they never drift across apps:
+
+```text
+Set-Cookie: __Host-shop-sid=<token>; Path=/; Secure; HttpOnly; SameSite=Lax
+```
+
+## Key Rules
+
+- Give each separate application its own hostname/origin.
+- Do not treat URL paths as an isolation boundary.
+- Scope cookies to the exact host (`__Host-`) rather than a shared `Domain`.
+- Route cross-app integration through explicit, reviewed APIs — never shared cookies.
+
+## Checklist for Code Review
+
+- Are all distinct applications on separate hostnames/origins?
+- Are any back-end components accidentally bundled under one host?
+- Do cookies use host-only scope instead of a shared `Domain`?
+- Is any cross-app dependency relying implicitly on same-origin access?

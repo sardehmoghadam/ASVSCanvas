@@ -25,6 +25,75 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that high-value business logic flows require multi-user approval to prevent unauthorized or accidental actions. This could include but is not limited to large monetary transfers, contract approvals, access to classified information, or safety overrides in manufacturing.
+This control requires a second approver for high-value or high-consequence actions. One person's credentials alone must not be enough to complete the flow.
+
+High-value examples given in the requirement include large monetary transfers, contract approvals, access to classified information, and safety overrides in manufacturing. The principle is segregation of duties at the application level.
+
+## Why This Matters
+
+A single compromised account, or a single malicious insider, should not be able to authorize a high-value action alone. Requiring a separate, independent approver raises the bar: the attacker must compromise two identities and the approval must look legitimate to a second human.
+
+For safety and financial systems this is a foundational control against both fraud and accidents.
+
+## Main Security Requirement
+
+> Verify that high-value business logic flows require multi-user approval to prevent unauthorized or accidental actions. This could include but is not limited to large monetary transfers, contract approvals, access to classified information, or safety overrides in manufacturing.
+
+It targets both *unauthorized* (malicious) and *accidental* actions — the second approver catches mistakes too.
+
+## Common Failure Patterns
+
+- **Approver = requester** — the same account can both create and approve.
+- **Client-side "approval" flag** — a boolean the requester can set on the request.
+- **Self-service escalation** — a user who can grant themselves the approver role.
+- **No independence** — an approval that can be provided by an account the requester controls.
+
+## Secure Implementation
+
+Represent approvals as a distinct server-side step requiring a different identity:
+
+```javascript
+const TRANSFER_THRESHOLD = 10_000;
+
+function requireApproval(amount) {
+  return amount >= TRANSFER_THRESHOLD;
+}
+
+function approveTransfer(transfer, approver, actor) {
+  if (approver === actor) {
+    throw new Error("Requester cannot approve their own transfer");
+  }
+  if (!hasApproverRole(approver)) {
+    throw new Error("Approver lacks the required role");
+  }
+  markApproved(transfer, approver);   // only then can the transfer proceed
+}
+```
+
+Enforce it as a state machine so nothing high-value executes until approval exists:
+
+```python
+def execute_payment(payment, actor):
+    if payment.amount >= THRESHOLD and payment.approver is None:
+        abort(403, "High-value payment requires a second approver")
+    if payment.approver == actor:
+        abort(403, "Requester cannot approve their own payment")
+    settle(payment)
+```
+
+## Key Rules
+
+- Require a *different* identity to approve than to request.
+- Gate the side effect on a persisted, server-side approval record.
+- Anchor the threshold in server-side configuration, not the client.
+- Audit who requested and who approved, with timestamps.
+
+## Checklist for Code Review
+
+- Can the requester approve their own high-value action?
+- Is the approval recorded server-side and checked before execution?
+- Are approval thresholds enforced in server code?
+- Is there an audit trail of requester and approver?
+- Are roles verified so a requester cannot self-grant approver rights?

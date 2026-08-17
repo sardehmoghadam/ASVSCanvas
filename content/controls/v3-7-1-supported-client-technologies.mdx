@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application only uses client-side technologies which are still supported and considered secure. Examples of technologies which do not meet this requirement include NSAPI plugins, Flash, Shockwave, ActiveX, Silverlight, NACL, or client-side Java applets.
+Client-side technology choices must be limited to platforms that are still maintained and considered secure. Discontinued runtimes — Flash, Silverlight, ActiveX, NPAPI plugins, and similar — have known, unpatched vulnerabilities and must be absent from the application. The requirement is a hard bar: if a technology is dead, it cannot be in the product.
+
+## Why This Matters
+
+Unsupported plugins and applets receive no security fixes, which means a single known exploit in Flash or ActiveX becomes a permanent door into the user's machine or session. Keeping them out removes a whole class of legacy, unpatchable attack surface from the product's trust boundary.
+
+## Main Security Requirement
+
+> Verify that the application only uses client-side technologies which are still supported and considered secure. Examples of technologies which do not meet this requirement include NSAPI plugins, Flash, Shockwave, ActiveX, Silverlight, NACL, or client-side Java applets.
+
+In practice this means an inventory of client-side dependencies with every item mapped to a supported, maintained runtime.
+
+## Common Failure Patterns
+
+- **Legacy shims retained** — a Flash or ActiveX fallback left in place for old browsers.
+- **Unmaintained libraries** — pulling in modern JavaScript that is itself abandoned and unpatched.
+- **Polyfill cruft** — old plugin-based polyfills that silently remained after migration.
+- **No inventory** — nobody knows which client-side technologies are actually in use.
+
+## Secure Implementation
+
+Keep a maintained dependency manifest and audit it for dead technologies:
+
+```json
+// package.json — modern, actively maintained dependencies only.
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "lodash": "^4.17.21"
+  }
+}
+```
+
+Audit for deprecated runtimes in a build step so they fail CI:
+
+```javascript
+const BLOCKED = /(flash|swf|silverlight|activex|applet|nsapi|nacl)/i;
+const source = readAllTemplates();
+if (BLOCKED.test(source)) {
+  throw new Error("Deprecated client-side technology detected");
+}
+```
+
+## Key Rules
+
+- Maintain an inventory of every client-side technology in use.
+- Remove discontinued runtimes (Flash, Silverlight, ActiveX, applets, NPAPI, NaCl) entirely.
+- Keep remaining client-side libraries supported and patched.
+- Fail builds on detection of blocked, deprecated technologies.
+
+## Checklist for Code Review
+
+- Is there a current inventory of client-side technologies and libraries?
+- Are any deprecated plugins or applets referenced anywhere in the product?
+- Are all client-side dependencies maintained and receiving security fixes?
+- Does CI/build tooling block reintroduction of deprecated technology?

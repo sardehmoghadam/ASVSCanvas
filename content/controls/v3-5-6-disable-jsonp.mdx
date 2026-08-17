@@ -24,6 +24,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that JSONP functionality is not enabled anywhere across the application to avoid Cross-Site Script Inclusion (XSSI) attacks.
+JSONP wraps a JSON response in a JavaScript function call so a `<script>` tag can load it cross-origin. That mechanism is inherently dangerous, so this control requires JSONP to be disabled everywhere — no endpoint, parameter, or legacy route that wraps responses in a caller-supplied callback.
+
+## Why This Matters
+
+JSONP executes the response as script in the caller's origin, which is exactly what Cross-Site Script Inclusion (XSSI) exploits: an attacker loads your "protected" data through a `<script>` tag and reads it from inside their own page, bypassing the same-origin policy entirely. Since modern `fetch` + CORS does the same job safely, JSONP should simply not exist.
+
+## Main Security Requirement
+
+> Verify that JSONP functionality is not enabled anywhere across the application to avoid Cross-Site Script Inclusion (XSSI) attacks.
+
+In practice this means searching the codebase and configuration for any callback/JSONP support and removing it, replacing it with CORS-based JSON.
+
+## Common Failure Patterns
+
+- **Legacy callback parameter** — an endpoint still honoring `?callback=...` or `?jsonp=...`.
+- **Global JSONP middleware** — a framework or CDN layer auto-wrapping responses.
+- **Unknown routes** — JSONP left in an old API version or admin tool nobody has audited.
+- **Partial removal** — the main API is fixed but a helper or third-party lib still returns JSONP.
+
+## Secure Implementation
+
+Serve plain JSON with strict content type and no callback handling:
+
+```javascript
+app.get("/api/data", (req, res) => {
+  res.type("application/json");           // JSON, never application/javascript
+  res.json({ result: "data" });
+  // No callback/prefix handling anywhere.
+});
+```
+
+If a caller previously used a callback, migrate them to CORS `fetch`:
+
+```javascript
+fetch("https://api.example.com/data", { credentials: "include" })
+  .then((r) => r.json())
+  .then((data) => console.log(data));
+```
+
+## Key Rules
+
+- Remove all JSONP/callback support from every endpoint.
+- Serve JSON with `Content-Type: application/json` and, ideally, `X-Content-Type-Options: nosniff`.
+- Replace cross-origin data needs with CORS + `fetch`.
+- Audit old API versions, admin tools, and third-party integrations for stray JSONP.
+
+## Checklist for Code Review
+
+- Does any endpoint accept a `callback`/`jsonp`/`prefix` parameter?
+- Does any response body get wrapped in a function call?
+- Is JSON served with the correct content type and no script wrappers?
+- Are cross-origin reads handled by CORS instead of JSONP?

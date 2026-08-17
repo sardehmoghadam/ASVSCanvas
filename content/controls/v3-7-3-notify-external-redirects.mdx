@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application shows a notification when the user is being redirected to a URL outside of the application control, with an option to cancel the navigation.
+Even when an external redirect is legitimate, the user should not be silently teleported to a third-party site. This control requires an interception page or prompt whenever the application sends the user to a URL it does not control, telling them they are leaving and giving them an explicit option to cancel before the navigation happens.
+
+## Why This Matters
+
+Attackers use redirects to move victims from a trusted context to a phishing or malware site with no warning. A visible "you are leaving" gate breaks the seamlessness of that trick: the user receives context and a chance to stop, which substantially reduces open-redirect and phishing success.
+
+## Main Security Requirement
+
+> Verify that the application shows a notification when the user is being redirected to a URL outside of the application control, with an option to cancel the navigation.
+
+In practice this means external redirection is routed through an interstitial page rather than a bare `Location` header in the initial response.
+
+## Common Failure Patterns
+
+- **Direct redirect** — sending a 302 to the external URL with no interstitial.
+- **Auto-continue countdown** — an "interstitial" that still navigates whether or not the user acts.
+- **No cancel path** — the prompt informs but does not offer a real way to abort.
+- **Inconsistent coverage** — some flows warn, others (SSO, logout) redirect instantly.
+
+## Secure Implementation
+
+Route external destinations through a warning page:
+
+```javascript
+app.get("/out", (req, res) => {
+  const target = req.query.to;
+  if (isExternal(target)) {
+    // Render a confirmation page instead of redirecting immediately.
+    return res.render("leaving", { target, cancelUrl: "/" });
+  }
+  res.redirect(target);
+});
+```
+
+The interstitial offers an explicit, user-driven continuation:
+
+```html
+<p>You are leaving app.example.com for <strong>{{target}}</strong>.</p>
+<a href="/">Cancel</a>
+<a href="{{target}}" rel="noopener noreferrer">Continue</a>
+```
+
+## Key Rules
+
+- Intercept every redirect to a URL outside the application.
+- Show the destination and a clear context ("you are leaving") before navigating.
+- Always provide a cancel link that returns to the app.
+- Never auto-continue; the user must explicitly choose to proceed.
+
+## Checklist for Code Review
+
+- Are external redirects routed through a warning interstitial?
+- Does the prompt display the actual destination URL?
+- Is a real cancel option present and working?
+- Are there any code paths that still redirect externally without warning?

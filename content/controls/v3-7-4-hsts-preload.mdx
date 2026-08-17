@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application top-level domain (e.g., site.tld) is added to the public preload list for HTTP Strict Transport Security (HSTS). This ensures that the use of TLS for the application is built directly into the main browsers, rather than relying only on the Strict-Transport-Security response header field.
+The HSTS preload list is a hard-coded registry shipped inside every major browser. If a top-level domain is on the list, the browser uses HTTPS for it from the very first request — no prior visit, no `Strict-Transport-Security` header needed. This control requires submitting the application's top-level domain to that list.
+
+## Why This Matters
+
+Header-delivered HSTS only helps after a first successful HTTPS visit, leaving the first-ever request — the one an SSL-stripping attacker targets most — vulnerable. Preload closes that first-visit window by baking TLS enforcement directly into the browser, so cleartext is refused before the first byte is ever sent.
+
+## Main Security Requirement
+
+> Verify that the application top-level domain (e.g., site.tld) is added to the public preload list for HTTP Strict Transport Security (HSTS). This ensures that the use of TLS for the application is built directly into the main browsers, rather than relying only on the Strict-Transport-Security response header field.
+
+In practice this means submitting the apex domain to hstspreload.org and meeting its strict submission requirements on every covered host.
+
+## Common Failure Patterns
+
+- **Preload without valid HSTS** — the header is missing `max-age` or `includeSubDomains`, so submission is rejected.
+- **Incomplete subdomain coverage** — only some hosts send HSTS, failing the preload eligibility checks.
+- **Not submitted at all** — relying entirely on the per-response header and accepting the first-visit gap.
+- **Premature submission** — preloading before all subdomains are ready for HTTPS, causing breakage.
+
+## Secure Implementation
+
+Meet eligibility on the whole domain, then preload:
+
+```nginx
+# Every host, including subdomains, must send a valid long-lived policy.
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+```
+
+Then submit the apex domain to the preload list (hstspreload.org) and verify `preload` is present:
+
+```text
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+```
+
+## Key Rules
+
+- Submit the top-level domain to the HSTS preload list.
+- Ensure `max-age` >= 1 year and `includeSubDomains` across all hosts before submitting.
+- Add the `preload` token once the domain is accepted.
+- Remember preload removal is slow; only submit when HTTPS is guaranteed domain-wide.
+
+## Checklist for Code Review
+
+- Is the top-level domain on (or pending inclusion in) the preload list?
+- Do all hosts/subdomains send a valid, long-lived HSTS policy?
+- Is the `preload` token present after acceptance?
+- Has the team weighed the slow-removal permanence of preload before opting in?

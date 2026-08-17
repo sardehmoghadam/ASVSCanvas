@@ -24,6 +24,78 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application's documentation defines input validation rules for how to check the validity of data items against an expected structure. This could be common data formats such as credit card numbers, email addresses, telephone numbers, or it could be an internal data format.
+This control establishes that input validation begins with written rules, not with code. Every data item the application accepts must have a documented expected structure before the implementation is written.
+
+Common formats that need explicit rules include:
+
+- Credit card numbers (check digit, length, issuer ranges)
+- Email addresses (local part, domain, allowed TLDs)
+- Telephone numbers (country code, length, allowed characters)
+- Internal data formats (order IDs, reference codes, date ranges)
+
+## Why This Matters
+
+When validation rules live only in a developer's head, they are applied inconsistently. One endpoint may check a field while another accepts the same field unsanitized. Attackers probe until they find the endpoint that was forgotten, then use it to inject malformed data that downstream systems mishandle.
+
+A shared, written contract also lets QA and code review test against the same expectations the developer implemented.
+
+## Main Security Requirement
+
+> Verify that the application's documentation defines input validation rules for how to check the validity of data items against an expected structure. This could be common data formats such as credit card numbers, email addresses, telephone numbers, or it could be an internal data format.
+
+It asks specifically for the *documentation* to define the rules — validation is too important to be left unstated.
+
+## Common Failure Patterns
+
+- **Rules only in code** — the validation logic exists but no one can state off-hand what "valid" means for each field.
+- **Vague formats** — documenting "a valid email" without defining length limits, allowed characters, or the local/domain split.
+- **Accepting loosely** — permitting extra characters (whitespace, control bytes) that downstream parsers interpret differently.
+- **Drift** — the documentation is written once and never updated when formats change.
+
+## Secure Implementation
+
+Document the rules in a compact field-contract table so code and documentation stay in sync:
+
+```text
+Field             Expected structure
+cardNumber        13-19 digits, Luhn-valid, no whitespace
+email             local@domain, <=254 chars, RFC 5322 local part
+phone             E.164 or country-coded, 7-15 digits
+orderId           ^ORD-[0-9]{8}$ (upper-case prefix + 8 digits)
+promoCode         ^[A-Z0-9]{6,10}$ (no separators)
+```
+
+Then centralize the actual checks in a single registry:
+
+```typescript
+const rules = {
+  cardNumber: /^\d{13,19}$/,
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
+  phone: /^\+?\d{7,15}$/,
+  orderId: /^ORD-\d{8}$/,
+  promoCode: /^[A-Z0-9]{6,10}$/,
+};
+
+export function validateField(name: keyof typeof rules, value: string): boolean {
+  const rule = rules[name];
+  if (!rule) throw new Error(`No validation rule documented for field: ${name}`);
+  return rule.test(value);
+}
+```
+
+## Key Rules
+
+- Write the rule down before you write the check.
+- Define length, character set, and structure — not just "a valid email".
+- Keep validation rules in a single source of truth that documentation and code share.
+- Revisit the documentation whenever a format changes.
+
+## Checklist for Code Review
+
+- Is there a documented rule for every input field this change accepts?
+- Does the rule specify length limits and the allowed character set?
+- Does the code enforce exactly the documented structure, nothing looser?
+- Are internal formats (IDs, codes) constrained with a pattern?
+- Was the documentation updated alongside any format change?

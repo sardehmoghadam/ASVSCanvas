@@ -24,6 +24,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application sets a referrer policy to prevent leakage of technically sensitive data to third-party services via the Referer HTTP request header field. This can be done using the Referrer-Policy HTTP response header field or via HTML element attributes. Sensitive data could include path and query data in the URL, and for internal non-public applications also the hostname.
+When the browser navigates from your app to a third party, it can send a `Referer` header containing your URL — including path and query string. A referrer policy restricts what, if anything, is shared. The policy can be set via the `Referrer-Policy` response header or a per-element `referrerpolicy` attribute, and it should strip query/path data (and for internal apps, the hostname) from cross-origin requests.
+
+## Why This Matters
+
+URLs routinely carry secrets — session-like tokens, IDs, search terms, redirect targets. If a page links out to an analytics or ad host, the full URL (query string included) leaks in the `Referer`. A restrictive policy stops that quiet data exfiltration without breaking navigation.
+
+## Main Security Requirement
+
+> Verify that the application sets a referrer policy to prevent leakage of technically sensitive data to third-party services via the Referer HTTP request header field. This can be done using the Referrer-Policy HTTP response header field or via HTML element attributes. Sensitive data could include path and query data in the URL, and for internal non-public applications also the hostname.
+
+In practice this means a single default policy on the origin, tightened further where links carry sensitive query parameters.
+
+## Common Failure Patterns
+
+- **No policy** — browsers fall back to default full-URL sending cross-origin.
+- **`unsafe-url`** — an explicit choice to always send the full URL, leaking everything.
+- **Sensitive data in the URL** — keeping tokens or IDs in query strings so they leak regardless of policy tiers.
+- **Policy only on HTML** — forgetting the header so API-driven or error pages lack it.
+
+## Secure Implementation
+
+Set a restrictive server-wide default:
+
+```text
+Referrer-Policy: strict-origin-when-cross-origin
+```
+
+Per-element, downgrade a specific link or widget:
+
+```html
+<a href="https://third-party.example" rel="noreferrer">External link</a>
+```
+
+For internal tools where even the hostname is sensitive:
+
+```text
+Referrer-Policy: no-referrer
+```
+
+## Key Rules
+
+- Set a restrictive `Referrer-Policy` on the whole origin.
+- Avoid `unsafe-url` entirely.
+- Keep secrets out of URLs; a strict policy cannot fix a token in the query string.
+- Use `rel="noreferrer"` on sensitive outbound links as a belt-and-suspenders.
+
+## Checklist for Code Review
+
+- Is a `Referrer-Policy` header set on every response?
+- Is the chosen policy strict enough for the sensitivity of the URL data?
+- Are there any `unsafe-url` or missing policies in the codebase?
+- Are tokens/secrets present in URLs that the policy would not fully protect?
+- Are high-value outbound links marked `rel="noreferrer"`?

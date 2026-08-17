@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the Content-Security-Policy header field specifies a location to report violations.
+A CSP violation occurs when the browser blocks a resource or script the policy forbids. The policy must also name where those violation reports go — a `report-to` endpoint (or the older `report-uri`) — so the operations team receives an alert when something is blocked, whether it is an attack in progress or a policy bug.
+
+## Why This Matters
+
+Without reporting, a CSP is silent: it might be blocking attacks, or it might be failing to protect anything, and you cannot tell the difference. Violation reports are the feedback loop that lets a team spot real injection attempts and detect when a policy is too strict (or being bypassed), turning a static header into an observable control.
+
+## Main Security Requirement
+
+> Verify that the Content-Security-Policy header field specifies a location to report violations.
+
+In practice this means the CSP includes a `report-to` (or `report-uri`) directive pointing at a monitored collection endpoint.
+
+## Common Failure Patterns
+
+- **No report endpoint** — the CSP is enforced but violations vanish into the void.
+- **Unmonitored endpoint** — reports are collected but nobody is alerted or the queue is ignored.
+- **`report-only` everywhere** — a policy that warns but never blocks is misread as active protection.
+- **Legacy `report-uri` only** — missing the modern `report-to` group configuration.
+
+## Secure Implementation
+
+Declare a reporting group and wire it into the policy:
+
+```text
+Report-To: { "group": "csp-endpoint", "max_age": 10886400, "endpoints": [{"url": "https://example.com/csp-report"}] }
+Content-Security-Policy: default-src 'self'; report-to csp-endpoint
+```
+
+Endpoint code should validate and store reports for later triage:
+
+```javascript
+app.post("/csp-report", (req, res) => {
+  const report = req.body["csp-report"];
+  if (report) storeViolation(report["violated-directive"], report["blocked-uri"]);
+  res.status(204).end();
+});
+```
+
+## Key Rules
+
+- Include a `report-to` group (and `report-uri` for legacy support) in the policy.
+- Route violations to a monitored, alerting endpoint.
+- Distinguish enforced CSP from `Content-Security-Policy-Report-Only` in dashboards.
+- Review violation volume and adjust the policy or code accordingly.
+
+## Checklist for Code Review
+
+- Does the CSP include a working `report-to` or `report-uri` directive?
+- Is the report endpoint reachable, authenticated if needed, and monitored?
+- Are violations stored and surfaced, not silently dropped?
+- Is the difference between enforced and report-only policies visible to the team?

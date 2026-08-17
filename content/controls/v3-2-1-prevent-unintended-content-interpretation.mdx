@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that security controls are in place to prevent browsers from rendering content or functionality in HTTP responses in an incorrect context (e.g., when an API, a user-uploaded file or other resource is requested directly). Possible controls could include: not serving the content unless HTTP request header fields (such as Sec-Fetch-*) indicate it is the correct context, using the sandbox directive of the Content-Security-Policy header field or using the attachment disposition type in the Content-Disposition header field.
+A single resource — a JSON API response, a user-uploaded HTML file, an image — can be interpreted by the browser in a context the developer never intended. If someone requests the API endpoint directly in the browser, the response may render as an HTML page rather than data. This control requires guards that force the browser to treat a response in the context the server intended, using `Sec-Fetch-*` request checks, the CSP `sandbox` directive, or `Content-Disposition: attachment`.
+
+## Why This Matters
+
+When a browser renders content "in an incorrect context", attacker-controlled text can be executed as active content. A stored-XSS payload in a JSON field is harmless until the response is opened directly and interpreted as HTML/JavaScript. Confining every response to its intended context closes an entire class of content-type-confusion and upload-based-XSS attacks.
+
+## Main Security Requirement
+
+> Verify that security controls are in place to prevent browsers from rendering content or functionality in HTTP responses in an incorrect context (e.g., when an API, a user-uploaded file or other resource is requested directly). Possible controls could include: not serving the content unless HTTP request header fields (such as Sec-Fetch-*) indicate it is the correct context, using the sandbox directive of the Content-Security-Policy header field or using the attachment disposition type in the Content-Disposition header field.
+
+In practice, choose at least one of the three mechanisms and apply it consistently to every non-document response.
+
+## Common Failure Patterns
+
+- **Serving uploads inline** — user files returned with `Content-Disposition: inline` so SVG/HTML executes in your origin.
+- **Broad `Sec-Fetch` checks** — validating `Sec-Fetch-Mode` but ignoring `Sec-Fetch-Dest` or `Sec-Fetch-Site`.
+- **Missing CSP sandbox** — relying on format alone without an explicit `sandbox` directive for untrusted content.
+- **JSON APIs rendered as HTML** — endpoints that echo content with a `text/html` content type guessed by the browser.
+
+## Secure Implementation
+
+Force user-uploaded content to download rather than render:
+
+```text
+Content-Disposition: attachment; filename="report-1234.pdf"
+Content-Type: application/octet-stream
+X-Content-Type-Options: nosniff
+```
+
+Gate a JSON API on the expected fetch context:
+
+```javascript
+function requireExpectedContext(req) {
+  const dest = req.headers["sec-fetch-dest"];
+  const mode = req.headers["sec-fetch-mode"];
+  if (!(dest === "empty" && (mode === "cors" || mode === "same-origin"))) {
+    throw new Error("Unexpected request context");
+  }
+}
+```
+
+## Key Rules
+
+- Pick a context mechanism and apply it uniformly; do not mix ad-hoc guards.
+- Never serve untrusted content with `Content-Disposition: inline`.
+- Validate the full `Sec-Fetch-*` set, not a single header in isolation.
+- Apply CSP `sandbox` to any untrusted document you must render inline.
+
+## Checklist for Code Review
+
+- Are user-uploaded files always served as attachments or sandboxed?
+- Do API endpoints reject non-fetch contexts via `Sec-Fetch-*`?
+- Is `X-Content-Type-Options: nosniff` present to stop MIME guessing?
+- Are any responses returned with an attacker-controllable content type?

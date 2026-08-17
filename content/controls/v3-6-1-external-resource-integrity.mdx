@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that client-side assets, such as JavaScript libraries, CSS, or web fonts, are only hosted externally (e.g., on a Content Delivery Network) if the resource is static and versioned and Subresource Integrity (SRI) is used to validate the integrity of the asset. If this is not possible, there should be a documented security decision to justify this for each resource.
+External assets (CDN-hosted libraries, fonts, CSS) are supplied by a third party, so the browser must be able to prove the file it received is the file you approved. Subresource Integrity pins a cryptographic hash of the exact asset into the `integrity` attribute; if the CDN serves anything else — tampered, compromised, or simply changed — the browser refuses to run it. The control also requires static, versioned URLs and a documented justification for any asset that cannot be pinned.
+
+## Why This Matters
+
+A compromised or malicious CDN can silently swap a library for a stealer that runs inside your origin with your users' data. SRI turns that supply-chain risk into a hard failure: without a matching hash, the asset never executes. It also guards against accidental version drift that could introduce vulnerable code.
+
+## Main Security Requirement
+
+> Verify that client-side assets, such as JavaScript libraries, CSS, or web fonts, are only hosted externally (e.g., on a Content Delivery Network) if the resource is static and versioned and Subresource Integrity (SRI) is used to validate the integrity of the asset. If this is not possible, there should be a documented security decision to justify this for each resource.
+
+In practice this means: host internally by default; for external assets, pin a hash and version the URL.
+
+## Common Failure Patterns
+
+- **External without SRI** — a CDN `<script>` tag with no `integrity` attribute.
+- **Unversioned URLs** — `latest` or unstable CDN aliases that can change content any time.
+- **Static hash but dynamic file** — pinning a hash for a resource that the CDN is allowed to update.
+- **Self-hosted assumption** — believing internal hosting removes supply-chain risk without a matching build/audit step.
+
+## Secure Implementation
+
+Pin a generated hash on each external asset:
+
+```html
+<script src="https://cdn.example.com/lib/1.2.3/lib.min.js"
+        integrity="sha384-..." crossorigin="anonymous"></script>
+<link rel="stylesheet"
+      href="https://cdn.example.com/fonts/1.2.0/style.css"
+      integrity="sha384-..." crossorigin="anonymous">
+```
+
+Generate the hash from the exact file content (e.g. via `openssl`), and treat any mismatch as a build failure:
+
+```text
+# Compute the base64-encoded SHA-384 digest for the SRI attribute.
+openssl dgst -sha384 -binary lib.min.js | openssl base64 -A
+```
+
+## Key Rules
+
+- Self-host assets by default; use a CDN only when there is a clear reason.
+- Require SRI on every externally hosted resource.
+- Pin to a static, versioned URL; never use mutable aliases.
+- Document and approve any external resource that cannot carry SRI.
+
+## Checklist for Code Review
+
+- Are externally hosted assets limited to static, versioned resources?
+- Does every external `<script>`/`<link>` carry a correct `integrity` hash?
+- Do any unversioned or "latest" CDN URLs remain?
+- Is there a documented security decision for any unpinned external asset?
