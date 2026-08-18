@@ -24,6 +24,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that only user-facing endpoints (intended for manual web-browser access) automatically redirect from HTTP to HTTPS, while other services or endpoints do not implement transparent redirects. This is to avoid a situation where a client is erroneously sending unencrypted HTTP requests, but since the requests are being automatically redirected to HTTPS, the leakage of sensitive data goes undiscovered.
+Automatic HTTP→HTTPS redirects are a browser convenience intended for humans typing a URL. This control scopes that behavior: only endpoints meant for a person using a web browser may transparently redirect from HTTP to HTTPS. Programmatic endpoints (APIs, web services) must not silently redirect — a plaintext request should fail loudly instead.
+
+## Why This Matters
+
+If an API client is misconfigured to send credentials over plain HTTP and the server simply 301s it to HTTPS, the sensitive data has already crossed the wire in cleartext — and the redirect means nobody ever notices the mistake. Failing loud on non-browser endpoints surfaces the misconfiguration immediately, so the leakage is discovered and fixed rather than silently masked.
+
+## Main Security Requirement
+
+> Verify that only user-facing endpoints (intended for manual web-browser access) automatically redirect from HTTP to HTTPS, while other services or endpoints do not implement transparent redirects. This is to avoid a situation where a client is erroneously sending unencrypted HTTP requests, but since the requests are being automatically redirected to HTTPS, the leakage of sensitive data goes undiscovered.
+
+In practice this means: browsers get a 301/302 to HTTPS, while API clients receive a `426 Upgrade Required` or a 403 forcing them to use HTTPS from the start.
+
+## Common Failure Patterns
+
+- **Blanket redirect** — a server-wide rule that 301s every path, including `/api/*`, to HTTPS.
+- **Silent protocol upgrade** — transparent redirects on webhooks, SDKs, and service-to-service calls.
+- **Redirect masking leakage** — cleartext requests bouncing to TLS without any warning or log.
+- **No HSTS** — user-facing endpoints that redirect but never pin the channel for future visits.
+
+## Secure Implementation
+
+Redirect browsers but reject non-HTTPS API traffic:
+
+```javascript
+app.use((req, res, next) => {
+  if (!req.secure) {
+    if (req.path.startsWith("/api/")) {
+      // Do not redirect machine clients — fail loud so leakage is discovered.
+      return res.status(426).json({ error: "HTTPS required" });
+    }
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+```
+
+Set HSTS only for the user-facing host so the browser never repeats the plaintext request:
+
+```nginx
+server {
+    listen 80;
+    server_name app.example.com;
+    return 301 https://$host$request_uri;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+}
+```
+
+## Key Rules
+
+- Redirect HTTP→HTTPS only for human-facing, browser-served endpoints.
+- Make API and service endpoints reject plain HTTP outright (e.g. `426 Upgrade Required`).
+- Never silently bridge a machine client from cleartext to TLS.
+- Send HSTS on user-facing responses so the first plaintext hop disappears.
+
+## Checklist for Code Review
+
+- Is the HTTP→HTTPS redirect scoped to user-facing endpoints only?
+- Do `/api/*` or webhook endpoints reject plain HTTP instead of redirecting?
+- Is any sensitive data being sent over HTTP before a redirect can occur?
+- Is HSTS configured on the user-facing host?

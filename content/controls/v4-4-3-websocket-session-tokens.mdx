@@ -25,6 +25,67 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the application standard session management cannot be used, dedicated tokens are being used for this, which comply with the relevant Session Management security requirements.
+Sometimes the standard session mechanism — typically session cookies — cannot flow into a WebSocket. When that happens, the application must not improvise a weaker substitute. It must use dedicated tokens that meet the same Session Management bar: cryptographically secure randomness, adequate entropy, short expiry, and revocation.
+
+## Why This Matters
+
+WebSocket clients frequently run outside the browser cookie context (native apps, services, or clients that cannot set cookies on the handshake). The token that replaces the session becomes the *only* credential guarding the socket. If it is a guessable short ID, a stable token embedded in a URL, or one that never expires, it becomes a trivial key to a long-lived, authenticated connection.
+
+## Main Security Requirement
+
+> Verify that, if the application standard session management cannot be used, dedicated tokens are being used for this, which comply with the relevant Session Management security requirements.
+
+In practice this means a server-issued token with equivalent strength and lifecycle to the application's session token.
+
+## Common Failure Patterns
+
+- **Static or serial token** — a monotonically increasing or low-entropy identifier.
+- **Token in the URL** — `wss://host/socket?token=...` leaks the token into logs, proxies, and history.
+- **No expiry or rotation** — a token valid forever, with no mechanism to revoke it.
+- **Degraded entropy** — using `Math.random()` or a timestamp where a CSPRNG is required.
+
+## Secure Implementation
+
+Issue a high-entropy, expiring token:
+
+```javascript
+import { randomBytes } from "node:crypto";
+
+function issueSocketToken(sessionId, ttlSeconds = 300) {
+  return {
+    token: randomBytes(32).toString("hex"), // 256-bit random
+    expiresAt: Date.now() + ttlSeconds * 1000,
+  };
+}
+```
+
+Validate it and enforce freshness and single-use intent:
+
+```javascript
+function verifySocketToken(token, sessionId) {
+  const entry = TOKEN_STORE.get(token);
+  if (!entry) return false;
+  if (entry.expiresAt < Date.now()) return false;
+  if (entry.sessionId !== sessionId) return false;
+  TOKEN_STORE.delete(token); // one-time use
+  return true;
+}
+```
+
+## Key Rules
+
+- Derive WebSocket tokens from a cryptographically secure random source.
+- Bind the token to the authenticated session it belongs to.
+- Enforce a short lifetime and rotate or revoke as needed.
+- Never transmit the token in the URL — pass it in the handshake header or first message.
+- Apply the same entropy and lifecycle rules as for standard session tokens.
+
+## Checklist for Code Review
+
+- Is the WebSocket token generated with a CSPRNG at adequate entropy?
+- Is the token bound to a specific authenticated session?
+- Does the token expire, and can it be revoked?
+- Is the token kept out of URLs, logs, and proxies?
+- Do token requirements match the same bar as standard session management?

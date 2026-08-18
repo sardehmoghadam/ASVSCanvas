@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, during the initial HTTP WebSocket handshake, the Origin header field is checked against a list of origins allowed for the application.
+A WebSocket connection starts as an HTTP handshake request that carries an `Origin` header declaring which page is opening the socket. During that handshake, the server must verify the `Origin` against an explicit allowlist of trusted origins and refuse the upgrade if it is not present or not allowed.
+
+## Why This Matters
+
+WebSocket connections are authenticated with the victim's session, but browsers do not restrict which origin may open them the way CORS restricts `fetch`. An attacker's page can therefore open a socket to your origin and ride the victim's session — cross-site WebSocket hijacking. An origin check is the defense: only pages you actually host may establish the connection.
+
+## Main Security Requirement
+
+> Verify that, during the initial HTTP WebSocket handshake, the Origin header field is checked against a list of origins allowed for the application.
+
+In practice this means comparing the exact serialized `Origin` against a denylist-free allowlist at handshake time.
+
+## Common Failure Patterns
+
+- **No origin check** — accepting every upgrade regardless of `Origin`.
+- **Empty/garbage `Origin` allowed** — accepting missing headers that non-browser clients (a.k.a. attackers) send.
+- **Wildcard or substring match** — `example.com.evil.net` passing a `endsWith("example.com")` check.
+- **Null origin accepted** — treating `Origin: null` (file://, sandboxed frames) as benign.
+
+## Secure Implementation
+
+Validate the exact origin during the handshake:
+
+```javascript
+const ALLOWED_ORIGINS = new Set([
+  "https://app.example.com",
+  "https://admin.example.com"
+]);
+
+server.on("upgrade", (req, socket, head) => {
+  const origin = req.headers.origin;
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) {
+    socket.write("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
+    return socket.destroy();
+  }
+  wss.handleUpgrade(req, socket, head, ws => wss.emit("connection", ws, req));
+});
+```
+
+## Key Rules
+
+- Verify the `Origin` header on every WebSocket handshake.
+- Compare the full serialized origin against an exact allowlist.
+- Reject missing, malformed, or `null` origins.
+- Use exact equality, never substring or wildcard matching.
+- Allow only origins the application actually serves.
+
+## Checklist for Code Review
+
+- Is the `Origin` header checked during the WebSocket handshake?
+- Are missing or `null` origins rejected?
+- Is the origin compared exactly against an allowlist?
+- Are any wildcard or substring-based origin comparisons present?

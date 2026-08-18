@@ -25,6 +25,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that WebSocket over TLS (WSS) is used for all WebSocket connections.
+Every WebSocket connection must be established with `wss://` — WebSocket over TLS. Plain `ws://` connections must be rejected or never opened. There is no legitimate production scenario for unencrypted WebSocket traffic.
+
+## Why This Matters
+
+A plain `ws://` connection carries every frame — session tokens, chat messages, trades, keystrokes — in cleartext, readable and modifiable by anyone on the network path. Because WebSocket connections are long-lived and authenticated, an unencrypted socket is a standing MITM target that leaks and can be silently injected into. It also triggers mixed-content block warnings when opened from an HTTPS page.
+
+## Main Security Requirement
+
+> Verify that WebSocket over TLS (WSS) is used for all WebSocket connections.
+
+In practice this means serving `wss://` from the TLS endpoint and refusing any non-TLS upgrade.
+
+## Common Failure Patterns
+
+- **`ws://` allowed** — the server accepts a plaintext upgrade over port 80.
+- **Dev-only fallback escaping to prod** — a `ws://` fallback for local development shipped to production.
+- **Config-driven scheme** — wiring the socket scheme to an environment flag that can be mis-set.
+- **Missing wss path in the proxy** — a TLS terminator that never forwards the Upgrade request.
+
+## Secure Implementation
+
+Reject any non-TLS upgrade at the server:
+
+```javascript
+import { WebSocketServer } from "ws";
+
+const wss = new WebSocketServer({ noServer: true });
+
+server.on("upgrade", (req, socket, head) => {
+  if (!req.socket.encrypted) {
+    socket.write("HTTP/1.1 426 Upgrade Required\r\nConnection: close\r\n\r\n");
+    return socket.destroy();
+  }
+  wss.handleUpgrade(req, socket, head, ws => wss.emit("connection", ws, req));
+});
+```
+
+On the client, build the endpoint from the page's own security context:
+
+```javascript
+const scheme = window.location.protocol === "https:" ? "wss" : "ws";
+const ws = new WebSocket(`${scheme}://${location.host}/socket`);
+```
+
+## Key Rules
+
+- Serve all WebSocket connections over `wss://`.
+- Refuse non-TLS WebSocket upgrades with a hard error.
+- Derive the client socket scheme from the hosting page (HTTPS ⇒ `wss`).
+- Verify the proxy/load balancer forwards the Upgrade request correctly.
+- Never open `ws://` from an HTTPS page.
+
+## Checklist for Code Review
+
+- Are all WebSocket endpoints served over `wss://`?
+- Does the server or proxy reject plaintext WebSocket upgrades?
+- Is there any `ws://` fallback that could reach production?
+- Does the TLS terminator correctly forward WebSocket upgrade requests?

@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the application (backend or frontend) builds and sends requests, it uses validation, sanitization, or other mechanisms to avoid creating URIs (such as for API calls) or HTTP request header fields (such as Authorization or Cookie), which are too long to be accepted by the receiving component. This could cause a denial of service, such as when sending an overly long request (e.g., a long cookie header field), which results in the server always responding with an error status.
+This control looks at the *outbound* side: when your application composes server-to-server requests, it must not produce URIs or headers (like `Authorization` or `Cookie`) that exceed what the receiving component will accept. Over-long values must be validated, truncated safely, or rejected before the request is sent.
+
+## Why This Matters
+
+An outbound request carrying a pathologically large header — a giant forwarded cookie or a bloated token — causes the receiving server to respond with a persistent error. When the message is retried or multiplied (fan-out, message queues, redirect chains), this becomes a self-inflicted denial of service: the two services loop on failing requests, consuming resources without ever succeeding.
+
+## Main Security Requirement
+
+> Verify that, if the application (backend or frontend) builds and sends requests, it uses validation, sanitization, or other mechanisms to avoid creating URIs (such as for API calls) or HTTP request header fields (such as Authorization or Cookie), which are too long to be accepted by the receiving component. This could cause a denial of service, such as when sending an overly long request (e.g., a long cookie header field), which results in the server always responding with an error status.
+
+In practice this means enforcing maximum sizes on outbound URIs and per-header lengths before serializing the request.
+
+## Common Failure Patterns
+
+- **Unbounded forwarding** — copying a client header (cookie, token) verbatim into an upstream call.
+- **Token bloat** — a JWT containing excessive claims replayed into every downstream call.
+- **Retry amplification** — a too-long request that is retried indefinitely, hammering the receiver.
+- **No constraint at build time** — relying on the receiving server to reject, after data has already been serialized.
+
+## Secure Implementation
+
+Enforce limits before sending, trimming or rejecting oversized values:
+
+```javascript
+const MAX_COOKIE = 4 * 1024;   // 4 KiB
+const MAX_URI = 8 * 1024;      // 8 KiB
+const MAX_HEADER = 16 * 1024;  // 16 KiB per header
+
+function buildUpstreamRequest({ url, headers }) {
+  if (url.length > MAX_URI) throw new Error("URI too long");
+  for (const [name, value] of Object.entries(headers)) {
+    if (String(value).length > MAX_HEADER) {
+      throw new Error(`Header too long: ${name}`);
+    }
+  }
+  return { url, headers };
+}
+```
+
+Cap the cookie you propagate rather than blindly forwarding it:
+
+```javascript
+function forwardedCookie(cookie) {
+  return cookie && cookie.length <= MAX_COOKIE ? cookie : "";
+}
+```
+
+## Key Rules
+
+- Define maximum sizes for outbound URIs and per-header values.
+- Truncate safely or reject oversized values before sending.
+- Do not blindly forward client headers into upstream requests.
+- Keep tokens and cookies scoped to the minimum claims needed downstream.
+- Avoid endless retries on 4xx/5xx responses caused by oversized requests.
+
+## Checklist for Code Review
+
+- Are maximum lengths enforced for outbound URIs and headers?
+- Are client-supplied `Cookie`/`Authorization` values size-capped before forwarding?
+- Can a long JWT or token be replayed into downstream calls unchecked?
+- Is retry logic gated to avoid looping on persistent 4xx failures?

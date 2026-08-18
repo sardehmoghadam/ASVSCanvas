@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that only HTTP methods that are explicitly supported by the application or its API (including OPTIONS during preflight requests) can be used and that unused methods are blocked.
+The application must maintain an explicit allowlist of HTTP methods per route and reject everything else. Typical APIs allow only `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, and `OPTIONS` (needed for CORS preflight). Methods the service never uses — `TRACE`, `CONNECT`, `BREW`, or any invented verb — must be refused with `405 Method Not Allowed`.
+
+## Why This Matters
+
+Unused methods expose behavior that attackers probe and abuse. `TRACE` enables Cross-Site Tracing (reflecting cookies), while unexpected verbs can trigger default handlers, hit hidden middleware, or bypass filters configured only for the intended methods. A strict allowlist shrinks the attack surface to exactly the operations the service was designed to accept.
+
+## Main Security Requirement
+
+> Verify that only HTTP methods that are explicitly supported by the application or its API (including OPTIONS during preflight requests) can be used and that unused methods are blocked.
+
+In practice this means a per-route allowlist shared by the application and the edge, with a default deny for everything unlisted.
+
+## Common Failure Patterns
+
+- **No method filtering** — a catch-all handler answers any verb for a route.
+- **`TRACE`/`CONNECT` left enabled** — web servers often ship with them permitted by default.
+- **Blanket `OPTIONS`** — answering preflight for endpoints that should not be callable cross-origin.
+- **Filter only at one layer** — the app blocks methods but the edge passes them through (or vice versa).
+
+## Secure Implementation
+
+Enforce the allowlist in the application layer:
+
+```javascript
+const ALLOWED = new Set(["GET", "POST", "OPTIONS"]);
+
+app.all("/api/:resource", (req, res, next) => {
+  if (!ALLOWED.has(req.method)) {
+    res.set("Allow", [...ALLOWED].join(", "));
+    return res.status(405).end();
+  }
+  next();
+});
+```
+
+Mirror it at the reverse proxy so unknown methods never reach the app:
+
+```nginx
+location /api/ {
+    limit_except GET POST OPTIONS {
+        deny all;
+    }
+    # ... proxy to the application ...
+}
+```
+
+## Key Rules
+
+- Define a per-route allowlist of supported methods.
+- Include `OPTIONS` only where CORS preflight is genuinely required.
+- Block all other methods with `405` and an `Allow` header.
+- Apply the allowlist at both edge and application layers.
+- Explicitly disable `TRACE` and `CONNECT`.
+
+## Checklist for Code Review
+
+- Does every route enforce an explicit HTTP method allowlist?
+- Are `TRACE`, `CONNECT`, and any unused verb blocked?
+- Is `OPTIONS` restricted to routes meant for cross-origin use?
+- Does any catch-all handler inadvertently accept arbitrary methods?
+- Is the allowlist consistent between the proxy and the application?

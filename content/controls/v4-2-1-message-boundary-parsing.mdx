@@ -25,6 +25,68 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all application components (including load balancers, firewalls, and application servers) determine boundaries of incoming HTTP messages using the appropriate mechanism for the HTTP version to prevent HTTP request smuggling. In HTTP/1.x, if a Transfer-Encoding header field is present, the Content-Length header must be ignored per RFC 2616. When using HTTP/2 or HTTP/3, if a Content-Length header field is present, the receiver must ensure that it is consistent with the length of the DATA frames.
+Every component on the request path — load balancer, firewall, CDN, application server, and the app itself — must decide where one HTTP message ends and the next begins using the *same* rule, and that rule must match the protocol version. In HTTP/1.x, `Transfer-Encoding` wins over `Content-Length` (the CL must be ignored). In HTTP/2 and HTTP/3, `Content-Length` must be checked against the actual DATA frame lengths.
+
+## Why This Matters
+
+Request smuggling happens when a front-end and back-end disagree about message boundaries: one component sees one request where the other sees two. An attacker exploits that desync to smuggle a malicious request inside the body of a legitimate one, poisoning caches, bypassing filters, or hijacking another user's request. A single consistent, version-correct framing rule defeats the entire class.
+
+## Main Security Requirement
+
+> Verify that all application components (including load balancers, firewalls, and application servers) determine boundaries of incoming HTTP messages using the appropriate mechanism for the HTTP version to prevent HTTP request smuggling. In HTTP/1.x, if a Transfer-Encoding header field is present, the Content-Length header must be ignored per RFC 2616. When using HTTP/2 or HTTP/3, if a Content-Length header field is present, the receiver must ensure that it is consistent with the length of the DATA frames.
+
+In practice this means: use HTTP/2/3 between components wherever possible, and where HTTP/1.1 remains, ensure every hop applies the RFC's precedence rules identically.
+
+## Common Failure Patterns
+
+- **Both `Content-Length` and `Transfer-Encoding`** — accepting the ambiguous pair instead of ignoring CL.
+- **Mixed versions on one path** — one hop speaks HTTP/2, another downgrades to HTTP/1.1, reopening the ambiguity.
+- **Mismatched CL in H2/H3** — a `Content-Length` that disagrees with the DATA frames is not rejected.
+- **Conflicting TLS/plaintext routing** — a request that enters and exits differently behind the proxy.
+
+## Secure Implementation
+
+Keep a single version and validated framing across the whole chain. Enforce HTTP/2 end-to-end behind the edge:
+
+```nginx
+# The edge terminates TLS and speaks HTTP/2 downstream only.
+server {
+    listen 443 ssl http2;
+    proxy_http_version 1.1;      # consistent version downstream
+
+    # Reject the ambiguous HTTP/1.x combination before it reaches the app.
+    if ($http_transfer_encoding ~* chunked) {
+        set $skip_content_length on;
+    }
+    proxy_pass http://backend;
+}
+```
+
+Where custom parsing exists, apply the precedence rule explicitly:
+
+```javascript
+function boundaryVersion1x(headers) {
+  // RFC 2616: Transfer-Encoding overrides Content-Length.
+  if (headers["transfer-encoding"]) return "transfer-encoding";
+  if (headers["content-length"]) return "content-length";
+  return "close";
+}
+```
+
+## Key Rules
+
+- Agree on one framing mechanism for every hop in the chain.
+- In HTTP/1.x, ignore `Content-Length` when `Transfer-Encoding` is present.
+- In HTTP/2 or HTTP/3, validate `Content-Length` against actual frame length.
+- Prefer HTTP/2/3 end-to-end to remove the ambiguity entirely.
+- Reject requests carrying both `Transfer-Encoding` and `Content-Length`.
+
+## Checklist for Code Review
+
+- Does every network component use the same message-framing rule?
+- Are the HTTP/1.x precedence rules (TE over CL) applied consistently?
+- Is `Content-Length` validated against DATA frames for HTTP/2 and HTTP/3?
+- Are requests with both TE and CL rejected or normalized identically?
+- Are there any HTTP/2 → HTTP/1.1 downgrades along the request path?

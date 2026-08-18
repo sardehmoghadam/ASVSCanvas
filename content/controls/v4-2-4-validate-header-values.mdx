@@ -25,6 +25,67 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application only accepts HTTP/2 and HTTP/3 requests where the header fields and values do not contain any CR (\r), LF (\n), or CRLF (\r\n) sequences, to prevent header injection attacks.
+HTTP/2 and HTTP/3 bundle headers into an indexed binary format, so line-break characters should never appear inside a header name or value. This control requires the application to reject any request where a header field or value contains a carriage return (`\r`), line feed (`\n`), or the CRLF pair — regardless of how the headers were decoded off the wire.
+
+## Why This Matters
+
+An embedded CRLF in a header value is the primitive behind header injection and response splitting: if any layer reconstructs a text header stream from decoded values, a smuggled newline lets the attacker terminate one header early and start a new one — injecting cookies, redirects, or cache-control directives into the response. Rejecting CR/LF at decode time closes the primitive at its source.
+
+## Main Security Requirement
+
+> Verify that the application only accepts HTTP/2 and HTTP/3 requests where the header fields and values do not contain any CR (\r), LF (\n), or CRLF (\r\n) sequences, to prevent header injection attacks.
+
+In practice this means validating decoded header names and values against `[\r\n]` before the application ever consumes them.
+
+## Common Failure Patterns
+
+- **Trusting the binary layer** — assuming HTTP/2's format makes CRLF impossible, while decoded values still reach a text-based backend.
+- **No value validation** — the framework validates names but not values.
+- **Log injection** — writing attacker-controlled header values into logs without neutralization.
+- **Gateway re-encoding** — a proxy that flattens H2 headers into HTTP/1.1 text without re-validating them.
+
+## Secure Implementation
+
+Reject any newline in a decoded header name or value:
+
+```javascript
+const CRLF = /[\r\n]/;
+
+function validateHeaders(headers) {
+  for (const [rawName, value] of Object.entries(headers)) {
+    const name = rawName.toLowerCase();
+    if (CRLF.test(name) || CRLF.test(String(value))) {
+      throw Object.assign(new Error("Header injection attempt"), { status: 400 });
+    }
+  }
+}
+```
+
+Apply it as a guard at the edge before routing:
+
+```javascript
+app.use((req, res, next) => {
+  try {
+    validateHeaders(req.headers);
+  } catch (e) {
+    return res.status(400).end();
+  }
+  next();
+});
+```
+
+## Key Rules
+
+- Reject any request whose header names or values contain `\r`, `\n`, or `\r\n`.
+- Validate headers after decoding, not only at the binary framing layer.
+- Never reconstruct a text header block from untrusted values without re-validating.
+- Neutralize header values before writing them into logs or caches.
+
+## Checklist for Code Review
+
+- Are decoded header names and values checked for `\r` or `\n`?
+- Does any proxy re-encode H2 headers into text without validation?
+- Are attacker-controlled header values ever written to logs or caches unescaped?
+- Does header validation cover both manually parsed and framework-decoded headers?

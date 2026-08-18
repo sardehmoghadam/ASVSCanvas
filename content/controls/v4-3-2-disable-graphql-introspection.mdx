@@ -25,6 +25,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that GraphQL introspection queries are disabled in the production environment unless the GraphQL API is meant to be used by other parties.
+GraphQL exposes built-in introspection fields (`__schema`, `__type`) that enumerate the entire schema. This control requires those queries to be turned off in production, with one exception: when the API is deliberately public and third parties are expected to discover and consume it, introspection may stay on.
+
+## Why This Matters
+
+Introspection is an automated map of the attack surface. It hands an attacker every type, field, argument, and — critically — every hidden or undocumented mutation and sensitive field, many of which would otherwise go unnoticed. Disabling it removes a cheap reconnaissance bounty and forces attackers to work from guesswork instead of a full blueprint.
+
+## Main Security Requirement
+
+> Verify that GraphQL introspection queries are disabled in the production environment unless the GraphQL API is meant to be used by other parties.
+
+In practice this means disabling introspection in production builds while leaving it available only in development tooling.
+
+## Common Failure Patterns
+
+- **Introspection left on in production** — often the default for many GraphQL servers.
+- **Off in dev only** — the flag is tied to `NODE_ENV` but the env var is misconfigured in prod.
+- **Blocked names only** — filtering `__schema` but not `__type` or nested `__typename` cells.
+- **Public-by-default schemas** — exposing sensitive internal fields in a schema others consume.
+
+## Secure Implementation
+
+Disable introspection in production:
+
+```javascript
+import { ApolloServer } from "apollo-server";
+
+const server = new ApolloServer({
+  schema,
+  introspection: process.env.NODE_ENV === "development", // off in prod
+  playground: false,
+});
+```
+
+Add a resolver-level guard for any tool that still permits it:
+
+```javascript
+function blockIntrospection(fieldName) {
+  return fieldName.startsWith("__") && fieldName !== "__typename";
+}
+```
+
+## Key Rules
+
+- Disable introspection (`__schema`, `__type`) in production.
+- Keep it enabled only in development and testing tooling.
+- Allow introspection in production only for genuinely public, third-party APIs.
+- Ensure the production environment variable cannot accidentally enable it.
+- Treat introspection as an information-disclosure surface in review.
+
+## Checklist for Code Review
+
+- Is introspection disabled for the production environment?
+- Is the disable flag bound to an environment variable that is reliably set in prod?
+- Are both `__schema` and `__type` blocked, not just `__schema`?
+- If the API is public, is that a deliberate, documented decision?

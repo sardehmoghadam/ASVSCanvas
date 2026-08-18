@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that every HTTP response with a message body contains a Content-Type header field that matches the actual content of the response, including the charset parameter to specify safe character encoding (e.g., UTF-8, ISO-8859-1) according to IANA Media Types, such as text/*, */+xml and */xml.
+Every response that carries a body must declare what it is via a `Content-Type` header that actually matches the bytes being served, and — for textual or XML media types — include an explicit `charset` parameter. The browser and downstream parsers must not have to guess either the format or the character encoding.
+
+## Why This Matters
+
+Without an explicit charset, browsers fall back to character-set detection ("sniffing"), which attackers abuse. The classic exploit is UTF-7: a document served without `charset` can be interpreted as UTF-7, where `<script>` can be encoded in ways a UTF-8-aware sanitizer never catches, producing working XSS. A mismatched or missing `Content-Type` similarly lets content be interpreted as HTML when it was meant to be plain data.
+
+## Main Security Requirement
+
+> Verify that every HTTP response with a message body contains a Content-Type header field that matches the actual content of the response, including the charset parameter to specify safe character encoding (e.g., UTF-8, ISO-8859-1) according to IANA Media Types, such as text/*, */+xml and */xml.
+
+In practice this means: always emit `Content-Type` explicitly, and include `; charset=utf-8` on every textual, XML-based, or notification media type.
+
+## Common Failure Patterns
+
+- **Missing charset on textual media** — `text/html` or `application/json` served without `; charset=utf-8`.
+- **Mismatched type** — serving JSON but declaring `text/html`, inviting reinterpretation.
+- **Generic `application/octet-stream`** — forcing the browser to sniff and reclassify content.
+- **Sniffing left enabled** — relying on `X-Content-Type-Options` as the only fix instead of correct typing.
+
+## Secure Implementation
+
+Set the type and charset explicitly in the application layer:
+
+```javascript
+app.get("/api/user", (req, res) => {
+  res.set("Content-Type", "application/json; charset=utf-8");
+  res.json({ name: "alice" });
+});
+```
+
+And at the edge, prevent reclassification by forcing the header for textual responses:
+
+```nginx
+# Textual and XML media types always carry an explicit charset.
+map $sent_http_content_type $with_charset {
+    ~^text/          $sent_http_content_type; # handled below
+    ~/(\+)?xml;?     $sent_http_content_type;
+    default          $sent_http_content_type;
+}
+
+add_header Content-Type "$with_charset; charset=utf-8" always;
+```
+
+## Key Rules
+
+- Declare `Content-Type` on every response that has a body.
+- Include `charset=utf-8` for all `text/*`, `*/+xml`, and `*/xml` responses.
+- Make the declared type match the actual content — never guess or bluff.
+- Avoid `application/octet-stream` where a precise type is known.
+
+## Checklist for Code Review
+
+- Does every body-carrying response set an explicit `Content-Type`?
+- Is `charset=utf-8` present on all textual and XML media types?
+- Does any response declare a type that does not match its payload?
+- Are there `text/*` or XML responses still relying on browser sniffing?
+- Does the declared charset actually match the encoding the serializer emitted?

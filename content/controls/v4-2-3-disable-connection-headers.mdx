@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application does not send nor accept HTTP/2 or HTTP/3 messages with connection-specific header fields such as Transfer-Encoding to prevent response splitting and header injection attacks.
+HTTP/2 and HTTP/3 abolished connection-specific header fields. Headers like `Connection`, `Keep-Alive`, `Transfer-Encoding`, `Upgrade`, and `Proxy-Connection` must never appear in an HTTP/2 or HTTP/3 message — neither sent by the application nor accepted from a client. Anything that forwards or emits them must strip them.
+
+## Why This Matters
+
+Connection-specific headers carry hop-by-hop semantics that mean different things on different legs of a connection. A `Transfer-Encoding` smuggled through an HTTP/2 path can desynchronize how intermediaries chunk the stream, enabling response splitting and header injection: an attacker crafts a message that the receiver splits into two, injecting their own header into the victim's reply.
+
+## Main Security Requirement
+
+> Verify that the application does not send nor accept HTTP/2 or HTTP/3 messages with connection-specific header fields such as Transfer-Encoding to prevent response splitting and header injection attacks.
+
+In practice this means filtering `Connection`, `Keep-Alive`, `Transfer-Encoding`, `Upgrade`, and `Proxy-Connection` at the boundary to HTTP/2/HTTP/3.
+
+## Common Failure Patterns
+
+- **HTTP/1.1 headers forwarded into H2** — an upstream `Transfer-Encoding` replayed verbatim into an HTTP/2 response.
+- **`Connection` header honored** — trusting a client-supplied list of "headers to drop."
+- **Upgrade/Proxy-Connection passthrough** — leaking hop-by-hop headers across a proxy boundary.
+- **No normalization at the edge** — relying on each microservice to clean framing headers itself.
+
+## Secure Implementation
+
+Strip all connection-specific and hop-by-hop headers at the ingress:
+
+```javascript
+const HOP_BY_HOP = new Set([
+  "connection", "keep-alive", "transfer-encoding",
+  "upgrade", "proxy-connection", "proxy-authenticate",
+  "proxy-authorization", "te", "trailer"
+]);
+
+function sanitizeIncoming(headers) {
+  for (const name of Object.keys(headers)) {
+    if (HOP_BY_HOP.has(name.toLowerCase())) delete headers[name];
+  }
+  // Also drop any header listed in a Connection header.
+  for (const h of String(headers["connection"] ?? "").split(",")) {
+    delete headers[h.trim().toLowerCase()];
+  }
+  return headers;
+}
+```
+
+## Key Rules
+
+- Never emit connection-specific headers in HTTP/2 or HTTP/3 traffic.
+- Strip `Connection`, `Keep-Alive`, `Transfer-Encoding`, `Upgrade`, and `Proxy-Connection` at the boundary.
+- Drop any header nominated by a client-supplied `Connection` header.
+- Normalize framing headers at the edge rather than per microservice.
+- Upgrade/adjust legacy HTTP/1.1 header code when serving H2/H3.
+
+## Checklist for Code Review
+
+- Do any HTTP/2 or HTTP/3 responses include connection-specific headers?
+- Is there a hop-by-hop header filter at the ingress/proxy?
+- Are headers listed in a client `Connection` header removed?
+- Does legacy HTTP/1.1 code get sanitized before H2/H3 use?

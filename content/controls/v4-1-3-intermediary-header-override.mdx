@@ -25,6 +25,65 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that any HTTP header field used by the application and set by an intermediary layer, such as a load balancer, a web proxy, or a backend-for-frontend service, cannot be overridden by the end-user. Example headers might include X-Real-IP, X-Forwarded-*, or X-User-ID.
+Some headers (client IP, trusted user ID, TLS termination flags) are injected by infrastructure the application trusts — a load balancer, reverse proxy, or backend-for-frontend layer. This control requires that an ordinary client cannot simply set those same headers itself; whatever value the app consumes must come from the trusted hop, never from the requester.
+
+## Why This Matters
+
+If a client can set `X-Forwarded-For` or `X-User-ID`, it can forge the value the application relies on. Consequences include bypassing IP-based rate limits and ACLs, impersonating another account, polluting audit logs, and defeating geo-restrictions. The header is only trustworthy when the app strips the user's copy and only honors the intermediary's.
+
+## Main Security Requirement
+
+> Verify that any HTTP header field used by the application and set by an intermediary layer, such as a load balancer, a web proxy, or a backend-for-frontend service, cannot be overridden by the end-user. Example headers might include X-Real-IP, X-Forwarded-*, or X-User-ID.
+
+In practice this means: the app must only trust these headers when arriving directly from the trusted proxy, and must strip or ignore any client-supplied copy.
+
+## Common Failure Patterns
+
+- **Trusting the raw header** — reading `X-Forwarded-For` straight from the request without stripping the client's value.
+- **Mixed values** — accepting both a user-supplied and a proxy-supplied instance of the same header.
+- **Unprotected edge** — the app binds directly to clients, yet still honors `X-Real-IP` from them.
+- **Log poisoning** — emitting user-forged headers into access logs or correlation IDs.
+
+## Secure Implementation
+
+Configure the proxy to overwrite rather than append, and the app to trust only the proxy hop:
+
+```nginx
+# Force the client IP and strip any client-sent instances of the header.
+map $remote_addr $trusted_real_ip { default $remote_addr; }
+
+server {
+    listen 443 ssl;
+    # ... TLS/proxy config ...
+
+    # Overwrite, never append, the forwarded IP.
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-User-ID "";
+}
+```
+
+In the application, read only the value injected by the trusted hop and reject direct copies:
+
+```javascript
+function clientIp(req) {
+  // Only meaningful when the app is reached exclusively via the trusted proxy.
+  return req.headers["x-real-ip"] || req.socket.remoteAddress;
+}
+```
+
+## Key Rules
+
+- Identify every header the app consumes that is set by an intermediary.
+- Ensure clients cannot set or append to those headers themselves.
+- Strip client-supplied copies before reading the trusted value.
+- Only bind the app to the trusted proxy; close any direct-client path.
+
+## Checklist for Code Review
+
+- Which request headers act as trusted values (IP, user ID, TLS flags)?
+- Can a client set those headers and have the value honored?
+- Are `X-Real-IP`, `X-Forwarded-*`, `X-User-ID` overwritten by the proxy, not appended?
+- Is there a direct-client path that skips the trusted intermediary?

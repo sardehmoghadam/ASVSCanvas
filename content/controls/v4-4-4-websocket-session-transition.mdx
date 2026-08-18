@@ -25,6 +25,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that dedicated WebSocket session management tokens are initially obtained or validated through the previously authenticated HTTPS session when transitioning an existing HTTPS session to a WebSocket channel.
+When a user upgrades an authenticated HTTPS session into a WebSocket, the socket's credentials must derive from that existing, verified session — not from a bare, unauthenticated handshake. The dedicated WebSocket token must be issued through (or validated against) the HTTPS session, establishing a secure handoff from the trusted page context to the socket.
+
+## Why This Matters
+
+If the WebSocket endpoint issues tokens to anyone who connects, an attacker can obtain a socket token without ever authenticating, then impersonate a user inside the channel. Tying token issuance to the already-authenticated HTTPS session means only an established, verified identity can cross the bridge into the WebSocket — closing the unauthenticated-upgrade gap.
+
+## Main Security Requirement
+
+> Verify that dedicated WebSocket session management tokens are initially obtained or validated through the previously authenticated HTTPS session when transitioning an existing HTTPS session to a WebSocket channel.
+
+In practice this means the socket handshake must present proof of the HTTPS session (a session cookie) before a dedicated token is minted.
+
+## Common Failure Patterns
+
+- **Anonymous token endpoint** — a `POST /socket/token` that issues credentials without checking the session.
+- **Socket accepts its own token directly** — bypassing the HTTPS-authenticated issuance step.
+- **No binding to the session ID** — the dedicated token is not tied to the originating session.
+- **Credential downgrade on upgrade** — the upgrade drops the HTTPS session context entirely.
+
+## Secure Implementation
+
+Issue the token only to the authenticated HTTPS session:
+
+```javascript
+app.post("/socket/token", authenticateSession, (req, res) => {
+  const token = issueSocketToken(req.session.id, 300); // 5 minutes
+  res.json(token);
+});
+```
+
+During the upgrade, require and validate that token against the session:
+
+```javascript
+server.on("upgrade", (req, socket, head) => {
+  const token = new URL(req.url, "https://x").searchParams.get("token");
+  if (!verifySocketToken(token, req.session?.id)) {
+    socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+    return socket.destroy();
+  }
+  wss.handleUpgrade(req, socket, head, ws => wss.emit("connection", ws, req));
+});
+```
+
+## Key Rules
+
+- Issue WebSocket tokens only through the authenticated HTTPS session.
+- Validate the HTTPS session (and its origin) before minting a token.
+- Bind the dedicated token to its originating session identifier.
+- Refuse socket upgrades that do not present a valid, session-bound token.
+- Keep the handoff short-lived to limit the exposure window.
+
+## Checklist for Code Review
+
+- Are WebSocket tokens issued only to authenticated HTTPS sessions?
+- Is the HTTPS session validated before a token is created?
+- Is the dedicated token bound to the originating session?
+- Does the upgrade path reject unauthenticated or invalid tokens?
+- Is the token lifetime appropriately short for a one-time handoff?

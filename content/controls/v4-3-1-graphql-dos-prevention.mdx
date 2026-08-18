@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a query allowlist, depth limiting, amount limiting, or query cost analysis is used to prevent GraphQL or data layer expression Denial of Service (DoS) as a result of expensive, nested queries.
+GraphQL lets the client name the exact fields it wants, which also means the client can demand arbitrarily deep or wide graphs of data. This control requires the server to constrain that freedom — via a query allowlist (persisted queries), depth limiting, a limit on the number of nodes, or a query cost analysis — so no single request can force explosive, expensive work out of the data layer.
+
+## Why This Matters
+
+A malicious or buggy query can nest resolvers thousands of levels deep or fan out into every relationship, triggering exponential database joins and consuming the server to exhaustion. This is a classic GraphQL DoS: a one-line query brings the API down. A depth or cost cap makes the work proportional to an approved budget instead of to attacker whim.
+
+## Main Security Requirement
+
+> Verify that a query allowlist, depth limiting, amount limiting, or query cost analysis is used to prevent GraphQL or data layer expression Denial of Service (DoS) as a result of expensive, nested queries.
+
+In practice this means at least one of these controls enforced in production — and ideally a cost budget plus a depth limit together.
+
+## Common Failure Patterns
+
+- **No depth limit** — a recursive schema field lets queries nest without bound.
+- **No cost analysis** — wide fan-out queries are not priced or capped.
+- **Introspection-fuelled discovery** — the attacker maps expensive paths because introspection is enabled.
+- **Client-controlled `$limit`** — pagination bounds that the caller can raise arbitrarily.
+
+## Secure Implementation
+
+Enforce a query depth limit with a supplied validator:
+
+```javascript
+import depthLimit from "graphql-depth-limit";
+
+const server = new ApolloServer({
+  schema,
+  validationRules: [depthLimit(7)], // reject deeper than 7 levels
+});
+```
+
+Better still, cap the *cost* of a query and reject over-budget requests:
+
+```javascript
+function estimateCost(ast) {
+  // Every field costs 1; connections with an argument cost extra.
+  let cost = 0;
+  ast.visitFields(field => (cost += field.arguments.length ? 10 : 1));
+  return cost;
+}
+
+if (estimateCost(parsedQuery) > MAX_QUERY_COST) {
+  throw new Error("Query too expensive");
+}
+```
+
+## Key Rules
+
+- Apply a depth limit or cost analysis to every GraphQL query.
+- Prefer a persisted-query allowlist for a fixed, audit-safe surface.
+- Cap list sizes server-side; do not trust client pagination limits.
+- Reject queries that exceed the budget before any resolver runs.
+- Combine depth and cost limits for defense in depth.
+
+## Checklist for Code Review
+
+- Is a depth limit, cost analysis, or query allowlist enforced in production?
+- Are recursive and list fields protected from unbounded nesting?
+- Does the server clamp `$limit`/pagination parameters?
+- Are expensive queries rejected before execution, not just logged after the fact?

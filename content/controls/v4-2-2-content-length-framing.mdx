@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that when generating HTTP messages, the Content-Length header field does not conflict with the length of the content as determined by the framing of the HTTP protocol, in order to prevent request smuggling attacks.
+When your application *generates* an HTTP message — a response or an outbound server-to-server request — the `Content-Length` it writes must equal the byte length the protocol's framing actually delivers. There must be no `Content-Length` set alongside chunked `Transfer-Encoding`, and no value that disagrees with the real body size.
+
+## Why This Matters
+
+A `Content-Length` that contradicts the real framing creates the same desync at the *outbound* side that attackers exploit inbound. Downstream proxies and clients that trust the header while the connection framing says otherwise will misparse subsequent messages, enabling request smuggling, response desynchronization, or truncated bodies that hide tampering.
+
+## Main Security Requirement
+
+> Verify that when generating HTTP messages, the Content-Length header field does not conflict with the length of the content as determined by the framing of the HTTP protocol, in order to prevent request smuggling attacks.
+
+In practice this means: never hand-write a `Content-Length`; let the framework or encoding layer calculate it from the actual bytes.
+
+## Common Failure Patterns
+
+- **Hardcoded length** — a fixed `Content-Length` that no longer matches the body after content changes.
+- **Chunked plus CL** — emitting both `Transfer-Encoding: chunked` and `Content-Length`.
+- **Pre-compression length** — setting CL to the uncompressed size while the body is served gzip-compressed.
+- **Manual `res.end()` with a stale CL** — reusing a header value across responses of different lengths.
+
+## Secure Implementation
+
+Let the runtime compute the length from the serialized body:
+
+```javascript
+// Let Node derive Content-Length from the actual bytes sent.
+app.get("/data", (req, res) => {
+  const body = JSON.stringify(payload);
+  res.set("Content-Type", "application/json");
+  res.end(body); // Node sets Content-Length = Buffer.byteLength(body)
+});
+```
+
+When proxying, strip user-supplied framing and let the upstream re-declare it:
+
+```nginx
+location /api/ {
+    proxy_pass http://backend;
+    proxy_set_header Content-Length "";
+    # chunked framing is derived by nginx from the upstream body
+}
+```
+
+## Key Rules
+
+- Never hand-calculate or hardcode `Content-Length`.
+- Do not send `Content-Length` together with `Transfer-Encoding`.
+- Compute the length from the exact bytes after any compression or encoding.
+- Strip incoming framing headers at the edge before repackaging the message.
+- Treat a CL/framing mismatch as a programming error, not a cosmetic warning.
+
+## Checklist for Code Review
+
+- Is any `Content-Length` value set manually rather than by the framework?
+- Are `Content-Length` and `Transfer-Encoding` ever present together?
+- Is the length computed before or after compression and charset encoding?
+- Does proxying code clear or recompute framing headers correctly?
+- Are outbound server-to-server requests free of stale or guessed lengths?
