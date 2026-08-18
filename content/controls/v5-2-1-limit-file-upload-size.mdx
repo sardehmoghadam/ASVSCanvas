@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application will only accept files of a size which it can process without causing a loss of performance or a denial of service attack.
+An upload endpoint must refuse any file larger than the application can comfortably process. The limit is set by what the application actually does with the file — storage, parsing, image processing, virus scanning — so that a single large upload cannot degrade service or exhaust resources to the point of denial of service.
+
+## Why This Matters
+
+Unbounded uploads are the simplest DoS against a service: a few oversized files exhaust disk, memory, or CPU (think resizing a 2 GB image, or parsing a giant XML). Enforcing a size limit early — before any expensive processing — turns a trivially-abused endpoint into a bounded one, protecting both the service and its storage.
+
+## Main Security Requirement
+
+> Verify that the application will only accept files of a size which it can process without causing a loss of performance or a denial of service attack.
+
+In practice this means enforcing the limit in multiple layers, including the reverse proxy and streaming request path.
+
+## Common Failure Patterns
+
+- **No limit at all** — accepting any size and discovering the cost later.
+- **App-only limit** — the proxy streams the full body before the app ever rejects it.
+- **Limit after processing** — validating size only after parsing or decoding, not before.
+- **Chunked bypass** — not accounting for `Transfer-Encoding: chunked` requests without a declared length.
+
+## Secure Implementation
+
+Reject oversized bodies at the edge so they never reach the application:
+
+```nginx
+# Stop dispatch of oversized requests before the app sees them.
+client_max_body_size 5m;
+```
+
+And enforce it in the upload middleware itself:
+
+```javascript
+import multer from "multer";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MiB
+    files: 3,
+  },
+});
+
+app.post("/upload", upload.array("files"), (req, res) => {
+  res.json({ ok: true });
+});
+```
+
+## Key Rules
+
+- Set a maximum upload size per feature, based on what the app can process.
+- Enforce the limit at the proxy and the application layer.
+- Reject oversized requests before any parsing, extraction, or processing.
+- Handle chunked streaming uploads explicitly.
+- Return a clear `413 Payload Too Large` style error.
+
+## Checklist for Code Review
+
+- Is there a size limit for every upload endpoint?
+- Is the limit enforced before the file is processed, not after?
+- Does the reverse proxy also cap request body size?
+- Are chunked/streaming uploads covered by the limit?
+- Is `413` returned when the limit is exceeded?

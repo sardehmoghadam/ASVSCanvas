@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that server-side file processing, such as file decompression, ignores user-provided path information to prevent vulnerabilities such as zip slip.
+When the server processes packed file formats — decompressing archives, unpacking uploads — it must not honor the path names embedded in the archive by the user. Instead of writing to `entry.path`, the application generates its own safe location for each extracted file. This is the core of zip-slip prevention.
+
+## Why This Matters
+
+Zip slip abused the archive's own entry names (`../../etc/cron.d/pwn`, or absolute `/tmp/x`) to write files outside the extraction folder, achieving arbitrary disk writes and code execution. Ignoring the attacker-supplied path — and computing the destination server-side — eliminates the overwrite primitive entirely, regardless of what the archive claims.
+
+## Main Security Requirement
+
+> Verify that server-side file processing, such as file decompression, ignores user-provided path information to prevent vulnerabilities such as zip slip.
+
+In practice this means discarding each entry's path and building a safe, sanitized destination yourself.
+
+## Common Failure Patterns
+
+- **Using entry.path directly** — trusting the archive's declared names.
+- **String-prefix checks** — comparing `"/safe/../"` textually before normalization.
+- **Weak basename handling** — passing traversal sequences through to `path.join`.
+- **Absolute or `..` paths** — entry names like `/tmp/x` or `../../x` escaping root.
+
+## Secure Implementation
+
+Ignore the entry path and compose the destination from a sanitized basename:
+
+```javascript
+const EXTRACT_ROOT = "/srv/extracted";
+
+for (const entry of archive) {
+  const base = path.basename(entry.path.replace(/\\/g, "/"));
+  const dest = path.join(EXTRACT_ROOT, base);
+  // Belt-and-braces: confirm final containment inside the root.
+  if (!dest.startsWith(path.resolve(EXTRACT_ROOT) + path.sep)) {
+    throw new Error("Rejected unsafe entry: " + entry.path);
+  }
+  stream(entry).pipe(fs.createWriteStream(dest));
+}
+```
+
+## Key Rules
+
+- Ignore user-provided path information in archived entries.
+- Generate the destination path server-side from a sanitized value.
+- Use `path.basename` (or equivalent) before joining to the extract root.
+- Canonicalize and verify the final path is within the root.
+- Apply the same rule to every entry, including nested archives.
+
+## Checklist for Code Review
+
+- Is each archive entry's destination computed server-side, not from the entry name?
+- Are entry paths stripped to a basename before joining?
+- Is the final path canonicalized and confirmed inside the extract root?
+- Are absolute paths and `..` sequences neutralized?
+- Does the logic cover nested or multi-level archives?

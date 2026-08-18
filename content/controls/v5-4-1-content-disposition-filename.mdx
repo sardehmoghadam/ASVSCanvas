@@ -1,4 +1,4 @@
----
+﻿---
 schemaVersion: "1.0.0"
 asvsVersion: "5.0.0"
 controlId: V5.4.1
@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application validates or ignores user-submitted filenames, including in a JSON, JSONP, or URL parameter and specifies a filename in the Content-Disposition header field in the response.
+When a download response is generated, the filename shown to the user comes from the `Content-Disposition` header â€” and that name must be set by the application, not taken raw from the request. User-supplied filenames, whether in JSON, JSONP, or URL parameters, must be validated or simply ignored.
+
+## Why This Matters
+
+A filename echoed unsanitized into `Content-Disposition` is a header injection vector: attacker-controlled newlines break headers and allow smuggling responses, or render stored XSS via crafted filenames. Determining the filename server-side (or validating it to a known-safe form) removes the input entirely from a security-sensitive header.
+
+## Main Security Requirement
+
+> Verify that the application validates or ignores user-submitted filenames, including in a JSON, JSONP, or URL parameter and specifies a filename in the Content-Disposition header field in the response.
+
+In practice this means the server sets the `filename` and never reflects the user's raw value.
+
+## Common Failure Patterns
+
+- **Reflecting request filename** â€” copying the param straight into the header.
+- **CRLF injection** â€” unvalidated `\r\n` in the filename splitting headers.
+- **No Content-Disposition** â€” relying on the URL path to name downloads.
+- **Allowing control chars** â€” unescaped quotes/semicolons breaking the header.
+
+## Secure Implementation
+
+Set the filename server-side, ignoring any user value:
+
+```javascript
+app.get("/download/:id", async (req, res) => {
+  const record = await db.files.get(req.params.id);
+  // Filename comes from storage metadata, never from the request.
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${record.sanitizedName}"`
+  );
+  res.send(record.contents);
+});
+```
+
+## Key Rules
+
+- Always set `Content-Disposition` with an application-chosen filename.
+- Validate or ignore user-supplied filenames from all parameter sources.
+- Strip/encode CR/LF, quotes, and control characters from any reflected name.
+- Use `attachment` for downloads, not `inline`, when rendering must be avoided.
+- Never build the header from raw request input.
+
+## Checklist for Code Review
+
+- Is the download filename set by the application, not the request?
+- Are user filenames from JSON/JSONP/URL params validated or dropped?
+- Are CR/LF and control characters stripped or encoded in the header value?
+- Is `Content-Disposition: attachment` used to force a download?
+- Could any request param reach the header unvalidated?

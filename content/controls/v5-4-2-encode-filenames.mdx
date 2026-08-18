@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that file names served (e.g., in HTTP response header fields or email attachments) are encoded or sanitized (e.g., following RFC 6266) to preserve document structure and prevent injection attacks.
+File names that cross protocol boundaries — into HTTP headers or email attachment headers — are data, not markup, and must be encoded or sanitized so they cannot change the structure of the message they ride in. RFC 6266 defines the `filename*` form for non-ASCII names; header injection needs CR/LF and control characters stripped.
+
+## Why This Matters
+
+A filename like `x\nSet-Cookie: ...` or one with quotes and non-ASCII bytes can break header parsing, enable header/HTTP response splitting, or corrupt email structure. Encoding the name per RFC 6266 and sanitizing structural characters keeps the filename data safely inside its field.
+
+## Main Security Requirement
+
+> Verify that file names served (e.g., in HTTP response header fields or email attachments) are encoded or sanitized (e.g., following RFC 6266) to preserve document structure and prevent injection attacks.
+
+In practice this means stripping control characters and quoting/encoding per the relevant standard.
+
+## Common Failure Patterns
+
+- **Raw names in headers** — unencoded `\n` in a `filename` value.
+- **Non-ASCII unhandled** — names with accents or emoji corrupting header bytes.
+- **Quotes/semicolons** — breaking out of the quoted `filename="..."` grammar.
+- **Same string for header and body** — email attachment names carrying raw user data.
+
+## Secure Implementation
+
+Sanitize structural characters and encode per RFC 6266:
+
+```javascript
+function sanitizeFilename(name) {
+  // Remove characters that terminate or break the header field.
+  return name.replace(/[\u0000-\u001f\u007f"\\\\;]/g, "");
+}
+
+app.get("/file/:id", (req, res) => {
+  const safe = sanitizeFilename(record.name);
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(safe)}`
+  );
+  res.send(record.contents);
+});
+```
+
+## Key Rules
+
+- Sanitize filenames to remove CR/LF, quotes, and control characters.
+- Encode non-ASCII names using the RFC 6266 `filename*` form.
+- Apply the same rules to email attachment names as HTTP headers.
+- Keep the encoded filename consistent with the stored name.
+- Treat filenames as untrusted data at every boundary they cross.
+
+## Checklist for Code Review
+
+- Are CR/LF and control characters stripped from served filenames?
+- Are non-ASCII names encoded via `filename*` (RFC 6266)?
+- Are quotes and semicolons neutralized in header filenames?
+- Is the same sanitization applied to email attachments?
+- Could a crafted name still alter message/header structure?

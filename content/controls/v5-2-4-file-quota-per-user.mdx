@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a file size quota and maximum number of files per user are enforced to ensure that a single user cannot fill up the storage with too many files, or excessively large files.
+Per-file limits are not enough: the application must also cap what each individual user can accumulate. The control enforces two per-user quotas — a total byte allowance and a maximum number of files — so no single account can monopolize storage across many uploads.
+
+## Why This Matters
+
+An attacker (or simply a runaway process) who stays under the per-file limit can still upload thousands of files and fill the volume. A per-user quota bounds aggregate consumption, preventing one account from denying service to everyone else by exhausting shared storage.
+
+## Main Security Requirement
+
+> Verify that a file size quota and maximum number of files per user are enforced to ensure that a single user cannot fill up the storage with too many files, or excessively large files.
+
+In practice this means tracking per-user totals at upload time and rejecting additions that would exceed the quota.
+
+## Common Failure Patterns
+
+- **Per-file only** — each file is under limit, but there is no aggregate per-user cap.
+- **Unbounded accounts** — no quota, or quota never checked/enforced.
+- **Check-then-write race** — quota read and write are not atomic, allowing concurrent overshoot.
+- **Anonymous bypass** — unauthenticated upload paths that escape per-user accounting entirely.
+
+## Secure Implementation
+
+Enforce the quota atomically at upload time:
+
+```javascript
+async function enforceQuota(userId, incomingBytes, incomingCount) {
+  const usage = await db.get("usage", userId); // { bytes, count }
+  const nextBytes = usage.bytes + incomingBytes;
+  const nextCount = usage.count + incomingCount;
+  if (nextBytes > MAX_BYTES || nextCount > MAX_FILES) {
+    throw Object.assign(new Error("Quota exceeded"), { status: 413 });
+  }
+  // Atomic increment guards against concurrent uploads.
+  await db.update("usage", userId,
+    { bytes: nextBytes, count: nextCount },
+    { where: b => b.bytes === usage.bytes && b.count === usage.count });
+}
+```
+
+## Key Rules
+
+- Enforce a total byte quota and a total file-count quota per user.
+- Apply quotas at upload time, not as a background sweep.
+- Make quota updates atomic to avoid raced overshoot.
+- Cover unauthenticated and bulk paths as well as logged-in users.
+- Return a clear `413`/quota error when the limit is reached.
+
+## Checklist for Code Review
+
+- Is there a per-user byte quota and file-count quota?
+- Is the quota enforced synchronously at upload, not deferred?
+- Are quota increments atomic under concurrency?
+- Do anonymous or batch uploads also count against a quota?
+- Is there a clear user-facing error when the quota is hit?

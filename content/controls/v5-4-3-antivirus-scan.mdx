@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent serving of known malicious content.
+Uploads and files retrieved from untrusted third parties must pass through an antivirus/malware scanner before the application stores or serves them. This prevents the service from becoming a distribution vector for known malicious content.
+
+## Why This Matters
+
+Even a well-validated file can carry known malware payloads that later harm the users who download it. An AV pass provides a signature-based safety net on top of structural/content validation — catching threats that type checks cannot, and protecting downstream users from serving known-bad content.
+
+## Main Security Requirement
+
+> Verify that files obtained from untrusted sources are scanned by antivirus scanners to prevent serving of known malicious content.
+
+In practice this means routing every untrusted file through a scanner and rejecting/quarantining any detection.
+
+## Common Failure Patterns
+
+- **No scan at all** — serving uploads directly without malware inspection.
+- **Scan skipped on some paths** — bulk imports or API uploads bypass the scanner.
+- **Scan-then-store race** — serving before the scan completes.
+- **Fail-open** — treating a scanner error/timeout as "clean".
+
+## Secure Implementation
+
+Scan synchronously before the file is made downloadable:
+
+```javascript
+async function scanThenStore(buffer, dest) {
+  const result = await clamav.scanStream(readableFrom(buffer));
+  if (result.isInfected) {
+    throw Object.assign(new Error("Malware detected"), { status: 415 });
+  }
+  await fs.promises.writeFile(dest, buffer);
+}
+```
+
+## Key Rules
+
+- Scan every file obtained from an untrusted source before storing or serving.
+- Block or quarantine on detection; never serve infected content.
+- Update virus definitions regularly.
+- Fail closed on scan errors rather than assuming clean.
+- Treat uploaded and imported/third-party files identically.
+
+## Checklist for Code Review
+
+- Are all untrusted files scanned before being stored or served?
+- Does detection block the file (quarantine/reject), never pass it?
+- Is there a documented behavior for scanner failure/timeout?
+- Are virus definitions kept up to date?
+- Do all ingestion paths (upload, import, API) route through the scanner?

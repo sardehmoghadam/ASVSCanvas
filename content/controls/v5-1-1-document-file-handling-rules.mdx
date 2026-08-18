@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the documentation defines the permitted file types, expected file extensions, and maximum size (including unpacked size) for each upload feature. Additionally, ensure that the documentation specifies how files are made safe for end-users to download and process, such as how the application behaves when a malicious file is detected.
+File handling is governed by a written policy, not by whatever the developers happened to code. The documentation must name, for every upload feature: which file types and extensions are permitted, the maximum on-disk size, the maximum *unpacked* size, and exactly what the application does with a file before users download or process it — including how it reacts when a malicious file is detected.
+
+## Why This Matters
+
+An undocumented upload path is an untested one. If no one has said "this endpoint accepts only PDF up to 5 MB, and rejects macro-enabled files with a quarantine page," then no one has checked that it does. The documentation drives implementation, review, and auditing; without it, file-handling controls drift and dangerous file types slip through silently.
+
+## Main Security Requirement
+
+> Verify that the documentation defines the permitted file types, expected file extensions, and maximum size (including unpacked size) for each upload feature. Additionally, ensure that the documentation specifies how files are made safe for end-users to download and process, such as how the application behaves when a malicious file is detected.
+
+In practice this means: a written per-feature file-handling spec that the code can be reviewed against.
+
+## Common Failure Patterns
+
+- **No written policy** — upload rules exist only in code, unreviewed and unmaintained.
+- **Missing unpacked size** — compressed uploads are bounded by disk size only, ignoring decompression bombs.
+- **Undefined malicious-file behavior** — nothing says what happens (quarantine? block? notify?) on detection.
+- **Policy drift** — the document says one thing and the code does another.
+
+## Secure Implementation
+
+Document each upload feature explicitly, including the failure path:
+
+```yaml
+# uploads.md — per-feature file handling policy
+invoice_upload:
+  permitted_types: [application/pdf]
+  max_size: 5242880        # 5 MiB on disk
+  max_unpacked_size: 52428800   # 50 MiB after extraction
+  extensions: [".pdf"]
+  on_malicious_detection: quarantine-and-notify
+```
+
+Keep the policy executable by mapping each rule to a validation constant:
+
+```javascript
+const UPLOAD_POLICY = {
+  invoice: { types: ["application/pdf"], maxSize: 5 * 1024 * 1024 },
+  avatar:  { types: ["image/png", "image/jpeg"], maxSize: 2 * 1024 * 1024 },
+};
+```
+
+## Key Rules
+
+- Document permitted types, extensions, and maximum size per upload feature.
+- Include the maximum unpacked size, not just the on-disk size.
+- Specify how files are safened before download and processing.
+- Define the exact behavior when a malicious file is detected.
+- Keep the documentation in sync with the actual code.
+
+## Checklist for Code Review
+
+- Is there a written file-handling policy for every upload feature?
+- Does it list permitted types, extensions, and both disk and unpacked sizes?
+- Is the malicious-file behavior defined and implemented?
+- Are validation constants in code consistent with the documented limits?
+- Is the documentation reviewed and updated alongside code changes?

@@ -25,6 +25,71 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that when the application accepts a file, either on its own or within an archive such as a zip file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. This includes, but is not limited to, checking the initial magic bytes, performing image re-writing, and using specialized libraries for file content validation. For L1, this can focus just on files which are used to make specific business or security decisions. For L2 and up, this must apply to all files being accepted.
+The file extension is untrusted — so is whatever MIME type the client claims. This control requires validating that the file *content* actually matches the type its extension implies: checking the magic bytes at the start of the file, re-writing images to strip embedded payloads, and using specialized libraries. It applies both to bare uploads and to the members inside archives like ZIP.
+
+## Why This Matters
+
+An attacker renames `malware.exe` to `invoice.pdf` or hides an HTML/JS payload inside a `.jpg` that is later served inline. Extension and client-declared MIME checks are trivially forged; only content inspection reveals the truth. Files that are later executed, rendered, or served to browsers must be proven to be what they claim before they are trusted.
+
+## Main Security Requirement
+
+> Verify that when the application accepts a file, either on its own or within an archive such as a zip file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. This includes, but is not limited to, checking the initial magic bytes, performing image re-writing, and using specialized libraries for file content validation. For L1, this can focus just on files which are used to make specific business or security decisions. For L2 and up, this must apply to all files being accepted.
+
+In practice this means: extension allowlist + magic-byte detection + (for images) a re-encode pass.
+
+## Common Failure Patterns
+
+- **Extension-only checks** — trusting `.pdf` or `.jpg` as proof of content.
+- **Client MIME trusted** — using the header the browser submitted to decide the type.
+- **No magic-byte check** — never validating the leading file signature.
+- **Image rendered raw** — serving user images without re-encoding, keeping scripts embedded in metadata.
+
+## Secure Implementation
+
+Detect the type from bytes, not from the name or claim:
+
+```javascript
+import { fileTypeFromBuffer } from "file-type";
+
+const ALLOWED = new Map([
+  ["png", "image/png"],
+  ["jpg", "image/jpeg"],
+  ["pdf", "application/pdf"],
+]);
+
+async function validateContent(buffer) {
+  const detected = await fileTypeFromBuffer(buffer);
+  if (!detected || !ALLOWED.has(detected.ext)) {
+    throw new Error("Unsupported or mismatched file content");
+  }
+}
+```
+
+Re-encode images so any embedded payload is destroyed before storage:
+
+```javascript
+import sharp from "sharp";
+
+async function rewriteImage(buffer) {
+  return sharp(buffer).rotate().resize({ width: 2000, withoutEnlargement: true })
+    .jpeg({ quality: 85 }).toBuffer();
+}
+```
+
+## Key Rules
+
+- Keep an allowlist of permitted extensions and MIME types.
+- Validate content using magic bytes, never the extension or claimed MIME.
+- Re-encode images to strip embedded payloads and metadata.
+- Validate files inside archives the same way as standalone uploads.
+- At L2+, apply content validation to every accepted file.
+
+## Checklist for Code Review
+
+- Is the file type derived from magic bytes rather than the extension?
+- Is the client-declared MIME type ignored?
+- Are uploaded images re-encoded before storage or serving?
+- Are archive members validated individually?
+- Is content validation applied to all files (L2+) not just decision-critical ones?

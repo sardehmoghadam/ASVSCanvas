@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application does not allow uploading compressed files containing symlinks unless this is specifically required (in which case it will be necessary to enforce an allowlist of the files that can be symlinked to).
+Archive formats can mark an entry as a symbolic link rather than a regular file. This control requires rejecting any compressed upload that contains a symlink entry. Symlinks may only be permitted when a feature genuinely needs them, and even then the target must be constrained to an explicit allowlist of safe paths.
+
+## Why This Matters
+
+A symlink in an uploaded archive is the engine of "zip slip" and overwrite attacks: extracting `link → /etc/cron.d/x` or `link → ../../webroot/shell.php` makes the app write attacker-chosen bytes outside the extraction directory, often straight into code-execution locations. Symlinks redirect writes; blocking them (or allowlisting targets) keeps extraction inside its sandbox.
+
+## Main Security Requirement
+
+> Verify that the application does not allow uploading compressed files containing symlinks unless this is specifically required (in which case it will be necessary to enforce an allowlist of the files that can be symlinked to).
+
+In practice this means inspecting each entry's mode/target and rejecting any symlink unless its target is allowlisted.
+
+## Common Failure Patterns
+
+- **Extracting every entry blindly** — trusting entry names and types from the archive.
+- **Unchecked symlink targets** — allowing `link → /etc/...` or absolute paths.
+- **Traversal in the target** — symlinks pointing outside the extraction root via `../`.
+- **No entry-type inspection** — never distinguishing regular files from links.
+
+## Secure Implementation
+
+Block symlinks unless the target is explicitly allowed:
+
+```javascript
+import unzipper from "unzipper";
+
+const ALLOWED_SYMLINK_TARGETS = new Set([]); // empty = no symlinks allowed
+
+async function checkEntries(zipBuffer) {
+  const dir = await unzipper.Open.buffer(zipBuffer);
+  for (const entry of dir.files) {
+    const isSymlink = (entry.externalFileAttributes >>> 16) & 0o170000 === 0o120000;
+    if (isSymlink) {
+      const target = entry.path.replace(/\\/g, "/");
+      if (!ALLOWED_SYMLINK_TARGETS.has(target)) {
+        throw new Error("Symlink not allowed: " + target);
+      }
+    }
+  }
+}
+```
+
+## Key Rules
+
+- Reject archives containing symlink entries by default.
+- Inspect each entry's type, not just its name.
+- Allow symlinks only when a feature requires them.
+- Constrain permitted symlinks to an explicit allowlist of targets.
+- Ensure the resolved target stays within the extraction root.
+
+## Checklist for Code Review
+
+- Are symlink entries detected and rejected on upload?
+- Is entry *type* (not name) inspected during validation?
+- If symlinks are allowed, is the target constrained to an allowlist?
+- Does extraction ensure resolved paths stay within the destination root?

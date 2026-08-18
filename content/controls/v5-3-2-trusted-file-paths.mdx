@@ -26,6 +26,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that when the application creates file paths for file operations, instead of user-submitted filenames, it uses internally generated or trusted data, or if user-submitted filenames or file metadata must be used, strict validation and sanitization must be applied. This is to protect against path traversal, local or remote file inclusion (LFI, RFI), and server-side request forgery (SSRF) attacks.
+File paths used in reads, writes, includes, and requests should come from the application's own identifiers, not from the client. Where user filenames or metadata must leak into a path, they must be strictly validated and sanitized first. This closes the class of "user data reaches a filesystem/URL API" bugs.
+
+## Why This Matters
+
+Concatenating user input into a path is the root cause of path traversal (`../../etc/passwd`), local/remote file inclusion, and SSRF via file URLs. The safest fix is structural: never let the user choose the path at all — generate IDs and map them to files; validate fiercely when you cannot avoid reuse.
+
+## Main Security Requirement
+
+> Verify that when the application creates file paths for file operations, instead of user-submitted filenames, it uses internally generated or trusted data, or if user-submitted filenames or file metadata must be used, strict validation and sanitization must be applied. This is to protect against path traversal, local or remote file inclusion (LFI, RFI), and server-side request forgery (SSRF) attacks.
+
+In practice this means using server-generated IDs and an allowlist, and resolving within a root.
+
+## Common Failure Patterns
+
+- **Direct name concatenation** — `fs.readFile(path.join(dir, req.body.name))`.
+- **Incomplete sanitization** — stripping `.` or `..` without normalizing.
+- **Unresolved paths** — failing to verify the final path stays inside the base directory.
+- **User metadata in URLs** — using filenames to build `http://...` requests (SSRF).
+
+## Secure Implementation
+
+Use an internal ID, never a user-chosen name:
+
+```javascript
+const STORE = "/srv/uploads";
+
+function resolveStoredFile(id) {
+  // Canonicalize and confirm containment before any I/O.
+  const target = path.resolve(STORE, id);
+  if (!target.startsWith(path.resolve(STORE) + path.sep)) {
+    throw new Error("Path escapes upload root");
+  }
+  return target;
+}
+```
+
+If user input is unavoidable, sanitize to an allowlist and re-verify containment:
+
+```javascript
+const SAFE_NAME = /^[a-z0-9][a-z0-9._-]{0,64}$/i;
+function safeBasename(name) {
+  if (!SAFE_NAME.test(name)) throw new Error("Invalid filename");
+  return path.basename(name);
+}
+```
+
+## Key Rules
+
+- Build paths from internally generated IDs or trusted values, not user input.
+- Never pass unsanitized filenames/metadata to filesystem or URL APIs.
+- Canonicalize (resolve) and verify containment within a fixed root.
+- When user input is unavoidable, apply a strict allowlist plus basename.
+- Treat filename use in URLs as SSRF/LFI risk too.
+
+## Checklist for Code Review
+
+- Are file paths built from internal IDs rather than user-supplied names?
+- Is every path resolved and checked for containment in the base directory?
+- Is user input sanitized against an allowlist when it must be used?
+- Do any `include`/`readFile`/`http.get` calls receive raw user filename data?
+- Are relative/absolute traversal characters neutralized?

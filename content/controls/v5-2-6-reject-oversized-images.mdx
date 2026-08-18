@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application rejects uploaded images with a pixel size larger than the maximum allowed, to prevent pixel flood attacks.
+An image's danger is not just its byte size but its *pixel dimensions*. A compressed few-KB image can declare dimensions of 100,000 × 100,000 pixels, which explode to gigabytes in memory the moment it is decoded. This control rejects images whose pixel dimensions exceed a maximum before they are decoded or processed.
+
+## Why This Matters
+
+"Pixel flood" (a.k.a. decompression bomb) attacks use tiny uploads with huge dimensions to exhaust memory and CPU during decode, resize, or thumbnail generation. A byte-size limit does nothing against this — the image is small on disk but astronomical when rasterized. Checking dimensions during metadata parsing stops the bomb before any expensive decoding begins.
+
+## Main Security Requirement
+
+> Verify that the application rejects uploaded images with a pixel size larger than the maximum allowed, to prevent pixel flood attacks.
+
+In practice this means reading the image header/dimensions and rejecting when `width × height` exceeds the cap.
+
+## Common Failure Patterns
+
+- **Byte-size only** — capping file bytes but never checking pixel dimensions.
+- **Decode-then-check** — rasterizing the image first, by which point the damage is done.
+- **No total-pixel cap** — limiting one dimension but not the product.
+- **Animated/strip images** — tall sprite or animated frames slipping past naive checks.
+
+## Secure Implementation
+
+Check dimensions from metadata before decoding:
+
+```javascript
+import sharp from "sharp";
+
+const MAX_PIXELS = 25 * 1024 * 1024; // 25 megapixels
+
+async function checkDimensions(buffer) {
+  const meta = await sharp(buffer, { limitInputPixels: MAX_PIXELS }).metadata();
+  if (meta.width * meta.height > MAX_PIXELS) {
+    throw Object.assign(new Error("Image too large"), { status: 413 });
+  }
+}
+```
+
+## Key Rules
+
+- Set a maximum pixel dimension (width × height) per image type.
+- Validate dimensions from metadata before decoding.
+- Cover animated, interlaced, and multi-frame images.
+- Return `413` rather than attempting to process the image.
+- Combine pixel limits with byte-size and format/type validation.
+
+## Checklist for Code Review
+
+- Is there a maximum pixel-size limit for uploaded images?
+- Are dimensions read from metadata *before* decoding?
+- Is the limit the product of width and height, not one dimension alone?
+- Are animated or multi-frame images covered?
+- Is an oversized image rejected with `413` before processing?

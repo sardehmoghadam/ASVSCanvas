@@ -25,6 +25,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application checks compressed files (e.g., zip, gz, docx, odt) against maximum allowed uncompressed size and against maximum number of files before uncompressing the file.
+Before extracting any compressed upload — ZIP, gz, docx, odt, or any archive accepted as a file — the application must inspect the archive's metadata and enforce two limits: the maximum total uncompressed size and the maximum number of contained files. Only archives within both limits may be unpacked.
+
+## Why This Matters
+
+A "zip bomb" is a tiny upload that expands to gigabytes, exhausting disk and memory the moment it is extracted. Limiting the *uncompressed* size and the *file count* before decompression converts that single-step catastrophic expansion into a cheap, early rejection. Without it, upload size limits on the compressed bytes offer no protection at all.
+
+## Main Security Requirement
+
+> Verify that the application checks compressed files (e.g., zip, gz, docx, odt) against maximum allowed uncompressed size and against maximum number of files before uncompressing the file.
+
+In practice this means reading the archive's central directory (or stream counting) and rejecting over-limit archives prior to extraction.
+
+## Common Failure Patterns
+
+- **Extract-then-check** — decompressing first and checking the result size afterward.
+- **ZIP bomb** — nested or high-ratio compression expanding to enormous size.
+- **No file-count cap** — thousands of tiny entries admitted blindly.
+- **Recursive extraction** — expanding archives inside archives without re-applying limits.
+
+## Secure Implementation
+
+Validate the archive's declared size and count before extracting:
+
+```javascript
+import unzipper from "unzipper";
+
+const MAX_UNCOMPRESSED = 50 * 1024 * 1024; // 50 MiB
+const MAX_ENTRIES = 1000;
+
+function validateZip(buffer) {
+  return new Promise((resolve, reject) => {
+    const dir = unzipper.Open.buffer(buffer);
+    dir.then(d => {
+      let total = 0;
+      if (d.files.length > MAX_ENTRIES) return reject(new Error("Too many files"));
+      d.files.forEach(f => (total += f.uncompressedSize));
+      if (total > MAX_UNCOMPRESSED) return reject(new Error("Archive too large"));
+      resolve();
+    }).catch(reject);
+  });
+}
+```
+
+## Key Rules
+
+- Enforce a maximum uncompressed size before any extraction.
+- Enforce a maximum count of entries in the archive.
+- Validate against the archive metadata, not the compressed byte size.
+- Re-apply limits for nested archives.
+- Reject over-limit archives with a clear error.
+
+## Checklist for Code Review
+
+- Are compressed files checked for uncompressed size *before* extraction?
+- Is there a maximum number of entries per archive?
+- Are nested/recursive archives re-validated?
+- Are zip, gz, docx, and odt all covered by the checks?
+- Does rejection happen before any I/O is performed on entry contents?
