@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application generates a new session token on user authentication, including re-authentication, and terminates the current session token.
+When a user authenticates — including re-authentication — the application must issue a brand-new session token and invalidate the old one. The pre-authentication token must never carry forward into the authenticated session.
+
+## Why This Matters
+
+Session fixation attacks work by planting a known token and waiting for the victim to authenticate with it; if the token does not change at login, the attacker already knows the victim's authenticated session ID. Rotating the token on every authentication guarantees the pre-login token is worthless after login.
+
+## Main Security Requirement
+
+> Verify that the application generates a new session token on user authentication, including re-authentication, and terminates the current session token.
+
+In practice this means a token rotation on login and on step-up re-authentication.
+
+## Common Failure Patterns
+
+- **Token unchanged at login** — pre-auth token becomes the auth token (fixation).
+- **Rotation on login only** — re-authentication reuses the current token.
+- **Old token not invalidated** — both old and new remain valid.
+- **Rotation done client-side** — new token not enforced server-side.
+
+## Secure Implementation
+
+Rotate and invalidate on every authentication:
+
+```javascript
+async function onAuthenticate(user, currentToken) {
+  await sessionStore.invalidate(currentToken);   // kill the old token
+  const newToken = generateSessionToken();       // fresh token
+  await sessionStore.create(newToken, { userId: user.id });
+  return newToken;
+}
+```
+
+## Key Rules
+
+- Issue a new token on every authentication and re-authentication.
+- Invalidate the previous token at the same time.
+- Enforce rotation server-side, not just in the client.
+- Apply to login, password reset, and step-up re-auth.
+- Make the old token unusable immediately.
+
+## Checklist for Code Review
+
+- Is the token rotated on initial login?
+- Is it also rotated on re-authentication?
+- Is the old token invalidated at rotation?
+- Is rotation enforced server-side?
+- Can a pre-auth token be used after authentication?

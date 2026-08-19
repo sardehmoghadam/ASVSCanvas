@@ -25,6 +25,50 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that users are able to view and (having authenticated again with at least one factor) terminate any or all currently active sessions.
+Users must be able to see a list of their currently active sessions, and — after authenticating again with at least one factor — terminate any or all of them. This gives the account owner visibility and control over every session in their name.
+
+## Why This Matters
+
+A user is often the first to notice an unfamiliar device or location in their session list. Being able to review and revoke sessions is a key self-service defense: it lets a victim of hijacking evict the attacker's sessions without waiting for support or resetting their whole account.
+
+## Main Security Requirement
+
+> Verify that users are able to view and (having authenticated again with at least one factor) terminate any or all currently active sessions.
+
+In practice this means a session dashboard with per-session revocation.
+
+## Common Failure Patterns
+
+- **No session list** — users cannot see active sessions.
+- **Termination without re-auth** — session list is self-service with no proof.
+- **Cannot revoke individually** — only "logout everywhere" without detail.
+- **Stale list** — sessions shown but termination targets wrong records.
+
+## Secure Implementation
+
+List sessions and require step-up before revoking:
+
+```javascript
+async function revokeSession(req, targetSessionId) {
+  await requireStepUp(req); // at least one factor
+  await sessionStore.delete(targetSessionId, { ownerId: req.user.id });
+}
+```
+
+## Key Rules
+
+- Show users their active sessions (device, location, time).
+- Require re-authentication (≥1 factor) before terminating.
+- Allow terminating individual sessions or all at once.
+- Only let users revoke their own sessions.
+- Provide fresh, accurate session metadata.
+
+## Checklist for Code Review
+
+- Can users view all their active sessions?
+- Is re-authentication required before revocation?
+- Can users terminate individual sessions?
+- Can users terminate all sessions?
+- Are cross-user session revocations prevented?

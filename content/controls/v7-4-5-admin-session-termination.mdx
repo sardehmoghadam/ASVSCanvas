@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that application administrators are able to terminate active sessions for an individual user or for all users.
+Administrators must have the ability to forcibly terminate active sessions — either for a single user or for all users at once. This is the administrative counterpart to user-initiated logout, enabling incident response and bulk remediation.
+
+## Why This Matters
+
+When an account is compromised or a system-wide threat emerges (a leaked token, an active attack), waiting for each user to log out is not viable. Admin-initiated termination lets operators cut off a specific compromised user, or force a global re-authentication, without touching account records.
+
+## Main Security Requirement
+
+> Verify that application administrators are able to terminate active sessions for an individual user or for all users.
+
+In practice this means admin tooling to revoke one or all sessions.
+
+## Common Failure Patterns
+
+- **No admin revocation** — only users can end their own sessions.
+- **No bulk termination** — cannot clear all sessions at once.
+- **Revocation only via DB surgery** — no safe, audited path.
+- **No audit trail** — admin terminations are unlogged.
+
+## Secure Implementation
+
+Expose admin endpoints that revoke per-user or globally:
+
+```javascript
+async function adminTerminate(targetUserId, scope) {
+  if (scope === "all") {
+    await sessionStore.deleteAll();
+  } else {
+    await sessionStore.deleteAllForUser(targetUserId);
+  }
+  await audit.log({ actor: adminId, action: "terminate-sessions", scope });
+}
+```
+
+## Key Rules
+
+- Let admins terminate an individual user's sessions.
+- Let admins terminate all users' sessions.
+- Require admin authorization and auditing on these actions.
+- Invalidate sessions server-side (V7.4.1).
+- Integrate with incident-response runbooks.
+
+## Checklist for Code Review
+
+- Can admins terminate a single user's sessions?
+- Can admins terminate all users' sessions?
+- Are these actions authorized and audited?
+- Does revocation happen server-side?
+- Is there a safe, non-DB-manual path for operators?

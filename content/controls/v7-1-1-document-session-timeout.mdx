@@ -25,6 +25,51 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the user session inactivity timeout and absolute maximum session lifetime are documented, are appropriate in combination with other controls, and that the documentation includes justification for any deviations from NIST SP 800-63B re-authentication requirements.
+The inactivity timeout (idle until logout) and the absolute maximum session lifetime (hard cap regardless of activity) must both be written down, set to sensible values in relation to the rest of the system's controls, and — where they diverge from NIST SP 800-63B re-authentication guidance — include an explicit justification.
+
+## Why This Matters
+
+Undocumented timeouts lead to guesswork, inconsistent enforcement across teams, and sessions that linger far longer than the risk profile allows. A written policy makes the security decision reviewable and testable, and forces conscious, justified trade-offs rather than defaults that drift toward "never expire."
+
+## Main Security Requirement
+
+> Verify that the user session inactivity timeout and absolute maximum session lifetime are documented, are appropriate in combination with other controls, and that the documentation includes justification for any deviations from NIST SP 800-63B re-authentication requirements.
+
+In practice this means a written session policy that states both timeouts and any NIST deviations.
+
+## Common Failure Patterns
+
+- **No timeout documented** — values exist only in code or nowhere.
+- **Infinite sessions** — "remember me forever" with no absolute cap.
+- **Undocumented deviations** — stricter or looser than NIST without rationale.
+- **Inconsistent values** — idle/absolute timeouts conflict across components.
+
+## Secure Implementation
+
+Centralize the timeout policy and document the chosen values:
+
+```javascript
+const SESSION_POLICY = {
+  // Documented and approved; deviation from NIST justified in SESSION_POLICY.md.
+  idleTimeoutSeconds: 15 * 60,        // 15 minutes of inactivity
+  absoluteLifetimeSeconds: 12 * 3600, // 12 hour hard cap
+};
+```
+
+## Key Rules
+
+- Document both inactivity timeout and absolute lifetime.
+- Choose values appropriate to the application's risk.
+- Justify any deviation from NIST SP 800-63B re-auth guidance.
+- Keep policy consistent with the actual enforcement code.
+- Review the policy when risk or controls change.
+
+## Checklist for Code Review
+
+- Are both timeout values documented?
+- Are the values risk-appropriate?
+- Are NIST deviations explicitly justified?
+- Do the documented values match the implementation?
+- Is the policy reviewed and version-controlled?

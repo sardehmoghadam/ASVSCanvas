@@ -25,6 +25,50 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application requires further authentication with at least one factor or secondary verification before performing highly sensitive transactions or operations.
+For highly sensitive transactions or operations — moving money, changing critical settings, downloading sensitive data — the application must require additional authentication with at least one factor, or equivalent secondary verification, beyond the existing session.
+
+## Why This Matters
+
+A stolen session alone should not be enough to perform the most damaging actions. Step-up authentication forces the person at the keyboard to re-prove identity at the moment of the sensitive action, catching a hijacker who has the session but not the user's fresh credential or device.
+
+## Main Security Requirement
+
+> Verify that the application requires further authentication with at least one factor or secondary verification before performing highly sensitive transactions or operations.
+
+In practice this means a step-up challenge immediately before the sensitive action.
+
+## Common Failure Patterns
+
+- **No step-up** — session alone authorizes sensitive actions.
+- **Step-up skipped** — client-only check that can be bypassed.
+- **No secondary verification** — no device confirmation/OTP alternative.
+- **Step-up too coarse** — not tied to the specific sensitive operation.
+
+## Secure Implementation
+
+Require step-up before sensitive operations:
+
+```javascript
+async function executeSensitive(req, action) {
+  await requireStepUp(req, { level: "mfa-or-second-factor" });
+  await actions.perform(action);
+}
+```
+
+## Key Rules
+
+- Require additional authentication (≥1 factor) for sensitive actions.
+- Enforce step-up server-side, immediately before the action.
+- Accept secondary verification (device push/OTP) where suitable.
+- Tie step-up to the specific high-risk operation.
+- Re-challenge per sensitive transaction, not once per session.
+
+## Checklist for Code Review
+
+- Is step-up authentication required for sensitive transactions?
+- Is it enforced server-side?
+- Is at least one factor or secondary verification used?
+- Is step-up tied to the specific operation?
+- Can a stolen session alone perform the sensitive action?

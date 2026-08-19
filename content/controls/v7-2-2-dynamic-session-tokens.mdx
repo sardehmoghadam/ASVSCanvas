@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application uses either self-contained or reference tokens that are dynamically generated for session management, i.e. not using static API secrets and keys.
+Session tokens must be created dynamically for each session — either self-contained tokens (which carry their own claims/signature) or reference tokens (opaque IDs that point to server-side session data). Static API secrets and long-lived static keys must not double as session tokens.
+
+## Why This Matters
+
+Static secrets and API keys are credentials meant to be reused, not sessions with lifetimes, revocation, and per-user identity. Using them as session tokens means there is nothing to expire, rotate, or bind to a single user — and a leaked key is a permanent back door. Dynamically generated tokens carry identity and can be individually revoked.
+
+## Main Security Requirement
+
+> Verify that the application uses either self-contained or reference tokens that are dynamically generated for session management, i.e. not using static API secrets and keys.
+
+In practice this means per-session token issuance, not reused static credentials.
+
+## Common Failure Patterns
+
+- **Static API key as session token** — one value shared across requests/users.
+- **Reused tokens** — same token minted for multiple sessions.
+- **No rotation** — token never changes for the session's life.
+- **Secrets embedded client-side** — static keys shipped to the client as "session."
+
+## Secure Implementation
+
+Issue a fresh token per session:
+
+```javascript
+function createSession(user) {
+  return {
+    userId: user.id,
+    token: randomBytes(32).toString("base64url"), // per-session reference token
+    createdAt: Date.now(),
+  };
+}
+```
+
+## Key Rules
+
+- Generate a new session token per session (dynamic).
+- Use self-contained or reference tokens — never static secrets/API keys.
+- Bind the token to a single user and session.
+- Rotate tokens on authentication (V7.2.4).
+- Never reuse a token across sessions or users.
+
+## Checklist for Code Review
+
+- Are session tokens generated dynamically per session?
+- Are static API secrets/keys used as session tokens anywhere?
+- Is the token bound to one user and session?
+- Is the token rotated on authentication?
+- Are tokens ever reused or shared?

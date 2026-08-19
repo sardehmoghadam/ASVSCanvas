@@ -25,6 +25,51 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application gives the option to terminate all other active sessions after a successful change or removal of any authentication factor (including password change via reset or recovery and, if present, an MFA settings update).
+After a user changes or removes an authentication factor — password change via reset/recovery, an MFA update, or removing a factor — the application should offer to terminate all other active sessions. This lets the user clear out sessions that may belong to an attacker who had taken over the account.
+
+## Why This Matters
+
+Account takeover usually continues through existing sessions: the attacker is logged in elsewhere, and changing a password alone does not evict them. Offering to kill all other sessions when credentials or factors change lets the legitimate user reclaim sole access after a suspected compromise.
+
+## Main Security Requirement
+
+> Verify that the application gives the option to terminate all other active sessions after a successful change or removal of any authentication factor (including password change via reset or recovery and, if present, an MFA settings update).
+
+In practice this means an optional "sign out other devices" step on factor changes.
+
+## Common Failure Patterns
+
+- **No eviction option** — factor change leaves other sessions alive.
+- **Only current session affected** — other devices remain logged in.
+- **Not offered on password reset** — recovery path never clears sessions.
+- **No option after MFA removal** — removing a factor leaves sessions intact.
+
+## Secure Implementation
+
+Offer and, when accepted, terminate other sessions:
+
+```javascript
+async function onFactorChanged(user, { terminateOthers }) {
+  if (terminateOthers) {
+    await sessionStore.deleteAllForUser(user.id, { except: currentSessionId });
+  }
+}
+```
+
+## Key Rules
+
+- Offer to terminate all other sessions on any factor change/removal.
+- Include password change via reset/recovery in this flow.
+- Keep the current session active unless the user chooses otherwise.
+- Make the "terminate others" action clear and default-visible.
+- Apply to MFA updates and factor removal too.
+
+## Checklist for Code Review
+
+- Is terminating other sessions offered after password change?
+- Is it offered after password reset/recovery?
+- Is it offered after MFA updates or factor removal?
+- Does the action terminate sessions on other devices?
+- Is the current session preserved correctly?

@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application performs all session token verification using a trusted, backend service.
+Every check that a session token is valid — who it belongs to, whether it is expired or revoked — must happen in a trusted, server-side service. The client (browser, mobile app, API caller) is never the authority on whether a token is good.
+
+## Why This Matters
+
+If token verification happens on the client, an attacker controls the verifier and can simply tell it "this token is valid." Trusting client-side checks makes the token a decoration rather than a security boundary. Verification at the backend is what actually gates access.
+
+## Main Security Requirement
+
+> Verify that the application performs all session token verification using a trusted, backend service.
+
+In practice this means server-side validation of the token's signature, expiry, and revocation state.
+
+## Common Failure Patterns
+
+- **Client-side verification** — app trusts its own validity check.
+- **Signed token decoded only** — signature never validated on the server.
+- **Backend trusts a forwarded "valid" flag** — no re-verification at the trust boundary.
+- **Verification in an untrusted tier** — token checked in a client-reachable component.
+
+## Secure Implementation
+
+Verify tokens in a backend service at the point of use:
+
+```javascript
+function requireSession(req) {
+  const token = req.cookies?.session;
+  if (!token) throw new UnauthorizedError();
+  // Server-side only: signature + expiry + revocation check.
+  const session = sessionService.verify(token);
+  if (!session) throw new UnauthorizedError();
+  return session;
+}
+```
+
+## Key Rules
+
+- Verify session tokens only in a trusted backend service.
+- Validate signature, expiry, issuer, and revocation server-side.
+- Never accept a client-supplied "valid" assertion.
+- Keep verification at the trust boundary, not on the client.
+- Use the same backend verifier for every protected endpoint.
+
+## Checklist for Code Review
+
+- Is token verification performed server-side?
+- Is the signature actually validated (not just decoded)?
+- Are expiry and revocation checked?
+- Is any client-side validity flag trusted?
+- Is the verifier used consistently across endpoints?

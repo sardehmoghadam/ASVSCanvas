@@ -25,6 +25,51 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application requires full re-authentication before allowing modifications to sensitive account attributes which may affect authentication such as email address, phone number, MFA configuration, or other information used in account recovery.
+Before a user can modify account attributes that feed authentication or recovery — email address, phone number, MFA configuration, recovery information — they must fully re-authenticate. The current session alone is not enough proof for such high-impact changes.
+
+## Why This Matters
+
+Sensitive attribute changes are how attackers cement account takeover: they swap the email or phone so recovery goes to them, or disable MFA to lock the owner out. Requiring full re-authentication ensures these changes are only made by someone who still holds the actual credentials, not just someone with a stolen session.
+
+## Main Security Requirement
+
+> Verify that the application requires full re-authentication before allowing modifications to sensitive account attributes which may affect authentication such as email address, phone number, MFA configuration, or other information used in account recovery.
+
+In practice this means a step-up to full authentication on these flows.
+
+## Common Failure Patterns
+
+- **No re-auth** — session alone suffices for attribute changes.
+- **Partial re-auth** — step-up only checks one factor.
+- **Email/phone change unguarded** — recovery vectors modifiable without proof.
+- **MFA changes unguarded** — attacker can disable MFA directly.
+
+## Secure Implementation
+
+Gate sensitive changes behind full re-authentication:
+
+```javascript
+async function changeEmail(req, newEmail) {
+  await requireFullReauthentication(req); // password/MFA, not just session
+  await accounts.updateEmail(req.user.id, newEmail);
+  await notifyUser(req.user, "email-changed");
+}
+```
+
+## Key Rules
+
+- Require full re-authentication for sensitive attribute changes.
+- Cover email, phone, MFA config, and recovery info.
+- Enforce re-auth server-side before applying the change.
+- Notify the user of any sensitive change.
+- Consider terminating other sessions on these changes (V7.4.3).
+
+## Checklist for Code Review
+
+- Is full re-authentication required for email/phone changes?
+- Is it required for MFA configuration changes?
+- Is it required for recovery-info changes?
+- Is the re-auth check enforced server-side?
+- Is the user notified of sensitive changes?

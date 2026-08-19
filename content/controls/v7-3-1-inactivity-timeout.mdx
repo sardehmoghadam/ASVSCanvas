@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that there is an inactivity timeout such that re-authentication is enforced according to risk analysis and documented security decisions.
+The application must enforce an inactivity timeout: if the user is idle for a defined period, the session is expired (or requires re-authentication). The chosen duration must follow the risk analysis and the documented security decisions.
+
+## Why This Matters
+
+An unattended, logged-in session is a standing invitation — a stolen laptop, shared terminal, or forgotten tab keeps access open indefinitely. Inactivity timeout bounds the window during which an idle session can be abused, and it should be tuned to the sensitivity of the application rather than set arbitrarily.
+
+## Main Security Requirement
+
+> Verify that there is an inactivity timeout such that re-authentication is enforced according to risk analysis and documented security decisions.
+
+In practice this means an idle timer that expires or steps-up the session per policy.
+
+## Common Failure Patterns
+
+- **No idle timeout** — sessions live until the absolute cap (or forever).
+- **Client-only timer** — server never expires an idle session.
+- **Unjustified duration** — value not derived from risk analysis.
+- **No re-auth path** — idle session simply continues after resume.
+
+## Secure Implementation
+
+Track last activity server-side and expire idle sessions:
+
+```javascript
+function touchSession(session) {
+  session.lastSeenAt = Date.now();
+}
+
+function isIdleExpired(session, policy) {
+  return Date.now() - session.lastSeenAt > policy.idleTimeoutMs;
+}
+```
+
+## Key Rules
+
+- Enforce an inactivity timeout server-side.
+- Base the duration on risk analysis and documented decisions.
+- Record last-activity timestamps on the backend.
+- Expire or require re-authentication on resume after idle.
+- Align with the documented policy (V7.1.1).
+
+## Checklist for Code Review
+
+- Is there a server-side inactivity timeout?
+- Is the duration risk-justified and documented?
+- Are last-activity timestamps tracked server-side?
+- Does resume after idle require re-authentication?
+- Does enforcement match the documented timeout?

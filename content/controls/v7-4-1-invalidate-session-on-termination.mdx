@@ -25,6 +25,50 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that when session termination is triggered (such as logout or expiration), the application disallows any further use of the session. For reference tokens or stateful sessions, this means invalidating the session data at the application backend. Applications using self-contained tokens will need a solution such as maintaining a list of terminated tokens, disallowing tokens produced before a per-user date and time or rotating a per-user signing key.
+Once a session is terminated — by logout, expiry, or forced termination — the application must not allow any further use of it. For reference tokens/stateful sessions this means deleting the server-side session record; for self-contained tokens it means maintaining a revocation list, rejecting tokens issued before a per-user cutoff, or rotating the per-user signing key.
+
+## Why This Matters
+
+"Logout" that only clears the cookie is an illusion: the token still works if replayed. Real termination requires the backend to no longer honor that session. Self-contained tokens are stateless by design, so they need an explicit revocation mechanism to become terminable at all.
+
+## Main Security Requirement
+
+> Verify that when session termination is triggered (such as logout or expiration), the application disallows any further use of the session. For reference tokens or stateful sessions, this means invalidating the session data at the application backend. Applications using self-contained tokens will need a solution such as maintaining a list of terminated tokens, disallowing tokens produced before a per-user date and time or rotating a per-user signing key.
+
+In practice this means server-side invalidation on every termination path.
+
+## Common Failure Patterns
+
+- **Cookie cleared only** — token remains valid server-side.
+- **Stateless token never revoked** — logout has no effect.
+- **Partial invalidation** — some session data survives termination.
+- **No revocation for self-contained tokens** — JWT remains usable until expiry.
+
+## Secure Implementation
+
+Invalidate server-side and, for stateless tokens, check a revocation list:
+
+```javascript
+async function terminateSession(token) {
+  await sessionStore.delete(token);           // stateful: remove record
+  await revocationStore.add(token, ttl);      // stateless: reject on next verify
+}
+```
+
+## Key Rules
+
+- Disallow any further use of a terminated session.
+- Delete stateful session data at the backend on termination.
+- For self-contained tokens, use a revocation list / key rotation / per-user cutoff.
+- Apply invalidation to logout, expiry, and forced termination.
+- Verify revocation state on every request.
+
+## Checklist for Code Review
+
+- Does logout invalidate the session server-side?
+- Can a terminated reference token still be used?
+- Is there a revocation mechanism for self-contained tokens?
+- Are all termination paths (logout/expiry/forced) covered?
+- Is revocation checked on every request?

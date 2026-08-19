@@ -25,6 +25,50 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the documentation defines how many concurrent (parallel) sessions are allowed for one account as well as the intended behaviors and actions to be taken when the maximum number of active sessions is reached.
+The documentation must state how many parallel sessions a single account may hold at once, and what happens when that ceiling is hit — whether the oldest session is killed, the newest login is refused, or the user is prompted to choose.
+
+## Why This Matters
+
+Concurrent sessions multiply the attack surface: a hijacked session remains usable alongside the legitimate one, and the user has no way to notice. A documented limit (with defined overflow behavior) caps exposure and turns "too many sessions" from an ambiguous state into a deliberate, reviewable policy.
+
+## Main Security Requirement
+
+> Verify that the documentation defines how many concurrent (parallel) sessions are allowed for one account as well as the intended behaviors and actions to be taken when the maximum number of active sessions is reached.
+
+In practice this means a written per-account session limit plus overflow handling.
+
+## Common Failure Patterns
+
+- **No limit defined** — unlimited parallel sessions allowed.
+- **Undefined overflow** — limit exists but behavior at the cap is unspecified.
+- **Docs drift from code** — documented limit differs from enforcement.
+- **No user visibility** — user cannot see or manage the sessions consuming the cap.
+
+## Secure Implementation
+
+Document the limit and its overflow behavior, then mirror it in enforcement:
+
+```javascript
+const SESSION_LIMIT = {
+  maxConcurrent: 5,
+  onLimitReached: "terminate-oldest", // or "deny-new" / "prompt-user"
+};
+```
+
+## Key Rules
+
+- Define the maximum concurrent sessions per account.
+- Specify the action taken when the limit is reached.
+- Keep documentation and enforcement in sync.
+- Consider user visibility of active sessions (V7.5.2).
+- Review the limit against account-risk profile.
+
+## Checklist for Code Review
+
+- Is the concurrent session limit documented?
+- Is the behavior at the cap defined?
+- Does enforcement match the documented limit?
+- Can users see their active sessions?
+- Is the limit risk-appropriate?

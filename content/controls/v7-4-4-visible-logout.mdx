@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all pages that require authentication have easy and visible access to logout functionality.
+Every page that requires authentication must present an easily visible logout control. A user should not have to hunt through menus or know a magic URL to sign out.
+
+## Why This Matters
+
+If logout is hidden, users — especially on shared or public machines — will often just close the tab, leaving the session alive for the next person. A visible, one-click logout makes session termination the path of least resistance and reduces abandoned-session exposure.
+
+## Main Security Requirement
+
+> Verify that all pages that require authentication have easy and visible access to logout functionality.
+
+In practice this means a persistent, obvious logout affordance in the UI.
+
+## Common Failure Patterns
+
+- **Hidden logout** — buried in submenus or settings.
+- **Logout absent on some pages** — only on the home/dashboard.
+- **No logout on SPA routes** — deep links lack the control.
+- **Logout not visible on mobile** — responsive layout drops the affordance.
+
+## Secure Implementation
+
+Render a persistent logout control in the shared authenticated layout:
+
+```jsx
+function AuthenticatedLayout({ children, onLogout }) {
+  return (
+    <>
+      <header>
+        <button onClick={onLogout} aria-label="Sign out">Sign out</button>
+      </header>
+      {children}
+    </>
+  );
+}
+```
+
+## Key Rules
+
+- Show a logout control on every authenticated page.
+- Keep it visible and easy to reach (one click).
+- Ensure it appears in all layouts, including mobile and deep routes.
+- Make the control clear and labeled.
+- Logout must invalidate the session server-side (V7.4.1).
+
+## Checklist for Code Review
+
+- Is logout visible on every authenticated page?
+- Is it present in the shared layout (not per-page)?
+- Does it appear on mobile/deep-linked routes?
+- Is the control clearly labeled?
+- Does logout actually terminate the session server-side?

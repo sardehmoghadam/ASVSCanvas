@@ -25,6 +25,49 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that there is an absolute maximum session lifetime such that re-authentication is enforced according to risk analysis and documented security decisions.
+Regardless of how active the user is, a session must end after an absolute maximum lifetime. Once that hard cap is reached — from the moment of authentication — the user must re-authenticate, even if they have been continuously active.
+
+## Why This Matters
+
+Inactivity timeouts alone can be defeated by periodic activity (or a script that "keeps the session alive"). An absolute cap places a hard ceiling on how long any single authentication event can remain trusted, limiting the damage window for a hijacked session that is being actively used.
+
+## Main Security Requirement
+
+> Verify that there is an absolute maximum session lifetime such that re-authentication is enforced according to risk analysis and documented security decisions.
+
+In practice this means a fixed, non-extendable expiration from session creation.
+
+## Common Failure Patterns
+
+- **No absolute cap** — session only expires on inactivity.
+- **Sliding lifetime** — activity resets the absolute clock.
+- **Renewable forever** — token refreshed without re-authentication.
+- **Cap never enforced server-side** — client honors it but backend doesn't.
+
+## Secure Implementation
+
+Store a fixed creation time and reject sessions past the cap:
+
+```javascript
+function isAbsoluteExpired(session, policy) {
+  return Date.now() - session.createdAt > policy.absoluteLifetimeMs;
+}
+```
+
+## Key Rules
+
+- Enforce an absolute maximum lifetime from session creation.
+- Never extend the cap on activity (no sliding renewal).
+- Require full re-authentication when the cap is reached.
+- Base the duration on risk analysis and documentation.
+- Enforce server-side, independent of the client.
+
+## Checklist for Code Review
+
+- Is there an absolute session lifetime?
+- Is it measured from authentication, not last activity?
+- Is renewal-without-reauth prevented?
+- Does reaching the cap force re-authentication?
+- Is the cap enforced server-side?

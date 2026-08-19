@@ -25,6 +25,50 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application terminates all active sessions when a user account is disabled or deleted (such as an employee leaving the company).
+When a user account is disabled or deleted — for example when an employee leaves — all of that user's active sessions must be terminated immediately. No session belonging to that account should continue to work after the account is shut down.
+
+## Why This Matters
+
+Disabling or deleting an account closes the front door but not the sessions already in flight. An offboarded employee (or a hijacked account being disabled) could keep using a still-valid session unless it is explicitly terminated. Ending all sessions at account shutdown completes the revocation of access.
+
+## Main Security Requirement
+
+> Verify that the application terminates all active sessions when a user account is disabled or deleted (such as an employee leaving the company).
+
+In practice this means a session purge tied to the account lifecycle event.
+
+## Common Failure Patterns
+
+- **Account disabled, sessions live** — existing sessions keep working.
+- **Deletion leaves orphaned sessions** — no cleanup hook on delete.
+- **Only current session killed** — other devices/sessions persist.
+- **Manual cleanup expected** — no automated termination on offboarding.
+
+## Secure Implementation
+
+Terminate all sessions as part of disabling/deleting:
+
+```javascript
+async function disableAccount(userId) {
+  await users.setStatus(userId, "disabled");
+  await sessionStore.deleteAllForUser(userId); // purge every active session
+}
+```
+
+## Key Rules
+
+- Terminate all active sessions on account disable or deletion.
+- Automate the purge as part of the lifecycle event.
+- Cover every session across all devices.
+- Apply equally to admin-initiated and self-service closure.
+- Verify no session survives the account state change.
+
+## Checklist for Code Review
+
+- Are all sessions terminated when an account is disabled?
+- Are all sessions terminated when an account is deleted?
+- Is the termination automated (not manual)?
+- Does it cover sessions on all devices?
+- Is this wired into the offboarding flow?

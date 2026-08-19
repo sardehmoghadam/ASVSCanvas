@@ -25,6 +25,51 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all systems that create and manage user sessions as part of a federated identity management ecosystem (such as SSO systems) are documented along with controls to coordinate session lifetimes, termination, and any other conditions that require re-authentication.
+In a federated setup, multiple systems — IdPs, SSO gateways, relying parties — each hold some slice of a user's session. This control requires an inventory of every system that creates or manages sessions, plus documented controls to coordinate their lifetimes, termination, and re-authentication triggers so the parts behave as one coherent policy.
+
+## Why This Matters
+
+Federated sessions are only as strong as their weakest coordinating link. If the IdP session expires but a relying party keeps its own session alive indefinitely, the "logout" is illusory. Documenting every session-owning system and how they coordinate prevents orphaned or zombie sessions that outlive the user's actual authentication.
+
+## Main Security Requirement
+
+> Verify that all systems that create and manage user sessions as part of a federated identity management ecosystem (such as SSO systems) are documented along with controls to coordinate session lifetimes, termination, and any other conditions that require re-authentication.
+
+In practice this means a federation session inventory plus coordination policy.
+
+## Common Failure Patterns
+
+- **Incomplete inventory** — some session-owning systems undocumented.
+- **Uncoordinated lifetimes** — IdP and RP timeouts diverge silently.
+- **No single logout** — terminating one session leaves others alive.
+- **No re-auth coordination** — conditions requiring re-auth are not propagated.
+
+## Secure Implementation
+
+Maintain a registry of session owners and their coordination rules:
+
+```javascript
+const FEDERATED_SESSIONS = [
+  { system: "idp",        role: "identity-provider",  maxLifetime: "15m" },
+  { system: "sso-gateway", role: "session-broker",    maxLifetime: "15m" },
+  { system: "app-a",      role: "relying-party",      maxLifetime: "12h" },
+];
+```
+
+## Key Rules
+
+- Inventory every system that creates or manages sessions.
+- Document coordinated session lifetimes across systems.
+- Define coordinated termination (single logout / back-channel).
+- Document re-authentication conditions per system.
+- Keep the federation diagram current with architecture changes.
+
+## Checklist for Code Review
+
+- Is every session-owning system inventoried?
+- Are lifetimes coordinated across systems?
+- Is termination propagated (single logout)?
+- Are re-authentication conditions documented per system?
+- Is the documentation kept current?

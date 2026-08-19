@@ -25,6 +25,50 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that session lifetime and termination between Relying Parties (RPs) and Identity Providers (IdPs) behave as documented, requiring re-authentication as necessary such as when the maximum time between IdP authentication events is reached.
+Session lifetimes and termination must behave consistently between Relying Parties (RPs) and Identity Providers (IdPs), as documented. When the maximum time since the last IdP authentication event is reached, the user must be re-authenticated.
+
+## Why This Matters
+
+In federation, an RP may hold a session long after the IdP's assurance has gone stale. Without coordinated lifetimes, the RP keeps trusting an authentication that the IdP would no longer vouch for. Tying RP sessions to the IdP's authentication age ensures "how recently did the IdP actually verify this user" remains enforced.
+
+## Main Security Requirement
+
+> Verify that session lifetime and termination between Relying Parties (RPs) and Identity Providers (IdPs) behave as documented, requiring re-authentication as necessary such as when the maximum time between IdP authentication events is reached.
+
+In practice this means RP sessions expire based on the IdP auth event time.
+
+## Common Failure Patterns
+
+- **RP session outlives IdP session** — no dependency on IdP state.
+- **IdP auth age ignored** — RP never checks `auth_time`.
+- **Uncoordinated termination** — IdP logout not propagated to RPs.
+- **Docs and behavior diverge** — documented lifetimes not enforced.
+
+## Secure Implementation
+
+Enforce RP lifetime against the IdP's authentication age:
+
+```javascript
+function requiresReauth(claims, policy) {
+  const ageSeconds = Date.now() / 1000 - claims.auth_time;
+  return ageSeconds > policy.maxIdpAuthAgeSeconds;
+}
+```
+
+## Key Rules
+
+- Coordinate RP and IdP session lifetimes per documentation.
+- Track the IdP authentication event time (`auth_time`).
+- Require re-authentication when the max IdP auth age is reached.
+- Propagate termination between IdP and RPs.
+- Keep behavior consistent with federation docs (V7.1.3).
+
+## Checklist for Code Review
+
+- Do RP sessions respect IdP authentication age?
+- Is `auth_time` checked against a documented maximum?
+- Is re-authentication forced when the max age is reached?
+- Is IdP termination propagated to RPs?
+- Does behavior match the documented federation policy?

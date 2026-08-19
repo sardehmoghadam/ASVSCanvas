@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that creation of a session requires either the user consent or an explicit action, preventing the creation of new application sessions without user interaction.
+A new application session must only be created when the user consents or takes an explicit action. The system must not silently spin up sessions in the background — such as via silent SSO or hidden auto-login — without the user's knowledge or involvement.
+
+## Why This Matters
+
+Silent session creation means sessions appear without any user-visible event, which is confusing at best and dangerous at worst: it can mask unauthorized authentication or make users believe they are logged out when they are not. Requiring consent/an explicit action keeps session creation user-driven and observable.
+
+## Main Security Requirement
+
+> Verify that creation of a session requires either the user consent or an explicit action, preventing the creation of new application sessions without user interaction.
+
+In practice this means no background/implicit session creation.
+
+## Common Failure Patterns
+
+- **Silent SSO** — session created by a hidden iframe redirect.
+- **Background auto-login** — token exchange creates a session invisibly.
+- **No user prompt** — consent/action never surfaced.
+- **Session created on page load** — mere visit establishes a session.
+
+## Secure Implementation
+
+Gate session creation on explicit user action:
+
+```javascript
+async function createSessionFromAuth(authResult, userAction) {
+  if (!userAction.consented && !userAction.explicit) {
+    throw new Error("Session creation requires user consent/action");
+  }
+  return sessionStore.create(authResult);
+}
+```
+
+## Key Rules
+
+- Create sessions only on user consent or explicit action.
+- Avoid silent/background session creation (iframe SSO).
+- Surface a clear prompt for consent-based flows.
+- Never auto-create a session on a passive page load.
+- Log session-creation events with the triggering action.
+
+## Checklist for Code Review
+
+- Does session creation require consent or explicit action?
+- Are there silent SSO / hidden-iframe session creations?
+- Is a user prompt shown for consent flows?
+- Can a passive page load create a session?
+- Is the triggering action recorded?
