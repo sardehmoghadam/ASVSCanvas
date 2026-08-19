@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that users are notified of suspicious authentication attempts (successful or unsuccessful). This may include authentication attempts from an unusual location or client, partially successful authentication (only one of multiple factors), an authentication attempt after a long period of inactivity or a successful authentication after several unsuccessful attempts.
+The application must tell users about suspicious authentication activity — both failures and successes. Suspicious means anything out of the ordinary: a login from an unusual location or client, only one factor succeeding, a login after long inactivity, or a success right after many failures.
+
+## Why This Matters
+
+Users are a frontline detection layer. Alerting them to anomalies lets them react quickly — changing a compromised password, revoking sessions — before an attacker consolidates access. Many takeovers start with a few odd logins that went unnoticed precisely because nothing was reported.
+
+## Main Security Requirement
+
+> Verify that users are notified of suspicious authentication attempts (successful or unsuccessful). This may include authentication attempts from an unusual location or client, partially successful authentication (only one of multiple factors), an authentication attempt after a long period of inactivity or a successful authentication after several unsuccessful attempts.
+
+In practice this means an event pipeline from login to notification, with defined risk signals.
+
+## Common Failure Patterns
+
+- **No notifications** — anomalies pass silently.
+- **One signal only** — alerting on location but not on partial MFA or post-inactivity.
+- **Successes ignored** — only failures trigger alerts.
+- **Noisy/undifferentiated alerts** — users trained to ignore them.
+
+## Secure Implementation
+
+Detect risk signals and notify on thresholds:
+
+```javascript
+async function onAuthEvent(event) {
+  const suspicious =
+    event.locationUnusual || event.clientUnusual ||
+    event.partialFactorSuccess || event.loginAfterLongInactivity ||
+    (event.success && event.priorFailures >= 3);
+
+  if (suspicious) {
+    await notify(user, {
+      template: "suspicious-auth",
+      details: summarize(event),
+    });
+  }
+}
+```
+
+Alert on both successes and failures, and link to a "this wasn't me" action.
+
+## Key Rules
+
+- Notify users of suspicious successful *and* unsuccessful attempts.
+- Cover unusual location/client, partial MFA, post-inactivity, and post-failure success.
+- Keep notifications actionable and specific (time, method, location).
+- Provide a "this wasn't me" response path.
+- Avoid alert fatigue with clear, concise wording.
+
+## Checklist for Code Review
+
+- Are users notified of suspicious auth attempts?
+- Do notifications cover both success and failure cases?
+- Are the documented risk signals all evaluated?
+- Is each notification actionable with remediation steps?
+- Is there a way for a user to report a false/unauthorized attempt?

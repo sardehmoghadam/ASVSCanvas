@@ -24,6 +24,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that default user accounts (e.g., root, admin, or sa) are not present in the application or are disabled.
+Well-known default accounts — `root`, `admin`, `sa`, `guest`, and vendor defaults — must not exist in the deployment, or if they exist, must be disabled and their default credentials changed. Any account whose credentials are published in documentation or famous defaults is an open door.
+
+## Why This Matters
+
+Default accounts ship with known usernames and passwords, and attackers scan for them automatically. A forgotten `admin/admin` or an enabled `sa` account bypasses every other authentication control in seconds. Removing or disabling them removes a class of instant-compromise that requires zero effort from the attacker.
+
+## Main Security Requirement
+
+> Verify that default user accounts (e.g., root, admin, or sa) are not present in the application or are disabled.
+
+In practice this means an inventory proves no default account is active with default credentials.
+
+## Common Failure Patterns
+
+- **Default credentials left in place** — shipped username/password unchanged.
+- **Vendor accounts enabled** — database/appliance admin accounts active.
+- **Known backdoors** — undocumented support accounts still present.
+- **No inventory** — nobody can prove which accounts exist.
+
+## Secure Implementation
+
+Disable or remove default accounts and rotate any initial credentials:
+
+```sql
+-- Disable, don't just rename, well-known accounts
+ALTER USER 'root'@'localhost' ACCOUNT LOCK;
+
+-- Or remove vendor-supplied anonymous/guest accounts
+DROP USER 'guest'@'%';
+DROP USER 'anonymous'@'%';
+```
+
+Implement least-privilege named accounts with unique, generated credentials instead.
+
+## Key Rules
+
+- Remove or disable default accounts (`root`, `admin`, `sa`, `guest`).
+- Change all vendor-supplied default credentials on deploy.
+- Audit for known/undocumented support accounts.
+- Use uniquely named, least-privilege accounts.
+- Keep an account inventory you can verify against.
+
+## Checklist for Code Review
+
+- Are any default (`root`/`admin`/`sa`/`guest`) accounts active?
+- Are vendor-supplied default passwords changed?
+- Is there an inventory of all accounts in the environment?
+- Are remaining accounts named uniquely and least-privileged?
+- Can you demonstrate no account still uses a known default credential?

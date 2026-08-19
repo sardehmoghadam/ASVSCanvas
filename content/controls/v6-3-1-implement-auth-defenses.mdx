@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that controls to prevent attacks such as credential stuffing and password brute force are implemented according to the application security documentation.
+The defenses written down in V6.1.1 must now be operational in the running system. Rate limiting, anti-automation, and adaptive responses must actually be wired into the login flow, with thresholds and behavior matching the documented policy.
+
+## Why This Matters
+
+Documentation without implementation is security theater. Credential stuffing and brute force are continuous, automated threats; the only thing that slows them is live enforcement in the authentication path. This control verifies the promise made by the documentation is kept in code and configuration.
+
+## Main Security Requirement
+
+> Verify that controls to prevent attacks such as credential stuffing and password brute force are implemented according to the application security documentation.
+
+In practice this means the login code reads and enforces the documented thresholds.
+
+## Common Failure Patterns
+
+- **Documented but absent** — the policy exists but no code enforces it.
+- **Mismatched thresholds** — code limits differ from the documented values.
+- **Client-only enforcement** — limits exist only in the browser, trivially bypassable.
+- **Friction only for humans** — no bot detection, only a static lockout.
+
+## Secure Implementation
+
+Enforce the documented policy in the authentication path:
+
+```javascript
+async function login(req, res) {
+  const { account, ip } = req;
+  const status = await riskEngine.assess(account, ip); // matches AUTH_POLICY
+  if (status.blocked) {
+    return res.status(429).json({ error: "Too many attempts" });
+  }
+  const ok = await verifyCredentials(req.body.username, req.body.password);
+  if (!ok) {
+    await riskEngine.recordFailure(account, ip); // progressive delay / captcha
+  }
+}
+```
+
+Configure the risk engine from a source of truth shared with the documentation.
+
+## Key Rules
+
+- Implement the documented rate limiting, anti-automation, and adaptive controls.
+- Enforce them server-side in the authentication path.
+- Keep code thresholds identical to the documented policy.
+- Apply friction progressively; avoid malicious lockout (V6.1.1).
+- Verify enforcement with automated/failed-login tests.
+
+## Checklist for Code Review
+
+- Are the documented controls actually implemented in code?
+- Are thresholds read from/kept in sync with the documentation?
+- Is enforcement server-side, not client-only?
+- Is there rate limiting plus anti-automation/adaptive response?
+- Does a failed-login test confirm the controls trigger?

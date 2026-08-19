@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the application supports multiple identity providers (IdPs), the user identity cannot be spoofed via another supported identity provider (e.g., by using the same user identifier). The standard mitigation would be for the application to register and identify the user using a combination of the IdP ID (serving as a namespace) and the user ID in the IdP.
+When an application supports multiple identity providers (IdPs), a user's identity in one IdP must not collide with a different user's identity in another. The application must namespace each identity by combining the IdP identifier with the user ID within it, so `user123` from IdP-A and `user123` from IdP-B resolve to distinct accounts.
+
+## Why This Matters
+
+Without namespacing, an attacker can create an account with the same user ID on a weaker or attacker-controlled IdP and be mapped onto an existing victim's account — spoofing identity through the authentication back door. Combining IdP + user ID ensures each account is unambiguously scoped to its provider.
+
+## Main Security Requirement
+
+> Verify that, if the application supports multiple identity providers (IdPs), the user identity cannot be spoofed via another supported identity provider (e.g., by using the same user identifier). The standard mitigation would be for the application to register and identify the user using a combination of the IdP ID (serving as a namespace) and the user ID in the IdP.
+
+In practice this means a composite, provider-scoped subject, not a bare `sub`/username.
+
+## Common Failure Patterns
+
+- **Bare user ID** — matching accounts on `sub`/email alone.
+- **No provider namespace** — `user123` from any IdP maps to the same account.
+- **Trusting self-registration** — letting users pick an ID that matches an existing account.
+- **Email collision** — relying on email uniqueness across providers.
+
+## Secure Implementation
+
+Build a provider-scoped subject for lookup and provisioning:
+
+```javascript
+function computeLocalSubject(idp, claims) {
+  // Namespace the IdP's subject so it cannot collide across providers.
+  return `idp:${idp.id}:${claims.sub}`;
+}
+
+async function findOrProvision(idp, claims) {
+  const subject = computeLocalSubject(idp, claims);
+  let account = await db.findBySubject(subject);
+  if (!account) account = await db.createUser({ subject });
+  return account;
+}
+```
+
+## Key Rules
+
+- Scope user identity by IdP ID + user ID (namespace).
+- Never match accounts on a bare provider subject.
+- Treat the same `sub` from different IdPs as distinct users.
+- Avoid relying on email uniqueness across IdPs.
+- Provision new accounts only through the provider-scoped key.
+
+## Checklist for Code Review
+
+- Are identities namespaced by IdP plus per-IdP user ID?
+- Can the same user ID in two IdPs map to one account?
+- Is account lookup keyed on a provider-scoped subject?
+- Is email uniqueness assumed across providers?
+- Does provisioning use the composite identifier?

@@ -25,6 +25,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that application documentation defines how controls such as rate limiting, anti-automation, and adaptive response, are used to defend against attacks such as credential stuffing and password brute force. The documentation must make clear how these controls are configured and prevent malicious account lockout.
+Authentication defenses — rate limiting, anti-automation, and adaptive responses — must exist on paper before they exist in code. The documentation names the controls, states how they are configured, and explains how they stop credential stuffing and brute force without letting an attacker lock out a legitimate user.
+
+## Why This Matters
+
+Credential stuffing and brute force are automated and cheap. Without documented limits, an attacker can guess at full speed and a poorly-tuned lockout can become a denial-of-service against your own users. Writing the defense down forces the team to decide thresholds, distinguish attacker traffic from user mistakes, and keep lockout from being weaponized.
+
+## Main Security Requirement
+
+> Verify that application documentation defines how controls such as rate limiting, anti-automation, and adaptive response, are used to defend against attacks such as credential stuffing and password brute force. The documentation must make clear how these controls are configured and prevent malicious account lockout.
+
+In practice this means a configurable, documented policy that maps to real code constants.
+
+## Common Failure Patterns
+
+- **Undocumented thresholds** — limits exist only in code, unplanned and unreviewed.
+- **Global lockout** — an attacker locking every account by guessing usernames.
+- **No anti-automation** — nothing distinguishes bots from humans (no CAPTCHA, velocity checks, or device signals).
+- **No adaptive response** — identical treatment regardless of risk signals.
+
+## Secure Implementation
+
+Document the policy and mirror it in configuration that code reads:
+
+```javascript
+const AUTH_POLICY = {
+  perIpPerMinute: 10,          // failed attempts before progressive delay
+  perAccountPerMinute: 5,
+  lockoutStrategy: "progressive-delay", // not hard lockout
+  adaptive: ["bot-detection", "device-fingerprint"],
+};
+```
+
+Then implement failure counting without a hard global lockout:
+
+```javascript
+async function recordFailure(account, ip) {
+  const n = await failures.increment(account, ip);
+  if (n >= AUTH_POLICY.perAccountPerMinute) {
+    await captcha.require(); // raise friction, never lock the account outright
+  }
+}
+```
+
+## Key Rules
+
+- Document rate limiting, anti-automation, and adaptive response controls.
+- State exact thresholds and configuration in the documentation.
+- Prevent malicious account lockout (avoid hard global lockout).
+- Distinguish attacker traffic from normal user mistakes.
+- Keep the documented policy in sync with live configuration.
+
+## Checklist for Code Review
+
+- Is there written documentation for auth rate limiting and anti-automation?
+- Are thresholds configured to values the docs describe?
+- Can an attacker lock out legitimate accounts?
+- Are adaptive responses (risk-based friction) present, not just a fixed limit?
+- Is the policy reviewed when thresholds change?

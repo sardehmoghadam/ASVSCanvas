@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that biometric authentication mechanisms are only used as secondary factors together with either something you have or something you know.
+Biometrics must never be the sole means of authentication. They may only serve as a *secondary* factor alongside another factor — something you have (a device) or something you know (a password/PIN). The biometric unlocks the other factor; it is not a password substitute on its own.
+
+## Why This Matters
+
+Biometrics are non-revocable (you cannot rotate a fingerprint) and fallible (false accepts, spoofing, sensor variance), and their privacy implications are severe if stored centrally. Requiring a primary knowledge or possession factor means a biometric compromise alone is not enough to take over an account, and a lost capability does not lock the user out.
+
+## Main Security Requirement
+
+> Verify that biometric authentication mechanisms are only used as secondary factors together with either something you have or something you know.
+
+In practice this means biometric unlock layered over a password/PIN/device, never standalone login.
+
+## Common Failure Patterns
+
+- **Biometric-only login** — fingerprint as the sole credential.
+- **Centralized biometric storage** — raw templates kept server-side.
+- **No fallback** — biometric failure leaves no other path.
+- **Treating biometric as a password** — using it to derive a cryptographic key assumed secret.
+
+## Secure Implementation
+
+Restrict biometrics to locally unlocking a key or confirming alongside a primary factor:
+
+```javascript
+// The biometric only gates access to a locally held credential.
+async function enableBiometricUnlock(user, deviceKey) {
+  // Ask the device to require biometric (Touch ID/Face ID/WebAuthn UV)
+  // before releasing deviceKey. The server never stores biometric data.
+  await secureStore.set("deviceKey", deviceKey, { requireBiometric: true });
+}
+```
+
+Authentication still requires the primary factor (password/PIN or a possession factor).
+
+## Key Rules
+
+- Use biometrics only as a secondary factor.
+- Always pair biometrics with something-you-have or something-you-know.
+- Keep biometric data on-device; never store templates centrally.
+- Provide a non-biometric fallback for enrollment failure.
+- Do not treat biometric output as a revocable secret.
+
+## Checklist for Code Review
+
+- Is there any biometric-only authentication path?
+- Are biometrics always paired with a primary factor?
+- Is biometric data kept on-device, not server-side?
+- Is there a fallback when biometrics fail?
+- Are biometrics used to unlock a key rather than as a secret?

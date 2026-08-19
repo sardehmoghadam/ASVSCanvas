@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that renewal instructions for authentication mechanisms which expire are sent with enough time to be carried out before the old authentication mechanism expires, configuring automated reminders if necessary.
+Any authentication mechanism that expires — a certificate, a smart card, an identity that needs refreshing — must come with renewal instructions sent well before expiry, leaving the user time to act. Where renewal is easy to forget, automated reminders should be configured.
+
+## Why This Matters
+
+An expired authentication mechanism is a self-inflicted lockout or, worse, a user scrambling through an insecure fallback at the last minute. Early, automated reminders prevent the cliff where a credential dies with no replacement, keeping authentication continuous and avoiding last-resort workarounds that weaken security.
+
+## Main Security Requirement
+
+> Verify that renewal instructions for authentication mechanisms which expire are sent with enough time to be carried out before the old authentication mechanism expires, configuring automated reminders if necessary.
+
+In practice this means scheduled notifications tied to the expiry date.
+
+## Common Failure Patterns
+
+- **No reminder** — renewal left entirely to the user's memory.
+- **Too-late notice** — notification arrives after or just before expiry.
+- **One-shot email** — no follow-up as expiry approaches.
+- **No instructions** — "renew soon" without telling them how.
+
+## Secure Implementation
+
+Schedule notifications ahead of the expiry window:
+
+```javascript
+async function scheduleRenewalReminders(user, mechanism) {
+  const days = [30, 14, 3, 0];
+  for (const d of days) {
+    const at = mechanism.expiresAt - d * DAY_MS;
+    if (at > Date.now()) {
+      await reminders.schedule(at, {
+        to: user.contact,
+        template: "auth-renewal",
+        data: { mechanism, steps: RENEWAL_STEPS[mechanism.type] },
+      });
+    }
+  }
+}
+```
+
+Include concrete renewal steps and a link to the renewal flow.
+
+## Key Rules
+
+- Send renewal instructions well before the mechanism expires.
+- Configure automated reminders at multiple offsets.
+- Include actionable, specific renewal steps.
+- Track reminders so none slip through a gap.
+- Verify renewal can actually be completed before expiry.
+
+## Checklist for Code Review
+
+- Are renewal reminders scheduled for expiring mechanisms?
+- Are they sent early enough to complete the steps?
+- Are reminders automated rather than manual?
+- Do notifications include concrete renewal instructions?
+- Is there a follow-up as expiry draws near?

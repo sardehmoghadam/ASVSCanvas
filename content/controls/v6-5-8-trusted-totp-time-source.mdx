@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that time-based one-time passwords (TOTPs) are checked based on a time source from a trusted service and not from an untrusted or client provided time.
+TOTP validation must reference trustworthy time — a time source the application controls or a trusted service (e.g. NTP-synchronized server clock). It must never rely on a timestamp supplied by the client, which an attacker can trivially forge to replay or extend the validity of a code.
+
+## Why This Matters
+
+TOTP correctness depends entirely on both parties agreeing what time it is. If the server accepts client-provided time, an attacker can set "now" to the moment a stolen code was generated and replay it indefinitely. Trusting only a controlled/NTP time source keeps the 30-second window anchored to reality.
+
+## Main Security Requirement
+
+> Verify that time-based one-time passwords (TOTPs) are checked based on a time source from a trusted service and not from an untrusted or client provided time.
+
+In practice this means reading `Date.now()` from the server (NTP-synced), never from the request.
+
+## Common Failure Patterns
+
+- **Client-supplied timestamp** — validating against `req.body.time`.
+- **Unsynchronized server clocks** — no NTP, drifting out of step.
+- **Over-generous drift** — allowing huge skew effectively extends the window.
+- **Time from a third party without trust** — using an unauthenticated time API.
+
+## Secure Implementation
+
+Use the server clock and keep it NTP-synchronized:
+
+```javascript
+import { authenticator } from "otplib";
+
+function verifyTotp(user, code) {
+  // 'now' comes from the server's NTP-synced clock, not the client.
+  return authenticator.verify({
+    token: code,
+    secret: user.totpSecret,
+    window: 1, // allow at most ±1 step of clock skew
+  });
+}
+```
+
+Ensure the host runs an NTP client and rejects client time entirely.
+
+## Key Rules
+
+- Validate TOTPs against a trusted, server-side time source.
+- Never trust client-provided time.
+- Keep server clocks NTP-synchronized.
+- Limit acceptable skew (e.g. ±1 step).
+- Monitor for clock drift that would break or extend validity.
+
+## Checklist for Code Review
+
+- Is TOTP time read from the server, never the client?
+- Is the host clock synchronized via NTP?
+- Is clock-skew allowance bounded and small?
+- Are client-supplied timestamps ignored?
+- Is drift monitored to prevent window extension?

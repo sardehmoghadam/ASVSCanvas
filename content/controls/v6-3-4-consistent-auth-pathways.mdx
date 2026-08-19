@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the application includes multiple authentication pathways, there are no undocumented pathways and that security controls and authentication strength are enforced consistently.
+If the application has several ways to authenticate, none may exist off the books, and every pathway must enforce the same security controls and authentication strength. An undocumented or weaker login path is an unguarded door; a stronger standard only helps if it applies everywhere.
+
+## Why This Matters
+
+Attackers probe every authentication surface — the mobile app, the API, the admin console, the social login callback. A single pathway that skips MFA, rate limiting, or session hardening becomes the path of least resistance and negates the protections on all the others. Consistency across every documented pathway is what makes the overall posture real.
+
+## Main Security Requirement
+
+> Verify that, if the application includes multiple authentication pathways, there are no undocumented pathways and that security controls and authentication strength are enforced consistently.
+
+In practice this means reconciling the registry from V6.1.3 against live endpoints.
+
+## Common Failure Patterns
+
+- **Hidden endpoints** — a legacy login route not in the registry.
+- **Weaker secondary path** — the mobile/API path dropping MFA.
+- **Inconsistent controls** — rate limiting on web but not on SSO callback.
+- **Registry drift** — docs and reality diverge over time.
+
+## Secure Implementation
+
+Centralize authentication behind shared middleware applied to every pathway:
+
+```javascript
+// Every login route funnels through the same stack.
+app.post("/login", AUTH_STRENGTH.requireMFA, authenticate);
+app.post("/sso/callback", AUTH_STRENGTH.requireMFA, ssoCallback);
+app.post("/api/token", AUTH_STRENGTH.requireMFA, tokenExchange);
+```
+
+Audit discovered routes against the documented registry on a schedule.
+
+## Key Rules
+
+- Enumerate every pathway in the documentation (V6.1.3).
+- Confirm no undocumented authentication pathways exist.
+- Apply the same strength and controls to all pathways.
+- Centralize auth logic so it cannot diverge per route.
+- Re-audit the registry on code changes.
+
+## Checklist for Code Review
+
+- Are all login routes present in the documentation?
+- Is any pathway missing from the registry?
+- Does every pathway enforce the same MFA and controls?
+- Is authentication handled by shared, centralized middleware?
+- Is the registry re-verified after changes?

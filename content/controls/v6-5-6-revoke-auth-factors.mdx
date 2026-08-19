@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that any authentication factor (including physical devices) can be revoked in case of theft or other loss.
+Every authentication factor a user has enrolled — software tokens, backup codes, physical keys — must be independently revocable. When a phone is stolen or a hardware key lost, the user (or an administrator) can disable just that factor without affecting the others.
+
+## Why This Matters
+
+If a factor cannot be revoked, a lost or stolen device remains a live credential forever, and the only "remediation" is abandoning the account or nuking all factors. Independent revocation confines the loss to the one compromised factor and keeps the rest of the user's authentication working.
+
+## Main Security Requirement
+
+> Verify that any authentication factor (including physical devices) can be revoked in case of theft or other loss.
+
+In practice this means per-factor removal, both self-service and administrator-assisted.
+
+## Common Failure Patterns
+
+- **No self-revoke** — user cannot remove a lost device without support.
+- **All-or-nothing** — account reset required to drop one factor.
+- **Revoke without re-auth** — removing factors possible from an unauthenticated session.
+- **No audit trail** — factor removal is silent and untracked.
+
+## Secure Implementation
+
+Support removing an individual factor, gated by re-authentication:
+
+```javascript
+app.delete("/account/factors/:id", authenticate, async (req, res) => {
+  const factor = req.user.factors.find(f => f.id === req.params.id);
+  if (!factor) return res.status(404).end();
+  await verifyFactor(req.user, req.body.factorProof); // require another factor
+  await db.removeFactor(req.user.id, factor.id);
+  await audit.log("factor.revoked", { factor: factor.id });
+  res.json({ revoked: true });
+});
+```
+
+## Key Rules
+
+- Allow independent revocation of any single factor.
+- Provide self-service revocation for stolen/lost devices.
+- Require re-authentication before revoking a factor.
+- Support administrator-assisted revocation when needed.
+- Log each revocation for accountability.
+
+## Checklist for Code Review
+
+- Can each factor be revoked independently?
+- Is self-service revocation available to users?
+- Is re-authentication required before revocation?
+- Can an admin revoke a factor on the user's behalf?
+- Are revocations logged and auditable?

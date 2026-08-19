@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that lookup secrets, out-of-band authentication requests or codes, and time-based one-time passwords (TOTPs) are only successfully usable once.
+Every one-time credential — lookup/backup secrets, out-of-band codes, and TOTPs — may only be *successfully* used a single time. Once a code is accepted, it is immediately consumed; any reuse (or replay) must fail. A code that merely times out does not count as used, but a code that grants access cannot be spent twice.
+
+## Why This Matters
+
+If a code can be used repeatedly, any interception (network sniffing, shoulder-surfing, a logged message) becomes long-term access. Single-use enforcement bounds the damage of a leaked code to one authentication and defeats replay attacks, which rely on presenting the same credential again.
+
+## Main Security Requirement
+
+> Verify that lookup secrets, out-of-band authentication requests or codes, and time-based one-time passwords (TOTPs) are only successfully usable once.
+
+In practice this means recording which code values (or TOTP time steps) have been consumed.
+
+## Common Failure Patterns
+
+- **Replay within window** — a TOTP accepted twice in the same 30s step.
+- **No consumption tracking** — codes verified but never invalidated.
+- **Failure not consumed** — a wrong code can be retried, but a *successful* code must be consumed.
+- **Lookup secrets reusable** — a backup code remaining valid after success.
+
+## Secure Implementation
+
+Track consumed codes and TOTP time steps before granting access:
+
+```javascript
+async function verifyTotpOnce(user, code, now) {
+  const step = Math.floor(now / 1000 / 30);
+  if (await consumed.get(user.id, `totp:${step}`)) {
+    return { ok: false, reason: "replay" };
+  }
+  const ok = authenticator.verify({ token: code, secret: user.totpSecret });
+  if (ok) await consumed.set(user.id, `totp:${step}`, true, { ttl: 60 });
+  return { ok };
+}
+```
+
+Store the consumed marker atomically (set-if-not-exists) to close race conditions.
+
+## Key Rules
+
+- Allow each code to succeed at most once.
+- Consume the value atomically at the moment of success.
+- Track TOTP time steps to prevent reuse in the same window.
+- Mark lookup secrets and OOB codes single-use on success.
+- Fail closed on any replay attempt.
+
+## Checklist for Code Review
+
+- Is each lookup/OOB code consumed after success?
+- Are TOTPs rejected if the same time step is reused?
+- Is consumption atomic (race-free)?
+- Can any successfully-used code authenticate again?
+- Is replay explicitly logged and denied?

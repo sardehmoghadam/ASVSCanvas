@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that authentication mechanisms using the Public Switched Telephone Network (PSTN) to deliver One-time Passwords (OTPs) via phone or SMS are offered only when the phone number has previously been validated, alternate stronger methods (such as Time based One-time Passwords) are also offered, and the service provides information on their security risks to users. For L3 applications, phone and SMS must not be available as options.
+OTPs delivered over the telephone network (SMS or voice call) are weaker, and must only be offered under conditions: the phone number was already verified, a stronger alternative (like TOTP) is also available, and the user is informed of the risks. For Level 3 applications, phone/SMS must not be an option at all.
+
+## Why This Matters
+
+PSTN OTPs are vulnerable to SIM-swapping, SS7 interception, and device theft, and they depend on the mobile carrier's security. Offering them as the default or only second factor gives users a false sense of protection. Restricting them — and banning them at L3 — steers users toward genuinely phishing-resistant or at least more robust factors.
+
+## Main Security Requirement
+
+> Verify that authentication mechanisms using the Public Switched Telephone Network (PSTN) to deliver One-time Passwords (OTPs) via phone or SMS are offered only when the phone number has previously been validated, alternate stronger methods (such as Time based One-time Passwords) are also offered, and the service provides information on their security risks to users. For L3 applications, phone and SMS must not be available as options.
+
+In practice this means gating SMS OTP availability and excluding it entirely at L3.
+
+## Common Failure Patterns
+
+- **SMS as the only option** — no TOTP/WebAuthn alternative offered.
+- **Unvalidated numbers** — OTP sent to a number never confirmed as the user's.
+- **No risk disclosure** — users not told SMS OTP is weaker.
+- **SMS allowed at L3** — phone factor present in high-assurance flows.
+
+## Secure Implementation
+
+Only expose PSTN OTP when preconditions hold; hide it at L3:
+
+```javascript
+function allowedFactors(user, level) {
+  const factors = ["totp", "webauthn"];
+  if (level >= 3) return factors; // no phone/SMS at L3
+  if (user.phoneVerified) factors.push("sms");
+  return factors;
+}
+```
+
+Offer stronger factors first and surface the security-risk notice when SMS is chosen.
+
+## Key Rules
+
+- Offer PSTN/SMS OTP only when the number is pre-validated.
+- Always offer a stronger alternative (TOTP/WebAuthn).
+- Disclose the security risks of phone/SMS to users.
+- Never allow phone/SMS for L3.
+- Default users to stronger factors over SMS.
+
+## Checklist for Code Review
+
+- Is the phone number validated before SMS OTP is offered?
+- Are stronger alternatives also presented?
+- Are users informed of SMS OTP risks?
+- Is phone/SMS excluded at L3?
+- Does the UI default to stronger factors?

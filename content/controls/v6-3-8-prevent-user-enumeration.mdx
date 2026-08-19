@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that valid users cannot be deduced from failed authentication challenges, such as by basing on error messages, HTTP response codes, or different response times. Registration and forgot password functionality must also have this protection.
+An attacker must not be able to learn whether a username or email exists by observing authentication responses. Error messages, HTTP status codes, response times, and behaviors in login, registration, and forgot-password must be indistinguishable whether the account exists or not.
+
+## Why This Matters
+
+Enumeration is the reconnaissance step before credential stuffing and targeted phishing. Once an attacker knows which usernames are valid, they can focus their attacks and bypass generic protections. Making responses identical removes the signal that turns username guessing into account discovery.
+
+## Main Security Requirement
+
+> Verify that valid users cannot be deduced from failed authentication challenges, such as by basing on error messages, HTTP response codes, or different response times. Registration and forgot password functionality must also have this protection.
+
+In practice this means uniform messages, codes, and timing for both existing and non-existing accounts.
+
+## Common Failure Patterns
+
+- **Distinct messages** — "no such user" vs "wrong password."
+- **Different status codes** — 200 vs 404 differing by existence.
+- **Timing side channel** — real accounts skip a bcrypt call and return faster.
+- **Boy who cried wolf** — registration revealing "already taken."
+
+## Secure Implementation
+
+Keep responses identical and equalize the work both branches do:
+
+```javascript
+async function login(req, res) {
+  const { username, password } = req.body;
+  const user = await db.findByUsername(username);
+  const hash = user
+    ? user.passwordHash
+    : DUMMY_HASH; // expensive hash so timing matches
+  const ok = await verifyHash(password, hash);
+  const response = ok ? success() : "Invalid username or password";
+  return res.status(ok ? 200 : 401).json({ error: response });
+}
+```
+
+Forgot-password should only return the generic "if that account exists, an email was sent."
+
+## Key Rules
+
+- Use one identical error message for login failures.
+- Return identical HTTP codes regardless of account existence.
+- Equalize timing (compare against a dummy hash when no user exists).
+- Make registration and forgot-password non-enumerating too.
+- Never reveal "account exists" via any channel.
+
+## Checklist for Code Review
+
+- Is the login failure message identical for existing/missing accounts?
+- Are HTTP status codes uniform across both cases?
+- Is a dummy-hash comparison used to equalize timing?
+- Do registration and forgot-password avoid enumeration?
+- Are login/registration flows covered by enumeration tests?

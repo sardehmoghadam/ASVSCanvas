@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the presence and integrity of digital signatures on authentication assertions (for example on JWTs or SAML assertions) are always validated, rejecting any assertions that are unsigned or have invalid signatures.
+Every authentication assertion the application accepts — JWTs, SAML assertions — must have its signature verified: present, valid, and produced by a trusted key. Assertions that are unsigned, have an invalid/invalidly-issued signature, or fail integrity must be rejected outright.
+
+## Why This Matters
+
+An assertion is just a claim wrapped in a format; the signature is what proves it actually came from the IdP rather than the attacker. Skipping signature verification — or accepting `alg=none` — lets anyone forge an assertion and authenticate as any user. Enforcing signature validation is the difference between trusting the IdP and trusting anyone.
+
+## Main Security Requirement
+
+> Verify that the presence and integrity of digital signatures on authentication assertions (for example on JWTs or SAML assertions) are always validated, rejecting any assertions that are unsigned or have invalid signatures.
+
+In practice this means mandatory signature verification with pinning against trusted keys (V6.7.1).
+
+## Common Failure Patterns
+
+- **No verification** — decoding a JWT without checking the signature.
+- **`alg=none` accepted** — algorithm-confusion / missing signature passes.
+- **Untrusted keys** — verifying against a key supplied by the request.
+- **No expiry/audience/issuer checks** — signature valid but the assertion is not for this system.
+
+## Secure Implementation
+
+Verify signature, key, and claim constraints together:
+
+```javascript
+import { verify } from "jsonwebtoken";
+
+function verifyAssertion(token) {
+  const payload = verify(token, JWKS, {
+    algorithms: ["RS256"],          // never allow "none"
+    issuer: "https://idp.example.com",
+    audience: "my-app",
+  });
+  return payload;
+}
+```
+
+## Key Rules
+
+- Always validate the signature on assertions (JWT/SAML).
+- Reject unsigned or invalidly-signed assertions.
+- Restrict accepted algorithms; explicitly disallow `none`.
+- Verify against trusted, pinned keys (V6.7.1).
+- Also validate issuer, audience, and expiry.
+
+## Checklist for Code Review
+
+- Are assertion signatures always verified?
+- Is `alg=none` or weak algorithms rejected?
+- Are assertions verified against trusted, pinned keys only?
+- Are issuer/audience/expiry checked?
+- Are unsigned assertions refused?

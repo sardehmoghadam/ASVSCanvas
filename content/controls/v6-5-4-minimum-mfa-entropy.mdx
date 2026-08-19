@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that lookup secrets and out-of-band authentication codes have a minimum of 20 bits of entropy (typically 4 random alphanumeric characters or 6 random digits is sufficient).
+Lookup secrets and out-of-band codes must carry at least 20 bits of entropy — enough that a guessing attack is impractical. In practice, that means about 4 random alphanumeric characters or 6 random digits, generated truly at random (not incrementally or predictably).
+
+## Why This Matters
+
+20 bits means roughly a million possibilities. For a credential that is rate-limited and single-use, that is sufficient to prevent casual guessing while keeping codes short enough to type. Weaker codes (e.g. 3 or 4 digits) fall into the range an attacker can brute force even with modest rate limits.
+
+## Main Security Requirement
+
+> Verify that lookup secrets and out-of-band authentication codes have a minimum of 20 bits of entropy (typically 4 random alphanumeric characters or 6 random digits is sufficient).
+
+In practice this means enforcing code length/randomness at generation time.
+
+## Common Failure Patterns
+
+- **3–4 numeric codes** — only ~10³–10⁴ possibilities.
+- **Predictable generation** — sequential or time-derived codes (see V6.5.3).
+- **Entropy overestimated** — "alphanumeric" that is actually words or patterns.
+- **No rate limit alongside** — a short code without throttling becomes crackable.
+
+## Secure Implementation
+
+Generate codes with at least 20 bits of entropy and enforce rate limiting:
+
+```javascript
+import { randomBytes } from "node:crypto";
+
+function generateOobCode() {
+  // 6 random digits ≈ 20 bits of entropy.
+  const digits = Array.from({ length: 6 }, () =>
+    randomBytes(1)[0] % 10
+  );
+  return digits.join("");
+}
+```
+
+Combine with a maximum-attempt limit so the search space is never exhaustible.
+
+## Key Rules
+
+- Ensure lookup/OOB codes have ≥20 bits of entropy.
+- Use ~4 random alphanumeric or ~6 random digits (or equivalent).
+- Generate them with a CSPRNG (V6.5.3).
+- Pair with rate limiting so guessing is bounded.
+- Do not overstate entropy for human-readable/predictable codes.
+
+## Checklist for Code Review
+
+- Do lookup/OOB codes have at least 20 bits of entropy?
+- Are they generated randomly (not sequentially/predictably)?
+- Is the code length compatible with the entropy target?
+- Is rate limiting enforced alongside the code check?
+- Is the entropy assumption honest for the actual alphabet used?

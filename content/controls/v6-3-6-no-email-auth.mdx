@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that email is not used as either a single-factor or multi-factor authentication mechanism.
+Email must never serve as an authentication factor — neither as the only factor (magic-link-only login replacing a password) nor as the second factor in MFA (a code emailed every login). Email may still be used for recovery notifications and OOB password resets only under strict conditions, but never for *authentication* itself.
+
+## Why This Matters
+
+Email is typically protected by just another password on a third-party server, and inboxes are a frequent compromise target. Using email as a factor means your authentication is only as strong as the user's webmail password — which may be the same password, or already breached. It collapses two factors into effectively one weak link.
+
+## Main Security Requirement
+
+> Verify that email is not used as either a single-factor or multi-factor authentication mechanism.
+
+In practice this means no login code accepts an email-sent code or a bare email link as the authentication credential.
+
+## Common Failure Patterns
+
+- **Magic-link-only login** — email link as the sole factor.
+- **Email OTP as MFA** — second factor delivered via the inbox.
+- **Email code free-fall** — a code emailed and accepted without another factor.
+- **Conflating recovery with auth** — treating reset links as ongoing login.
+
+## Secure Implementation
+
+For MFA, use possession factors that are not email, such as TOTP or WebAuthn:
+
+```javascript
+import { authenticator } from "otplib";
+
+function verifySecondFactor(user, code) {
+  const secret = user.totpSecret; // established at enrollment
+  return authenticator.verify({ token: code, secret });
+}
+```
+
+Keep email for notifications and (rate-limited) recovery flows, clearly separated from login.
+
+## Key Rules
+
+- Do not use email as a single factor.
+- Do not use email codes/links as the MFA factor.
+- Use TOTP, push, or hardware tokens for the second factor.
+- Keep email limited to notification and (tightly controlled) recovery.
+- Separate recovery-vs-authentication logic in code.
+
+## Checklist for Code Review
+
+- Is email used as the sole authentication factor anywhere?
+- Is an emailed code accepted as the MFA factor?
+- Are possession factors (TOTP/push/hardware) used instead?
+- Is email restricted to notifications/recovery, not login?
+- Is recovery flow code clearly separated from authentication?

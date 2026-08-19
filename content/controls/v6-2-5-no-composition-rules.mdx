@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that passwords of any composition can be used, without rules limiting the type of characters permitted. There must be no requirement for a minimum number of upper or lower case characters, numbers, or special characters.
+Password policy must not dictate *which* characters a user includes. There must be no "one uppercase, one digit, one symbol" rules, no banned character classes. Any composition is allowed; strength is driven by length and blocklist checks, not by forcing particular character types.
+
+## Why This Matters
+
+Composition rules are actively harmful: they frustrate users, encourage predictable substitutions (`P@ssw0rd`), and reduce the effective search space in ways attackers already model. Modern guidance (NIST SP 800-63B) is explicit — drop character-class requirements and let users choose long passphrases they can remember.
+
+## Main Security Requirement
+
+> Verify that passwords of any composition can be used, without rules limiting the type of characters permitted. There must be no requirement for a minimum number of upper or lower case characters, numbers, or special characters.
+
+In practice this means validating length and blocklists only, never character classes.
+
+## Common Failure Patterns
+
+- **Class quotas** — requiring N uppercase/digits/symbols.
+- **Banned characters** — forbidding spaces, emoji, or certain symbols.
+- **Hidden rules** — the UI claims freedom but validation rejects some inputs.
+- **Legacy regex** — old composition regexes still active in code.
+
+## Secure Implementation
+
+Validate only length and blocklists; accept any character the user types:
+
+```javascript
+function validatePassword(password) {
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+  // No check on character classes. Names, spaces, and Unicode are fine.
+  return true;
+}
+```
+
+Validate on characters, not bytes, so Unicode and spaces pass through untouched.
+
+## Key Rules
+
+- Do not require specific character types (upper/lower/digit/symbol).
+- Do not forbid any character class — spaces and Unicode are allowed.
+- Base strength on length and blocklist/breach checks only.
+- Remove legacy composition regexes from all password paths.
+- Communicate the policy clearly so users trust passphrases.
+
+## Checklist for Code Review
+
+- Are there any character-class requirements or quotas?
+- Is any character type forbidden from passwords?
+- Are spaces and Unicode (emoji, accents) accepted?
+- Is validation based on length and blocklists, not composition?
+- Are legacy composition checks removed everywhere?

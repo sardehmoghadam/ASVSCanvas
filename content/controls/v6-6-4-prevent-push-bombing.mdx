@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, where push notifications are used for multi-factor authentication, rate limiting is used to prevent push bombing attacks. Number matching may also mitigate this risk.
+When MFA uses push notifications, the system must throttle the number of pushes sent so an attacker cannot flood ("bomb") a victim with approval requests until they fatigue the user into accepting. Number matching — showing a code the user must type into the request — is an additional mitigation.
+
+## Why This Matters
+
+Push bombing exploits human nature: send enough "Approve sign-in?" prompts and the victim eventually hits approve — or mistakes the attacker's prompt for their own. Rate limiting caps how many prompts an attacker can generate, and number matching forces the user to confirm the *specific* transaction, breaking the auto-approve reflex.
+
+## Main Security Requirement
+
+> Verify that, where push notifications are used for multi-factor authentication, rate limiting is used to prevent push bombing attacks. Number matching may also mitigate this risk.
+
+In practice this means limiting push frequency and requiring out-of-band confirmation of the transaction.
+
+## Common Failure Patterns
+
+- **Unlimited pushes** — attacker triggers endless prompts.
+- **No number matching** — approve-only prompts with no code to verify.
+- **No backoff** — repeated failed pushes not throttled or blocked.
+- **Deny not surfaced** — user cannot report a push as fraudulent.
+
+## Secure Implementation
+
+Throttle pushes and require number matching:
+
+```javascript
+async function sendPush(user, authRequest) {
+  if (await pushes.exceeded(user.id, { max: 3, per: 60 })) {
+    await alertSuspicious(user); // see V6.3.5
+    return { ok: false, reason: "rate_limited" };
+  }
+  const matchCode = crypto.randomInt(1_000_000, 9_999_999);
+  await deliverPush(user.device, {
+    type: "mfa",
+    title: "Is this you signing in?",
+    action: "Enter the code shown on your screen: " + matchCode,
+  });
+  await pushes.record(user.id);
+}
+```
+
+## Key Rules
+
+- Rate limit push notifications per user/device.
+- Use number matching so the user confirms the exact transaction.
+- Throttle or block after repeated failed/denied pushes.
+- Give users a clear "this wasn't me" deny/report action.
+- Log push bombing attempts and alert on thresholds.
+
+## Checklist for Code Review
+
+- Are push notifications rate limited?
+- Is number matching implemented for push approving?
+- Is there backoff after repeated denials?
+- Can users report a fraudulent push?
+- Are bombing patterns detected and alerted?

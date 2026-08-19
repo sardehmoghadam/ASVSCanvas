@@ -25,6 +25,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the certificates used to verify cryptographic authentication assertions are stored in a way that protects them from modification.
+The certificates (or public keys) the application trusts to verify cryptographic authentication assertions must be stored where they cannot be altered. If an attacker can swap or modify the trust anchor, they can mint their own assertions and authenticate as anyone.
+
+## Why This Matters
+
+Signature validation is only as good as the key you validate against. A writable certificate store lets an attacker substitute their own public key, after which every forged assertion verifies "valid." Protecting the trust anchor from modification is the foundation on which all assertion checks rest.
+
+## Main Security Requirement
+
+> Verify that the certificates used to verify cryptographic authentication assertions are stored in a way that protects them from modification.
+
+In practice this means read-only, access-controlled, tamper-evident storage for trust anchors.
+
+## Common Failure Patterns
+
+- **Writable trust store** — certificates in a user-editable file/dir.
+- **No integrity check** — no pinning or hash over the certificate set.
+- **Broad write access** — app/deploy users can modify keys.
+- **In-memory trust loaded unsafely** — anchors fetched from an unauthenticated source at runtime.
+
+## Secure Implementation
+
+Keep trust anchors read-only and verify integrity:
+
+```javascript
+import { readFileSync } from "node:fs";
+
+// Loaded from a read-only, access-controlled location at startup.
+const TRUSTED_KEYS = JSON.parse(
+  readFileSync("/etc/app/trusted-auth-keys.json", "utf8")
+);
+
+function verifyAssertion(assertion) {
+  const key = TRUSTED_KEYS[assertion.kid];
+  if (!key) throw new Error("Unknown key id");
+  return jws.verify(assertion, key); // valid only against pinned key
+}
+```
+
+Configure the file with read-only permissions and verify against a known checksum.
+
+## Key Rules
+
+- Store auth-verification certificates read-only.
+- Restrict write access to the trust store to a narrow role.
+- Pin or checksum the certificate set to detect tampering.
+- Never fetch trust anchors from unauthenticated sources at runtime.
+- Rotate/replace trust anchors through a controlled process.
+
+## Checklist for Code Review
+
+- Are auth certificates stored in a read-only location?
+- Who has write access to the trust store?
+- Is the certificate set integrity-checked (checksum/pinning)?
+- Are trust anchors fetched from authenticated, pinned sources?
+- Is there a controlled procedure for rotating anchors?

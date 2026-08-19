@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the challenge nonce is at least 64 bits in length, and statistically unique or unique over the lifetime of the cryptographic device.
+The challenge (nonce) used in cryptographic authentication must be at least 64 bits long and statistically unique — a fresh random value so a challenge is effectively never reused within the device's lifetime. This prevents replay, where an attacker captures a valid challenge-response and resubmits it.
+
+## Why This Matters
+
+A reused or short challenge lets an attacker record the flow once and replay it later, or predict the next challenge. A 64-bit random nonce has a search space large enough that collision and prediction are infeasible, tying each authentication to a one-time transaction that cannot be replayed.
+
+## Main Security Requirement
+
+> Verify that the challenge nonce is at least 64 bits in length, and statistically unique or unique over the lifetime of the cryptographic device.
+
+In practice this means generating the challenge with a CSPRNG (≥8 random bytes) per operation.
+
+## Common Failure Patterns
+
+- **Short nonces** — 32 bits or smaller, brute-force/predictable.
+- **Counter-based, predictable** — sequentially incrementing challenges.
+- **Reused constants** — the same challenge for every operation.
+- **Client-supplied nonce** — trusting a value chosen by the attacker.
+
+## Secure Implementation
+
+Generate a fresh 64-bit+ challenge server-side with a CSPRNG:
+
+```javascript
+import { randomBytes } from "node:crypto";
+
+function generateChallenge() {
+  return randomBytes(16).toString("base64url"); // 128 bits, unique per operation
+}
+
+// Keep the challenge per-session and reject any response not matching it.
+const challenge = generateChallenge();
+const verified = await verifyChallengeResponse(challenge, response);
+```
+
+Store the challenge keyed to the session/request and discard after use.
+
+## Key Rules
+
+- Generate challenge nonces of at least 64 bits.
+- Use a CSPRNG so nonces are statistically unique.
+- Generate them server-side; never accept client-chosen nonces.
+- Discard/consume a nonce after its operation (no reuse).
+- Track nonce use to ensure uniqueness over the device lifetime.
+
+## Checklist for Code Review
+
+- Are challenge nonces at least 64 bits?
+- Are they generated with a CSPRNG server-side?
+- Are nonces unique and never reused?
+- Are client-supplied nonces rejected?
+- Is the nonce consumed after the operation completes?

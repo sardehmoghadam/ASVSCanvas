@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a user password stays valid until it is discovered to be compromised or the user rotates it. The application must not require periodic credential rotation.
+A password must remain valid indefinitely — until evidence shows it was compromised, or the user chooses to change it. The application must not expire passwords on a schedule or force users to rotate every 30/60/90 days.
+
+## Why This Matters
+
+Forced periodic rotation is recognized as harmful: it makes users choose weaker passwords, reuse old ones with trivial increments (`Spring2026!` → `Summer2026!`), and write them down. Attackers immediately use a rotated password, so expiry adds friction without real protection. Compromise, not age, should be the trigger for change (see V6.2.12).
+
+## Main Security Requirement
+
+> Verify that a user password stays valid until it is discovered to be compromised or the user rotates it. The application must not require periodic credential rotation.
+
+In practice this means no `password_expiry_date` enforcement and no rotation nagging.
+
+## Common Failure Patterns
+
+- **Scheduled expiry** — forcing change every N days.
+- **Password history bans** — forcing "different from last 5" (encourages variants).
+- **Rotation on login** — "your password has expired, please change it."
+- **Equating age with risk** — expiring strong passphrases on a timer.
+
+## Secure Implementation
+
+Track only compromise signals, not age, as the reason to invalidate:
+
+```javascript
+async function requireChange(user) {
+  // Age is NOT a trigger. Compromise evidence is.
+  if (user.credentialCompromised) {
+    await notify(user, "Password reset required (breach detected)");
+    return true;
+  }
+  return false;
+}
+```
+
+When a breach check flags the password, invalidate it and force a one-time change.
+
+## Key Rules
+
+- Do not expire passwords on a schedule.
+- Do not require periodic rotation.
+- Invalidate only on compromise evidence or user initiative.
+- Check against breach datasets at login/registration (V6.2.12).
+- Encourage (never force) change after a suspected incident.
+
+## Checklist for Code Review
+
+- Is there any time-based password expiry?
+- Are users forced to rotate periodically?
+- Is compromise the only automatic trigger for a reset?
+- Is breach-data checking active (V6.2.12)?
+- Are rotation reminders/nags removed?

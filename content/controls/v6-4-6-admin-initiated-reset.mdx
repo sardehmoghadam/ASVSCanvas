@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that administrative users can initiate the password reset process for the user, but that this does not allow them to change or choose the user password. This prevents a situation where they know the user password.
+An administrator may trigger a password reset on a user's behalf, but must never be able to set or view the user's password. The reset flows through a channel controlled by the user, who chooses the new value themselves — so no administrator ever learns the credential.
+
+## Why This Matters
+
+If admins can set a password, they hold — and could be compelled or bribed to reveal — users' secrets, and a shared known password breaks accountability and non-repudiation. Keeping the actual value with the user preserves the principle that a password is the user's alone, even against privileged insiders.
+
+## Main Security Requirement
+
+> Verify that administrative users can initiate the password reset process for the user, but that this does not allow them to change or choose the user password. This prevents a situation where they know the user password.
+
+In practice this means an admin-invoked reset that delivers a token to the user, not a chosen password.
+
+## Common Failure Patterns
+
+- **Admin sets password** — "temporary password: Admin123" sent by the admin.
+- **Admin sees the value** — generated password displayed to the admin.
+- **No user action required** — admin reset means the account is now admin's known secret.
+- **Shared temporary passwords** — the same temp value reused across users.
+
+## Secure Implementation
+
+Admin triggers a reset that hands control to the user's verified channel:
+
+```javascript
+app.post("/admin/users/:id/initiate-reset", requireAdmin, async (req, res) => {
+  const user = await db.find(req.params.id);
+  const token = await issueResetToken(user); // single-use, short-lived
+  await deliver(user.email, { subject: "Reset your password", token });
+  // Admin never sees or chooses any password value.
+  res.json({ resetInitiated: true });
+});
+```
+
+The user completes the reset by choosing their own new password.
+
+## Key Rules
+
+- Allow admins to *initiate* resets, not set passwords.
+- Never let an admin choose or view a user's password.
+- Deliver the reset flow through a user-controlled channel.
+- Require the user to choose the new password.
+- Log admin-initiated resets for accountability.
+
+## Checklist for Code Review
+
+- Can an administrator set or choose a user's password?
+- Is the admin limited to *initiating* a reset?
+- Is the reset completed by the user via their own channel?
+- Does any admin UI show a generated password value?
+- Are admin-initiated resets logged and auditable?

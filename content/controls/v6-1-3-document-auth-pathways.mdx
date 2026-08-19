@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the application includes multiple authentication pathways, these are all documented together with the security controls and authentication strength which must be consistently enforced across them.
+Any application with more than one way to log in — password, SSO, social login, API keys, biometric unlock — must list every pathway in one place, along with the security controls and the authentication strength each one enforces. The goal is a single, consistent picture of "how does a user get in."
+
+## Why This Matters
+
+An attacker does not attack your strongest door; they find the undocumented side entrance. When pathways are not enumerated, one of them ends up weakly protected (no MFA, no rate limit, weaker session). Documentation makes each pathway visible so it can be measured and brought up to the same standard.
+
+## Main Security Requirement
+
+> Verify that, if the application includes multiple authentication pathways, these are all documented together with the security controls and authentication strength which must be consistently enforced across them.
+
+In practice this means one registry of pathways each annotated with its controls.
+
+## Common Failure Patterns
+
+- **Undocumented pathways** — an API-only or social login missed from the list.
+- **Inconsistent strength** — password login requires MFA but a magic-link path does not.
+- **Missing controls per path** — no rate limiting on the SSO callback.
+- **Out-of-date registry** — the doc predates newer login options.
+
+## Secure Implementation
+
+Keep a single registry of every pathway and its controls:
+
+```
+| Pathway      | Factor(s)        | Controls                        |
+|--------------|------------------|---------------------------------|
+| Password     | something-you-know | rate limit, MFA, lockout-safe   |
+| SSO (OIDC)   | IdP assertion    | signature validation, acr check |
+| API key      | possession        | scope, rotation, TLS            |
+| Biometric    | something-you-are | secondary factor only           |
+```
+
+## Key Rules
+
+- Enumerate every authentication pathway in one registry.
+- Record the security controls and authentication strength per pathway.
+- Ensure no pathway is undocumented.
+- Enforce the stated strength consistently across all pathways.
+- Re-review the registry when login options change.
+
+## Checklist for Code Review
+
+- Is there a single register of all authentication pathways?
+- Does each pathway list its factors and security controls?
+- Are all pathways held to a consistent authentication strength?
+- Are there any login paths absent from the documentation?
+- Is the registry kept current with the code?

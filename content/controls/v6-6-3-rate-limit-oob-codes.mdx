@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a code based out-of-band authentication mechanism is protected against brute force attacks by using rate limiting. Consider also using a code with at least 64 bits of entropy.
+Code-based out-of-band authentication must be protected from brute-force guessing with rate limiting — capping attempts per account/device/time so an attacker cannot grind through possible codes. As a defense-in-depth measure, consider also using codes with at least 64 bits of entropy, so the space is large enough that guessing is futile even without throttling.
+
+## Why This Matters
+
+An unthrottled OOB code endpoint is an open invitation to brute force: the attacker submits guesses until one lands. Rate limiting bounds the number of guesses, and a high-entropy code makes the number of possibilities astronomically large. Together they ensure a guessable code is not the weak link in authentication.
+
+## Main Security Requirement
+
+> Verify that a code based out-of-band authentication mechanism is protected against brute force attacks by using rate limiting. Consider also using a code with at least 64 bits of entropy.
+
+In practice this means attempt counters and throttling at the OOB verification endpoint.
+
+## Common Failure Patterns
+
+- **No rate limit** — unlimited code guesses.
+- **Per-IP only** — attacker distributes guesses across IPs.
+- **No lockout/progressive delay** — a wrong guess is instantly retryable.
+- **Low-entropy codes** — short codes that brute force finishes before limits bite.
+
+## Secure Implementation
+
+Throttle per account and per code, and raise code entropy:
+
+```javascript
+async function verifyOobCode(user, code) {
+  if (await attempts.exceeded(user.id, { max: 5, per: 60 })) {
+    return { ok: false, reason: "rate_limited" };
+  }
+  await attempts.record(user.id); // failing a code still consumes an attempt
+  const record = await db.findOob(user.id);
+  return record ? constantTimeEqual(code, record.code) : false;
+}
+```
+
+If you cannot rate limit reliably, generate 64-bit codes (e.g. 16 random alphanumeric characters).
+
+## Key Rules
+
+- Rate limit OOB code verification per account/device/time.
+- Apply throttling regardless of client IP to resist distribution.
+- Record failed attempts and enforce progressive delay/lockout.
+- Consider ≥64-bit entropy codes as an added control.
+- Fail closed and log repeated failures.
+
+## Checklist for Code Review
+
+- Is OOB verification rate limited?
+- Is throttling keyed per account and per code, not just IP?
+- Do failed guesses consume attempt quota?
+- Are codes high-entropy (≥64 bits) where feasible?
+- Are repeated failures logged and denied?

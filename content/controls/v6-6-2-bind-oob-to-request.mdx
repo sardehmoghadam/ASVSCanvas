@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that out-of-band authentication requests, codes, or tokens are bound to the original authentication request for which they were generated and are not usable for a previous or subsequent one.
+An out-of-band code or token is tied to the exact authentication attempt that spawned it. A code generated for login session A must not work for session B — neither a previous nor a subsequent one. The OOB credential is bound to its originating request and dies with it.
+
+## Why This Matters
+
+If an OOB code is unbound, an attacker who obtains a code by triggering one authentication flow can inject it into a *different* flow they control — a classic cross-protocol or routing attack. Binding each code to its originating request prevents the credential from being transplanted between transactions.
+
+## Main Security Requirement
+
+> Verify that out-of-band authentication requests, codes, or tokens are bound to the original authentication request for which they were generated and are not usable for a previous or subsequent one.
+
+In practice this means associating the code with a request/session identifier and validating that association on use.
+
+## Common Failure Patterns
+
+- **Unscoped codes** — any code works on any request.
+- **Missing binding check** — stored code has no link to the originating session.
+- **Reusable across steps** — a code from a prior step accepted in the next.
+- **Predictable mappings** — binding uses a guessable request identifier.
+
+## Secure Implementation
+
+Bind the code to a random request ID and validate both together:
+
+```javascript
+async function verifyOob(req, code) {
+  const record = await db.findOob(code);
+  if (!record) return false;
+  // Code only valid for the exact request that initiated it.
+  if (record.requestId !== req.session.authRequestId) return false;
+  if (record.expiresAt < Date.now()) return false;
+  await db.consumeOob(record.id);
+  return true;
+}
+```
+
+## Key Rules
+
+- Bind each OOB code/token to its originating request.
+- Reject codes used from a different session/request.
+- Make the binding identifier unguessable and randomly generated.
+- Expire and consume codes on successful use (V6.5.1, V6.5.5).
+- Never reuse a consumed code for a later request.
+
+## Checklist for Code Review
+
+- Are OOB codes bound to the request that generated them?
+- Is the binding verified before the code is accepted?
+- Can a code from one session be used in another?
+- Is the binding identifier random and non-guessable?
+- Are codes expired and single-use?

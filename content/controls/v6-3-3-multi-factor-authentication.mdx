@@ -25,6 +25,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that either a multi-factor authentication mechanism or a combination of single-factor authentication mechanisms, must be used in order to access the application. For L3, one of the factors must be a hardware-based authentication mechanism which provides compromise and impersonation resistance against phishing attacks while verifying the intent to authenticate by requiring a user-initiated action (such as a button press on a FIDO hardware key or a mobile phone). Relaxing any of the considerations in this requirement requires a fully documented rationale and a comprehensive set of mitigating controls.
+Access to the application must require more than one factor — either true multi-factor authentication (two distinct factor types) or a combination of single-factor mechanisms. Level 3 is stricter: one factor must be phishing-resistant hardware (e.g. a FIDO key) that also proves user intent via a physical action. Weakening any of this demands documented rationale plus compensating controls.
+
+## Why This Matters
+
+A single factor (especially a password alone) is routinely stolen, guessed, or phished. Requiring a second, independent factor means a leak of one credential is not enough to take over an account. For high-assurance (L3) contexts, only hardware bound tokens that resist real-time phishing and verify human intent close the door on adversary-in-the-middle attacks.
+
+## Main Security Requirement
+
+> Verify that either a multi-factor authentication mechanism or a combination of single-factor authentication mechanisms, must be used in order to access the application. For L3, one of the factors must be a hardware-based authentication mechanism which provides compromise and impersonation resistance against phishing attacks while verifying the intent to authenticate by requiring a user-initiated action (such as a button press on a FIDO hardware key or a mobile phone). Relaxing any of the considerations in this requirement requires a fully documented rationale and a comprehensive set of mitigating controls.
+
+In practice this means requiring a second factor for access, with FIDO/WebAuthn for L3.
+
+## Common Failure Patterns
+
+- **Password-only** — a single factor for all users.
+- **Two knowledge factors** — password + secret question (still one factor type).
+- **Phishable second factor** — SMS/PSTN or OTPs alone for L3 (see V6.6.1).
+- **No intent verification** — hardware that auto-approves without a user action.
+
+## Secure Implementation
+
+Require a possession factor via WebAuthn for L3, and step up for L1/L2:
+
+```javascript
+import { generateAuthenticationOptions, verifyAuthenticationResponse } from "@simplewebauthn/server";
+
+const options = await generateAuthenticationOptions({
+  rpID: "example.com",
+  allowCredentials: user.credentials.map(c => ({ id: c.id, type: "public-key" })),
+});
+
+const verification = await verifyAuthenticationResponse({
+  response: req.body.attestationResponse,
+  expectedChallenge: options.challenge,
+  expectedOrigin: "https://example.com",
+  expectedRPID: "example.com",
+  credential: user.currentCredential,
+});
+```
+
+## Key Rules
+
+- Require MFA or combined single-factor mechanisms for access.
+- Use factors of distinct types (not two knowledge factors).
+- For L3, require phishing-resistant hardware (FIDO/WebAuthn).
+- Verify user intent via a physical action (button/tap).
+- Document any relaxation with rationale and compensating controls.
+
+## Checklist for Code Review
+
+- Is more than one factor required to access the application?
+- Are the factors of independent types?
+- Does L3 use hardware-based phishing-resistant authentication?
+- Is user intent (physical tap/press) verified?
+- Are any deviations documented with mitigation?

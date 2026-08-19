@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that paste functionality, browser password helpers, and external password managers are permitted.
+Password fields must not block paste, autocomplete, or password managers. Users may paste a value into the field, let the browser fill a saved credential, and use third-party managers — none of these aids may be disabled.
+
+## Why This Matters
+
+Blocking paste and password managers is cargo-cult security: it assumes a human typing a password is more secure than a tool supplying one, which is backwards. Password managers enable long, unique, random credentials — the single best defense against credential stuffing. Disabling them drives users back to weak, reused, hand-typed passwords.
+
+## Main Security Requirement
+
+> Verify that paste functionality, browser password helpers, and external password managers are permitted.
+
+In practice this means leaving `autocomplete` enabled and not listening for paste events to suppress them.
+
+## Common Failure Patterns
+
+- **`autocomplete="off"`** — blocking browser password helpers.
+- **Paste suppression** — JS that intercepts `onpaste` and prevents it.
+- **Copy/context-menu blocking** — disabling `oncopy` or context menus on the field.
+- **Custom masked widgets** — DOM structures managers cannot recognize or fill.
+
+## Secure Implementation
+
+Use a native field and leave standard behaviors intact:
+
+```html
+<input type="password" name="password" autocomplete="current-password" />
+```
+
+Avoid any handler that cancels paste or disables autofill:
+
+```javascript
+// Anti-pattern: do NOT do this
+input.addEventListener("paste", e => e.preventDefault()); // blocks managers
+```
+
+## Key Rules
+
+- Allow paste into password fields.
+- Leave browser autocomplete/password helpers enabled.
+- Permit external password managers (use native `input` fields).
+- Do not intercept paste/copy/context-menu events defensively.
+- Use appropriate `autocomplete` tokens (`current-password`, `new-password`).
+
+## Checklist for Code Review
+
+- Is paste allowed on all password fields?
+- Is `autocomplete` enabled with correct tokens?
+- Are password managers able to recognize and fill the fields?
+- Is there any JS suppressing paste/copy/autofill?
+- Is the field a native input, not a custom unlabeled widget?

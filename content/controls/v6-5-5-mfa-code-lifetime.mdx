@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that out-of-band authentication requests, codes, or tokens, as well as time-based one-time passwords (TOTPs) have a defined lifetime. Out of band requests must have a maximum lifetime of 10 minutes and for TOTP a maximum lifetime of 30 seconds.
+MFA credentials must have a defined, strictly bounded lifetime. Out-of-band requests/codes/tokens must expire after a maximum of 10 minutes; TOTPs must be valid for a maximum of 30 seconds per time step. After the window, a code is dead and must not authenticate.
+
+## Why This Matters
+
+Lifetimes bound the exposure of a leaked code: an unused OOB code becomes useless after 10 minutes, and a TOTP is only valid within its 30-second step. Without expiry, intercepted codes remain valid indefinitely and can be replayed at the attacker's leisure.
+
+## Main Security Requirement
+
+> Verify that out-of-band authentication requests, codes, or tokens, as well as time-based one-time passwords (TOTPs) have a defined lifetime. Out of band requests must have a maximum lifetime of 10 minutes and for TOTP a maximum lifetime of 30 seconds.
+
+In practice this means enforcing expiry at verification, not just at display.
+
+## Common Failure Patterns
+
+- **No expiry** — codes/tokens valid until used or forever.
+- **Over-long windows** — OOB codes valid for hours; TOTP drift too generous.
+- **Expiry not enforced at verify** — UI hides the code but the endpoint accepts it later.
+- **Client-side expiry only** — server trusts an age claimed by the client.
+
+## Secure Implementation
+
+Enforce lifetimes server-side for both OOB and TOTP:
+
+```javascript
+const OOB_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
+
+async function verifyOobCode(record, code) {
+  if (code !== record.code) return false;
+  if (Date.now() - record.createdAt > OOB_MAX_AGE_MS) return false;
+  return true;
+}
+
+const TOTP_STEP_SECONDS = 30;
+function totpValid(generatedStep, now) {
+  return Math.floor(now / 1000 / TOTP_STEP_SECONDS) === generatedStep;
+}
+```
+
+## Key Rules
+
+- Define an explicit lifetime for OOB and TOTP credentials.
+- Cap OOB requests/codes/tokens at 10 minutes.
+- Cap TOTP validity at 30 seconds per step.
+- Enforce expiry on the server at verification time.
+- Expire codes immediately on successful use (V6.5.1).
+
+## Checklist for Code Review
+
+- Is there a defined lifetime for every MFA credential type?
+- Do OOB codes expire within 10 minutes?
+- Are TOTPs limited to a 30-second step?
+- Is expiry enforced server-side, not just in the UI?
+- Are expired codes rejected on attempted use?

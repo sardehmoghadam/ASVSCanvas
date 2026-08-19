@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if an application uses a separate Identity Provider (IdP) and expects specific authentication strength, methods, or recentness for specific functions, the application verifies this using the information returned by the IdP. For example, if OIDC is used, this might be achieved by validating ID Token claims such as acr, amr, and auth_time (if present). If the IdP does not provide this information, the application must have a documented fallback approach that assumes that the minimum strength authentication mechanism was used (for example, single-factor authentication using username and password).
+When an application relies on an IdP and needs a certain authentication strength, method, or freshness for sensitive functions, it must actually verify those properties from the IdP's returned claims (`acr`, `amr`, `auth_time`). If the IdP omits them, the application must assume the weakest method (e.g. single-factor password) under a documented fallback.
+
+## Why This Matters
+
+An IdP might vouch that the user is authenticated without saying *how*. If the application assumes strong MFA just because the IdP issued a token, it can over-grant access to a session that was only password-protected. Explicit claim checks (with a conservative default) prevent privilege from being inferred where the IdP never asserted it.
+
+## Main Security Requirement
+
+> Verify that, if an application uses a separate Identity Provider (IdP) and expects specific authentication strength, methods, or recentness for specific functions, the application verifies this using the information returned by the IdP. For example, if OIDC is used, this might be achieved by validating ID Token claims such as acr, amr, and auth_time (if present). If the IdP does not provide this information, the application must have a documented fallback approach that assumes that the minimum strength authentication mechanism was used (for example, single-factor authentication using username and password).
+
+In practice this means mapping requirement → required claims and defaulting to minimum when absent.
+
+## Common Failure Patterns
+
+- **Over-assuming** — treating any IdP login as strong MFA.
+- **No claim checks** — ignoring `acr`/`amr`/`auth_time` entirely.
+- **Trusting absent claims** — missing values interpreted as "strong."
+- **No documented fallback** — ambiguous behavior when claims are missing.
+
+## Secure Implementation
+
+Require explicit claims, conservatively defaulting when absent:
+
+```javascript
+function authStrength(claims) {
+  const acr = claims.acr ?? "password";           // weakest by default
+  const amr = claims.amr ?? ["pwd"];
+  const recent = claims.auth_time
+    ? Date.now() / 1000 - claims.auth_time <= MAX_AGE_SECONDS
+    : false;                                      // stale/unknown => insufficient
+  return { acr, amr, recent };
+}
+
+function requireMfa(claims) {
+  const s = authStrength(claims);
+  return s.amr.includes("mfa") || s.acr === "https://refeds.org/profile/mfa";
+}
+```
+
+## Key Rules
+
+- Verify IdP claims (`acr`, `amr`, `auth_time`) for strength-sensitive functions.
+- Assume minimum (password/SFA) strength when claims are absent.
+- Document the fallback policy explicitly.
+- Enforce freshness when recentness is required.
+- Never infer strong MFA from the mere presence of an IdP token.
+
+## Checklist for Code Review
+
+- Are `acr`/`amr`/`auth_time` claims validated where strength matters?
+- Does missing-claims handling default to the weakest method?
+- Is the fallback documented?
+- Is freshness (`auth_time`) enforced for recent-auth requirements?
+- Is MFA never assumed without an explicit claim?

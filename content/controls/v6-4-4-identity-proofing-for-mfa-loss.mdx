@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that if a multi-factor authentication factor is lost, evidence of identity proofing is performed at the same level as during enrollment.
+When a user loses an MFA factor (lost phone, broken hardware key), recovering access must re-verify their identity to the same standard used when they first enrolled. Losing a factor cannot become a shortcut to a weaker proof of who they are.
+
+## Why This Matters
+
+Recovery from a lost factor is the moment an attacker most wants to impersonate the victim: "I lost my authenticator, please let me back in." If that path accepts weaker evidence than enrollment did, the attacker simply claims factor loss to bypass MFA entirely. Matching the enrollment proof keeps recovery as strong as initial onboarding.
+
+## Main Security Requirement
+
+> Verify that if a multi-factor authentication factor is lost, evidence of identity proofing is performed at the same level as during enrollment.
+
+In practice this means a defined, auditable identity-proofing procedure for factor loss.
+
+## Common Failure Patterns
+
+- **Self-service reset without proofing** — a lost factor is re-enrolled on a bare email click.
+- **Weaker proof at recovery** — enrollment required documents; recovery asks only a phone call.
+- **No evidence trail** — recovery performed but nothing recorded.
+- **One channel only** — recovery relies on the same (possibly compromised) email.
+
+## Secure Implementation
+
+Define and document a proofing procedure equal to enrollment:
+
+```
+Factor-loss recovery:
+1. User reports factor loss through a monitored channel.
+2. Evidence collected matches enrollment identity proofing
+   (e.g., government ID check, video verification, prior secrets).
+3. A human reviewer (segregated from requester) approves.
+4. A new factor is enrolled after the proof passes.
+5. The event is logged with evidence references.
+```
+
+## Key Rules
+
+- Perform identity proofing on factor loss at enrollment-equivalent level.
+- Define and document the proofing procedure and evidence required.
+- Require human review/approval before re-enrolling a factor.
+- Record an auditable trail of the proofing evidence.
+- Avoid letting a single (possibly compromised) channel complete recovery alone.
+
+## Checklist for Code Review
+
+- Is identity proofing performed before restoring a lost factor?
+- Is the proofing at the same level as enrollment?
+- Is the procedure documented and enforced?
+- Is there an auditable record of the proofing?
+- Can the flow be completed without human review/approval?

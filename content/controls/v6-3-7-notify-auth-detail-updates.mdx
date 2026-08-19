@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that users are notified after updates to authentication details, such as credential resets or modification of the username or email address.
+Whenever authentication-relevant details change — a credential reset, a username or email change, or any modification affecting how the user signs in — the user must receive a notification after the fact. The notification goes to the user, so a change an attacker made in secret surfaces immediately.
+
+## Why This Matters
+
+An attacker who takes over an account often changes the email address or resets credentials to cement control. If those changes are silent, the victim only discovers the takeover much later. Post-change notification gives the legitimate user an instant signal to intervene — "you changed your email?" — before the attacker finishes pivoting.
+
+## Main Security Requirement
+
+> Verify that users are notified after updates to authentication details, such as credential resets or modification of the username or email address.
+
+In practice this means an outbound notification on every auth-detail mutation.
+
+## Common Failure Patterns
+
+- **No notification** — changes happen silently.
+- **Notifying the new address only** — sending only to the attacker-controlled value.
+- **Missed change types** — alerts on password but not username/email.
+- **Delay** — notifications sent in a batch, not immediately.
+
+## Secure Implementation
+
+Notify both old and new contact points after a change:
+
+```javascript
+async function changeEmail(user, newEmail) {
+  const oldEmail = user.email;
+  user.email = newEmail;
+  await db.save(user);
+  await Promise.all([
+    notify(oldEmail, "Your email address was changed to " + newEmail),
+    notify(newEmail, "This address was added to your account"),
+  ]);
+}
+```
+
+Send immediately after commit, and include remediation if the change was not user-initiated.
+
+## Key Rules
+
+- Notify users after credential resets and auth-detail changes.
+- Cover username, email, and credential modifications.
+- Notify the prior contact point, not just the new one.
+- Send notifications promptly (not in a delayed batch).
+- Include "wasn't you?" remediation guidance.
+
+## Checklist for Code Review
+
+- Is a notification sent after each auth-detail change?
+- Are username/email/credential changes all covered?
+- Is the *old* email (or prior channel) also notified?
+- Are notifications sent immediately after the change?
+- Does the notice include steps to recover if unauthorized?

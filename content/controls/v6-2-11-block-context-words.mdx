@@ -25,6 +25,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the documented list of context specific words is used to prevent easy to guess passwords being created.
+The context-specific word list produced in V6.1.2 must actually be enforced at password creation. When a new password contains an organization, product, system, or role name (or a permutation of one), it is rejected as too guessable in the application's own context.
+
+## Why This Matters
+
+Documentation alone protects nothing; enforcement does. This control closes the loop between "we identified the words attackers would guess" and "we stop users from choosing them." A password like `Atlas2026!` is trivially guessable by anyone who knows your product codename, so validation must catch it before it is stored.
+
+## Main Security Requirement
+
+> Verify that the documented list of context specific words is used to prevent easy to guess passwords being created.
+
+In practice this means calling the blocklist check during registration and password change.
+
+## Common Failure Patterns
+
+- **Documented but unused** — list exists, code never checks it.
+- **Exact-match only** — substitution/permutation variants slip through.
+- **Applied to one path** — registration checks but change skips it.
+- **Stale list** — new product names never added, so the check grows blind.
+
+## Secure Implementation
+
+Reuse the documented list in the validation path:
+
+```javascript
+import { CONTEXT_WORDS } from "./context-words.js"; // documented in V6.1.2
+
+function containsContextWord(password) {
+  const norm = password.toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e");
+  return CONTEXT_WORDS.some(w => norm.includes(normalize(w)));
+}
+
+function validatePassword(password) {
+  if (containsContextWord(password)) {
+    throw new Error("Password must not contain company/product/system names");
+  }
+}
+```
+
+## Key Rules
+
+- Actually enforce the documented context-word list.
+- Check new passwords at registration *and* change.
+- Catch permutations and substitutions, not just exact names.
+- Keep the enforcement list in lockstep with documentation.
+- Combine with common-password and breach checks.
+
+## Checklist for Code Review
+
+- Is the documented context list actually imported/used in validation?
+- Is the check applied on registration and password change?
+- Are substitutions/permutations rejected?
+- Is the enforcement list the same source as the documentation?
+- Is the context check combined with other blocklists?

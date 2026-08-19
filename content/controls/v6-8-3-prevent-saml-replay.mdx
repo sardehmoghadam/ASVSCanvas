@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that SAML assertions are uniquely processed and used only once within the validity period to prevent replay attacks.
+A SAML assertion must be consumable only once. Whenever the application processes an assertion, it records that specific assertion (by its ID) as used, and rejects any attempt to present the same assertion again within its validity window.
+
+## Why This Matters
+
+A captured or replayed assertion is a ready-made authentication token. Without uniqueness tracking, an attacker who intercepts a valid SAML assertion can resubmit it to authenticate as the victim, possibly repeatedly. Single-processing confines the assertion to its one legitimate use.
+
+## Main Security Requirement
+
+> Verify that SAML assertions are uniquely processed and used only once within the validity period to prevent replay attacks.
+
+In practice this means persist-and-check the assertion ID before processing.
+
+## Common Failure Patterns
+
+- **No replay tracking** — consent loop replayed.
+- **No assertion ID check** — `InResponseTo`/`ID` never recorded.
+- **Late uniqueness check** — processed before replay is detected.
+- **Check only within window** — assertions replayed after the window ignored.
+
+## Secure Implementation
+
+Record the assertion ID and reject reuse atomically:
+
+```javascript
+async function processAssertion(assertion) {
+  const id = assertion.ID || assertion.id;
+  const key = `saml:${id}`;
+  if (await store.exists(key)) {
+    throw new Error("Assertion already consumed (replay)");
+  }
+  await store.set(key, "1", { ttl: assertionValiditySeconds(assertion) });
+  // ...now process the (fresh) assertion.
+}
+```
+
+The set-if-absent write must be atomic so concurrent replays cannot both pass.
+
+## Key Rules
+
+- Track each SAML assertion ID and process it only once.
+- Detect replay before consuming/processing the assertion.
+- Make the uniqueness check atomic (race-free).
+- Reject assertions already seen within the validity period.
+- Pair with signature and condition validation (V6.8.2).
+
+## Checklist for Code Review
+
+- Is every SAML assertion processed at most once?
+- Is the assertion ID recorded and checked atomically?
+- Are replays of a consumed assertion rejected?
+- Is the replay check performed before processing?
+- Are signature/condition validations also applied?
