@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the user can review, modify, and revoke consents which the user has granted through the authorization server.
+The user must be able to review the consents they've granted, modify them, and revoke them, all through the authorization server itself. There must be a self-service path to see what's been delegated and to change or withdraw it.
+
+## Why This Matters
+
+Delegation left in place can outlive the user's trust in it — a revoked-but-not-really grant is a standing hole. Without review and revocation, users can't walk back a mistaken or malicious grant, and the server can't honor changed consent. Self-service review/revoke is the correcting mechanism that keeps consent authoritative over time.
+
+## Main Security Requirement
+
+> Verify that the user can review, modify, and revoke consents which the user has granted through the authorization server.
+
+In practice this means a consent portal that lists grants with modify and revoke actions that actually take effect.
+
+## Common Failure Patterns
+
+- **No consent list** — users can't see what they've granted.
+- **Revoke without effect** — the grant stays valid after "revocation".
+- **Modify unsupported** — can only revoke all, not narrow a scope.
+- **Revocation not propagated** — tokens/grants remain active downstream.
+
+## Secure Implementation
+
+Expose a consent portal with working modify/revoke actions:
+
+```javascript
+app.get("/consents", requireUser, async (req, res) => {
+  const grants = await consents.listForUser(req.user.id);   // reviewable list
+  res.render("consents", { grants });
+});
+
+app.post("/consents/:id/revoke", requireUser, async (req, res) => {
+  await consents.revokeForUser(req.user.id, req.params.id); // revokes grants + tokens
+  await tokens.revokeByConsent(req.params.id);
+  res.redirect("/consents");
+});
+```
+
+## Key Rules
+
+- Show users a list of all consents they have granted.
+- Allow modifying (narrowing) and revoking consents.
+- Make revocation take effect immediately, including issued tokens.
+- Verify the acting user owns the consent before changing it.
+- Reflect revocations across resource servers (introspection/revocation).
+
+## Checklist for Code Review
+
+- Can users review their granted consents?
+- Can they modify or narrow consents?
+- Does revocation immediately invalidate related tokens?
+- Is ownership of the consent verified?
+- Are revocations propagated downstream?

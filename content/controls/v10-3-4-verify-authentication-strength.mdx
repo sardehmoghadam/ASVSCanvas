@@ -26,6 +26,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the resource server requires specific authentication strength, methods, or recentness, it verifies that the presented access token satisfies these constraints. For example, if present, using the OIDC acr, amr and auth_time claims respectively.
+Where a resource server's policies demand a certain authentication strength, method, or freshness, the presented access token must satisfy those requirements — and the server must actually check it. In OIDC terms this means validating the `acr` (authentication context class), `amr` (authentication methods), and `auth_time` (when authentication happened) claims.
+
+## Why This Matters
+
+Different operations warrant different proof of identity: reading a profile may need only a password login, while wiring a transfer should require step-up MFA that happened recently. If the resource server doesn't verify these claims, a token minted from a weak or stale login is treated the same as a strong, fresh one — undermining risk-based and step-up authentication policies.
+
+## Main Security Requirement
+
+> Verify that, if the resource server requires specific authentication strength, methods, or recentness, it verifies that the presented access token satisfies these constraints. For example, if present, using the OIDC acr, amr and auth_time claims respectively.
+
+In practice this means checking `acr`/`amr`/`auth_time` against the operation's policy.
+
+## Common Failure Patterns
+
+- **Policy declared, not enforced** — strength required but never read from the token.
+- **`auth_time` ignored** — stale authentication accepted as fresh.
+- **`acr` unverified** — claimed level trusted without a comparison.
+- **Weak default** — missing claims treated as "strong enough".
+
+## Secure Implementation
+
+Check the authentication claims against the operation's requirements:
+
+```javascript
+function meetsStrength(payload, policy) {
+  if (policy.minAcr && payload.acr && compareAcr(payload.acr, policy.minAcr) < 0) return false;
+  if (policy.requiredAmr && !policy.requiredAmr.every(m => payload.amr?.includes(m))) return false;
+  if (policy.maxAuthAge && payload.auth_time
+      && now() - payload.auth_time > policy.maxAuthAge) return false;
+  return true;
+}
+```
+
+## Key Rules
+
+- Define per-operation requirements for strength, method, and freshness.
+- Verify `acr` levels, `amr` methods, and `auth_time` against the token.
+- Reject (fail closed) when required claims are missing.
+- Re-authenticate/step-up when recentness or strength is insufficient.
+- Apply the same checks to introspection-based decisions.
+
+## Checklist for Code Review
+
+- Does the resource server enforce its auth-strength policies?
+- Are `acr`, `amr`, and `auth_time` actually checked?
+- Are missing/insufficient strengths rejected?
+- Is stale authentication treated as failed?
+- Are step-up flows triggered correctly on insufficient strength?

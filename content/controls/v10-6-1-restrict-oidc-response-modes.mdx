@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the OpenID Provider only allows values code, ciba, id_token, or id_token code for response mode. Note that code is preferred over id_token code (the OIDC Hybrid flow), and token (any Implicit flow) must not be used.
+The OpenID Provider must restrict the allowed response types to `code`, `ciba`, `id_token`, or `id_token code`. The `code` flow is preferred over `id_token code` (the Hybrid flow), and `token` — i.e., any Implicit flow — must no longer be used.
+
+## Why This Matters
+
+Response types define how the OP returns authentication results. The Implicit flow returns tokens directly in the frontend, exposing them to browser theft and history/log leakage; the Hybrid flow's `id_token` in the frontend carries similar exposure. Restricting to `code`-first flows (or CIBA) keeps tokens off the frontend and under the protection of the token endpoint and client authentication.
+
+## Main Security Requirement
+
+> Verify that the OpenID Provider only allows values code, ciba, id_token, or id_token code for response mode. Note that code is preferred over id_token code (the OIDC Hybrid flow), and token (any Implicit flow) must not be used.
+
+In practice this means an allowlist on the authorization/authentication endpoint's `response_type`.
+
+## Common Failure Patterns
+
+- **Implicit flow enabled** — `response_type=token` (and `id_token token`) accepted.
+- **Unrestricted response types** — any combination accepted.
+- **Hybrid favored** — `id_token code` used where `code` would do.
+- **Unknown/empty response types** — no validation of the value.
+
+## Secure Implementation
+
+Allowlist the permitted response types and reject the rest:
+
+```javascript
+const allowed = ["code", "ciba", "id_token", "id_token code"];
+
+if (!allowed.includes(req.query.response_type)) {
+  throw new InvalidRequestError("unsupported response_type");
+}
+if (req.query.response_type?.includes("token")) {
+  throw new InvalidRequestError("implicit flow disabled");
+}
+```
+
+## Key Rules
+
+- Allow only `code`, `ciba`, `id_token`, or `id_token code`.
+- Prefer `code` over the Hybrid flow.
+- Disable `token` (Implicit) entirely.
+- Validate `response_type` on every request.
+- Reject unknown or empty response types.
+
+## Checklist for Code Review
+
+- Are only the permitted response types allowed?
+- Is the Implicit (`token`) flow disabled?
+- Is `code` preferred over Hybrid?
+- Are unknown response types rejected?
+- Is validation applied on every request?

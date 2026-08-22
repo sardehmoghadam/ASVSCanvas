@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the authorization server returns the authorization code in the authorization response, it can be used only once for a token request. For the second valid request with an authorization code that has already been used to issue an access token, the authorization server must reject a token request and revoke any issued tokens related to the authorization code.
+An authorization code returned by the authorization server is single-use. The first token request consumes it; a second, valid request reusing the same code must be rejected, and any tokens issued from that code must be revoked.
+
+## Why This Matters
+
+Authorization codes transit the browser and can leak into logs, history, or referrer headers. Restricting each code to one exchange limits the window for interception, and revoking tokens on reuse means an attacker who somehow replays a code gets credentials revoked rather than silently duplicated.
+
+## Main Security Requirement
+
+> Verify that, if the authorization server returns the authorization code in the authorization response, it can be used only once for a token request. For the second valid request with an authorization code that has already been used to issue an access token, the authorization server must reject a token request and revoke any issued tokens related to the authorization code.
+
+In practice this means atomically marking codes as consumed on first use and revoking on detection of reuse.
+
+## Common Failure Patterns
+
+- **Code reuse allowed** — the same code exchanges twice.
+- **Non-atomic redemption** — race between two token requests allows both through.
+- **No revocation on reuse** — second use rejected but tokens stay valid.
+- **Long-lived codes** — codes remain redeemable for a long time.
+
+## Secure Implementation
+
+Redeem a code exactly once, atomically, revoking tokens on reuse:
+
+```javascript
+async function redeemCode(code, clientAuth) {
+  const row = await db.transaction(async (tx) => {
+    const r = await tx.codes.take(code);            // delete-or-error is atomic
+    if (!r) return null;
+    if (r.used) {
+      await tx.tokens.revokeForCode(r.id);          // revoke child tokens on reuse
+      throw new InvalidGrantError("code reused");
+    }
+    await tx.codes.markUsed(r.id);
+    return r;
+  });
+  return issueTokens(row);
+}
+```
+
+## Key Rules
+
+- Mark each code as consumed on first successful use.
+- Use an atomic compare-and-set so a code can't be redeemed twice.
+- Reject any subsequent use of a consumed code.
+- Revoke all tokens issued from a code when reuse is detected.
+- Bound the code's validity to a short time window.
+
+## Checklist for Code Review
+
+- Is each authorization code redeemable only once?
+- Is redemption atomic (no race between concurrent requests)?
+- Are repeat uses of a code rejected?
+- Are child tokens revoked when a code is reused?
+- Is the code's lifetime short?

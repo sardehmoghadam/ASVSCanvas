@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that when the authorization server prompts for user consent, it presents sufficient and clear information about what is being consented to. When applicable, this should include the nature of the requested authorizations (typically based on scope, resource server, Rich Authorization Requests (RAR) authorization details), the identity of the authorized application, and the lifetime of these authorizations.
+When the authorization server asks for consent, it must present enough clear information for an informed decision. This should cover the nature of the requested authorizations (via scopes, the resource server, and RAR authorization details), the identity of the application, and how long those authorizations will last.
+
+## Why This Matters
+
+A consent screen that says "Allow this app?" without specifics is meaningless — the user can't weigh a grant they don't understand. Transparent, specific consent (what's being accessed, by whom, and for how long) is what makes consent a real security control rather than a formality, and it supports privacy expectations.
+
+## Main Security Requirement
+
+> Verify that when the authorization server prompts for user consent, it presents sufficient and clear information about what is being consented to. When applicable, this should include the nature of the requested authorizations (typically based on scope, resource server, Rich Authorization Requests (RAR) authorization details), the identity of the authorized application, and the lifetime of these authorizations.
+
+In practice this means rendering a detailed consent view with scopes, app identity, and lifetime.
+
+## Common Failure Patterns
+
+- **Vague consent text** — "share your data" with no detail.
+- **App identity hidden** — client name not shown to the user.
+- **Lifetime omitted** — no indication of how long the grant lasts.
+- **RAR details collapsed** — fine-grained authorizations shown as opaque blobs.
+
+## Secure Implementation
+
+Render human-readable, specific consent details:
+
+```javascript
+renderConsentScreen({
+  app: { name: client.name, verified: client.verified },
+  authorizations: [
+    { scope: "orders:read", label: "Read your orders" },
+    { scope: "orders:write", label: "Place orders for you" },
+    ...richAuthorizationDetails(details),     // plain-language RAR breakdown
+  ],
+  resource: "api.example.com",
+  lifetime: "Until you revoke it",
+});
+```
+
+## Key Rules
+
+- Show the nature of every requested authorization in plain language.
+- Identify the application (and its verification status).
+- State the resource server the grant acts against.
+- Disclose the lifetime of the authorizations.
+- Re-present this detail whenever consent is re-requested.
+
+## Checklist for Code Review
+
+- Is the consent screen specific and readable?
+- Is the application identity shown?
+- Are scopes/RAR details explained in plain language?
+- Is the authorization lifetime disclosed?
+- Is full detail shown on every (re-)consent?

@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that for a given client, the authorization server only allows the usage of grants that this client needs to use. Note that the grants token (Implicit flow) and password (Resource Owner Password Credentials flow) must no longer be used.
+The authorization server must allow only the grant types each specific client actually needs. The `token` grant (Implicit flow) and the `password` grant (Resource Owner Password Credentials flow) must be retired entirely.
+
+## Why This Matters
+
+Grant types are privilege highways; the more a client can use, the more paths an attacker has. Allowing unused grants broadens the attack surface, and the legacy Implicit and ROPC flows leak tokens through the frontend or to the client's own code — precisely where they're hardest to protect. Restricting grants per client enforces least privilege on the flow level.
+
+## Main Security Requirement
+
+> Verify that for a given client, the authorization server only allows the usage of grants that this client needs to use. Note that the grants token (Implicit flow) and password (Resource Owner Password Credentials flow) must no longer be used.
+
+In practice this means a per-client allowlist of grant types, with Implicit and password grants disabled.
+
+## Common Failure Patterns
+
+- **All grants enabled** — server accepts every grant for every client.
+- **Implicit flow still on** — `response_type=token` permitted.
+- **ROPC still on** — `grant_type=password` permitted.
+- **Grant type not matched to client type** — public clients allowed confidential-only grants.
+
+## Secure Implementation
+
+Restrict grants per client and reject disallowed flows:
+
+```javascript
+const allowed = {
+  "web-confidential": ["authorization_code", "refresh_token"],
+  "mobile-public":    ["authorization_code", "refresh_token"],
+};
+
+if (!allowed[client.type].includes(req.body.grant_type)) {
+  throw new UnsupportedGrantTypeError();
+}
+if (req.body.grant_type === "password") throw new UnsupportedGrantTypeError(); // ROPC off
+```
+
+## Key Rules
+
+- Maintain a per-client allowlist of grant types.
+- Only enable grants that client genuinely requires.
+- Disable Implicit (`token`) and password (ROPC) grants globally.
+- Match grant allowance to the client's confidentiality type.
+- Reject any grant outside the client's allowlist.
+
+## Checklist for Code Review
+
+- Are grant types restricted per client?
+- Is the Implicit (`token`) grant disabled?
+- Is the password (ROPC) grant disabled?
+- Does each client have only the grants it needs?
+- Are unsupported grants rejected?

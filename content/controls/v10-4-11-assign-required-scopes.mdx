@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the authorization server configuration only assigns the required scopes to the OAuth client.
+The authorization server's configuration must assign each OAuth client only the scopes that client needs. No client should be granted a scope it will never use, and no scope should be attached simply because it's available.
+
+## Why This Matters
+
+Scopes granted to a client become privileges its tokens can carry. Over-assigning scopes means every token minted for that client can demand more than necessary — a larger damage radius if the client or a token is compromised. Assigning the minimum scopes enforces least privilege at the source, before any token is ever issued.
+
+## Main Security Requirement
+
+> Verify that the authorization server configuration only assigns the required scopes to the OAuth client.
+
+In practice this means a per-client scope configuration matching only the client's true needs.
+
+## Common Failure Patterns
+
+- **Blanket scope assignment** — every client gets the full scope catalog.
+- **Copy-paste client config** — scopes inherited from a template without review.
+- **Unused scopes retained** — scopes left after a feature is removed.
+- **Scopes assigned but never requested** — idle privileges sitting in the grant.
+
+## Secure Implementation
+
+Configure only the scopes the client needs:
+
+```yaml
+# client configuration
+clients:
+  - id: orders-web
+    type: confidential
+    allowed_scopes:            # minimal, feature-driven
+      - orders:read
+      - orders:write
+```
+
+## Key Rules
+
+- Assign only the scopes each client requires.
+- Audit per-client scope assignments regularly.
+- Remove scopes when client features change.
+- Reject token requests for scopes outside the client's assignment.
+- Avoid broad, blanket scope grants.
+
+## Checklist for Code Review
+
+- Does each client have only its required scopes assigned?
+- Are unused or legacy scopes present?
+- Are token requests limited to assigned scopes?
+- Is there a review process for scope assignments?
+- Can any assigned scope be narrowed or removed?

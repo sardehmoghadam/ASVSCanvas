@@ -26,6 +26,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the client is confidential and the authorization server requires the use of strong client authentication methods (based on public-key cryptography and resistant to replay attacks), such as mutual TLS (tls_client_auth, self_signed_tls_client_auth) or private key JWT (private_key_jwt).
+The client must be confidential, and the authorization server must require strong client authentication based on public-key cryptography that resists replay — such as mutual TLS (`tls_client_auth` or `self_signed_tls_client_auth`) or private key JWT (`private_key_jwt`).
+
+## Why This Matters
+
+Client authentication proves which client is calling. Weak methods like a shared `client_secret` in the request body can be phished, replayed, or leaked, and are too guessable for high-value clients. Public-key methods bind authentication to a private key that never leaves the client, and they carry nonces/time-bounds so a captured proof can't be replayed.
+
+## Main Security Requirement
+
+> Verify that the client is confidential and the authorization server requires the use of strong client authentication methods (based on public-key cryptography and resistant to replay attacks), such as mutual TLS (tls_client_auth, self_signed_tls_client_auth) or private key JWT (private_key_jwt).
+
+In practice this means the token endpoint accepts only `private_key_jwt` or mTLS-style authentication for confidential clients.
+
+## Common Failure Patterns
+
+- **`client_secret_basic` only** — weak shared-secret auth for a confidential client.
+- **Auth method optional** — server falls back to weaker methods.
+- **No replay protection** — JWTs accepted without nonce/expiry limits.
+- **Client treated as confidential but public-style auth used** — mismatch in trust model.
+
+## Secure Implementation
+
+Restrict client authentication to strong, replay-resistant methods:
+
+```javascript
+const allowed = ["private_key_jwt", "tls_client_auth", "self_signed_tls_client_auth"];
+
+if (!allowed.includes(req.clientAuth.method)) {
+  throw new InvalidClientError("strong client authentication required");
+}
+// for private_key_jwt: verify signature, iss/sub, aud, exp, and jti/nonce
+```
+
+## Key Rules
+
+- Require public-key-based client authentication for confidential clients.
+- Allow only mTLS (`tls_client_auth`/`self_signed_tls_client_auth`) or `private_key_jwt`.
+- Verify JWT signature, `iss`/`sub`, `aud`, and `exp` tightly.
+- Include replay protection (`jti`/nonce + short expiry).
+- Reject requests using weaker authentication methods.
+
+## Checklist for Code Review
+
+- Is the client confidential?
+- Is strong (public-key) client authentication required?
+- Are weak methods (shared secret) rejected?
+- Are `private_key_jwt` claims (iss/sub/aud/exp/jti) validated?
+- Is replay resistance enforced?

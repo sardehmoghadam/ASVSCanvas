@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the authorization server validates redirect URIs based on a client-specific allowlist of pre-registered URIs using exact string comparison.
+The authorization server must validate `redirect_uri` against a client-specific allowlist of pre-registered URIs, and it must compare them using exact string matching — no wildcards, subdomain tricks, or fuzzy logic.
+
+## Why This Matters
+
+The redirect URI is where the authorization server sends the code or token. If an attacker can register or request a near-matching redirect URI, they can steer the credential to a host they control while the user believes they're completing a legitimate flow. Exact matching against a fixed allowlist makes this interception impossible.
+
+## Main Security Requirement
+
+> Verify that the authorization server validates redirect URIs based on a client-specific allowlist of pre-registered URIs using exact string comparison.
+
+In practice this means a per-client allowlist compared with strict equality.
+
+## Common Failure Patterns
+
+- **Wildcard redirects** — patterns like `https://*.example.com` accepted.
+- **Prefix/loose matching** — only the start of the URI checked.
+- **Shared allowlist** — one list applied to all clients.
+- **No override check** — per-request `redirect_uri` allowed without validation.
+
+## Secure Implementation
+
+Compare `redirect_uri` against the client's exact registered values:
+
+```javascript
+const client = await clients.findById(req.body.client_id);
+const registered = client.redirect_uris; // ["https://app.example.com/cb"]
+
+if (!registered.includes(req.query.redirect_uri)) {     // exact string match
+  throw new InvalidRequestError("invalid redirect_uri");
+}
+```
+
+## Key Rules
+
+- Maintain a client-specific allowlist of pre-registered URIs.
+- Compare using exact string equality.
+- Reject wildcard, pattern, or partial matches.
+- Require `redirect_uri` to be present and to match the allowlist.
+- Treat missing/extra redirect URIs as invalid.
+
+## Checklist for Code Review
+
+- Are redirect URIs compared by exact string match?
+- Is the allowlist specific to each client?
+- Are wildcard/prefix matches rejected?
+- Is a redirect URI required on every request?
+- Are unregistered URIs denied?

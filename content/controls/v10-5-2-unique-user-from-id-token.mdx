@@ -25,6 +25,50 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the client uniquely identifies the user from ID Token claims, usually the sub claim, which cannot be reassigned to other users (for the scope of an identity provider).
+The client must derive the user's identity from ID Token claims that cannot be reassigned to different people — typically the `sub` (subject) claim, which the identity provider guarantees is stable and unique within its scope.
+
+## Why This Matters
+
+If the client keys its accounts on a changeable or reassignable attribute (like `email`), a user's identity can drift or be taken over, and two different people can collide. The `sub` claim is the provider's durable, non-reassignable identifier: pairing it with the issuer yields a stable key the client can safely use for account mapping.
+
+## Main Security Requirement
+
+> Verify that the client uniquely identifies the user from ID Token claims, usually the sub claim, which cannot be reassigned to other users (for the scope of an identity provider).
+
+In practice this means using `sub` (plus issuer) as the account key, not mutable attributes.
+
+## Common Failure Patterns
+
+- **`email` used as identity** — reassignable and changeable.
+- **No issuer scope** — `sub` treated as globally unique when it isn't.
+- **Mutable claim keyed** — username/phone used for linking accounts.
+- **Inconsistent mapping** — different code paths derive identity differently.
+
+## Secure Implementation
+
+Key the user account on `iss` + `sub`, not on mutable claims:
+
+```javascript
+const { payload } = await jwtVerify(idToken, keys, { issuer, audience, nonce });
+
+const subject = `${payload.iss}|${payload.sub}`;   // stable, non-reassignable key
+const user = await users.findOrCreateBySubject(subject);
+```
+
+## Key Rules
+
+- Use the `sub` claim (with issuer) as the identity key.
+- Avoid emails, usernames, or phones as the canonical identity.
+- Scope `sub` uniqueness to the issuing identity provider.
+- Build account mapping consistently from `iss` + `sub`.
+- Treat account-linking changes carefully and validate the new identity.
+
+## Checklist for Code Review
+
+- Is the user identity derived from `sub`?
+- Is `iss` included to disambiguate across providers?
+- Are mutable attributes (email/username) used as keys anywhere?
+- Is the identity mapping consistent across the codebase?
+- Is `sub` treated as non-reassignable, not as a display field?

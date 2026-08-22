@@ -26,6 +26,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the resource server prevents the use of stolen access tokens or replay of access tokens (from unauthorized parties) by requiring sender-constrained access tokens, either Mutual TLS for OAuth 2 or OAuth 2 Demonstration of Proof of Possession (DPoP).
+A resource server must prevent stolen or replayed access tokens from being used by unauthorized parties by requiring sender-constrained (proof-of-possession) tokens. The bearer of the token must also prove possession of the binding — via Mutual TLS for OAuth 2 (certificate-bound tokens) or OAuth 2 Demonstration of Proof of Possession (DPoP).
+
+## Why This Matters
+
+A plain bearer token is a string anyone can present; whoever steals it can call the API exactly as the rightful owner. Sender-constrained tokens bind the token to a client-controlled key (a TLS client certificate or a DPoP key), so possession of the token alone is not enough — the thief would also need the private key that proves they are the legitimate sender.
+
+## Main Security Requirement
+
+> Verify that the resource server prevents the use of stolen access tokens or replay of access tokens (from unauthorized parties) by requiring sender-constrained access tokens, either Mutual TLS for OAuth 2 or OAuth 2 Demonstration of Proof of Possession (DPoP).
+
+In practice this means validating the token-to-key binding (mTLS certificate or DPoP proof) on every request.
+
+## Common Failure Patterns
+
+- **Bearer-only tokens** — no sender binding at all.
+- **Binding declared, not checked** — the `cnf` claim is present but never verified.
+- **DPoP proof unvalidated** — signature/ath/nonce checks skipped.
+- **mTLS cert ignored** — certificate accepted but not matched to the token.
+
+## Secure Implementation
+
+Verify the sender binding on each request:
+
+```javascript
+// mTLS: require and match the client certificate thumbprint
+const certHash = sha256(req.socket.getPeerCertificate().raw);
+if (payload.cnf["x5t#S256"] !== certHash) throw new ForbiddenError();
+
+// DPoP: validate the proof signature, the ath (token hash), and nonce
+if (!await verifyDpopProof(req.headers.dpop, payload)) throw new ForbiddenError();
+```
+
+## Key Rules
+
+- Prefer sender-constrained tokens over bearer tokens for sensitive APIs.
+- Bind tokens via mTLS certificate-bound or DPoP.
+- Validate the binding (`cnf`/DPoP) on every request.
+- Enforce DPoP signature, `ath`, and nonce checks.
+- Reject requests whose proof-of-possession fails.
+
+## Checklist for Code Review
+
+- Are tokens sender-constrained (mTLS or DPoP) for sensitive resources?
+- Is the token-to-key binding actually verified?
+- Are DPoP signature, `ath`, and nonce checked?
+- Is a mismatched certificate/proof rejected?
+- Do replay protections exist for DPoP nonces?

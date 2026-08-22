@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that refresh tokens and reference access tokens can be revoked by an authorized user using the authorization server user interface, to mitigate the risk of malicious clients or stolen tokens.
+Refresh tokens and reference (introspectable) access tokens must be revocable by an authorized user through the authorization server's own user interface, so a user can cut off a client or stolen token without involving a developer.
+
+## Why This Matters
+
+Stolen or misused tokens can linger as long as their lifetime allows, and users often have no other way to sever a client's access. Providing a self-service revocation UI is the user's kill switch: it mitigates the damage of malicious clients and stolen tokens by letting the legitimate owner terminate grants on demand.
+
+## Main Security Requirement
+
+> Verify that refresh tokens and reference access tokens can be revoked by an authorized user using the authorization server user interface, to mitigate the risk of malicious clients or stolen tokens.
+
+In practice this means a user-facing page listing grants with a working revoke action.
+
+## Common Failure Patterns
+
+- **No revocation UI** — users must contact support to revoke.
+- **Revoke endpoint broken** — button exists but token stays valid.
+- **Reference tokens unforgeable only, but forgotten** — only refresh tokens revocable.
+- **Revocation not propagated** — introspection still reports the token active.
+
+## Secure Implementation
+
+Expose a revoke endpoint wired to the UI and authority store:
+
+```javascript
+app.post("/grants/:grantId/revoke", requireUser, async (req, res) => {
+  const grant = await grants.findByUser(req.user.id, req.params.grantId);
+  if (!grant) return res.status(404).end();
+
+  await tokens.revokeByGrant(grant.id);        // kills refresh + reference access tokens
+  res.redirect("/grants");
+});
+```
+
+## Key Rules
+
+- Provide a user-facing UI for review and revocation of grants.
+- Allow revoking both refresh tokens and reference access tokens.
+- Immediately invalidate revoked tokens (including via introspection).
+- Confirm the user is authorized to revoke the target grant.
+- Log and reflect revocation state promptly.
+
+## Checklist for Code Review
+
+- Can an authorized user revoke refresh tokens from the UI?
+- Can reference access tokens also be revoked?
+- Does revocation take effect immediately (introspection `active: false`)?
+- Is the revoking user authorized for that grant?
+- Is the UI reachable and working for self-service?

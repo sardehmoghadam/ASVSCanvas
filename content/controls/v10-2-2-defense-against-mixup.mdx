@@ -24,6 +24,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the OAuth client can interact with more than one authorization server, it has a defense against mix-up attacks. For example, it could require that the authorization server return the iss parameter value and validate it in the authorization response and the token response.
+When a client can talk to more than one authorization server, it must be able to tell them apart and reject responses from a different server than the one it initiated the flow with. The standard defense is to require the authorization server to return an `iss` (issuer) identifier and to validate it in both the authorization response and the token response.
+
+## Why This Matters
+
+A mix-up attack dupes the client into sending its `state`, code, or token request to the wrong (attacker-controlled) authorization server. The attacker then forwards the flow to the real, higher-trust server and, because the client is confused about which server it's talking to, intercepts or swaps the exchanged credentials. Validating the issuer pins each response to the server the client actually chose.
+
+## Main Security Requirement
+
+> Verify that, if the OAuth client can interact with more than one authorization server, it has a defense against mix-up attacks. For example, it could require that the authorization server return the iss parameter value and validate it in the authorization response and the token response.
+
+In practice this means comparing the returned `iss` to the pre-configured issuer for that flow.
+
+## Common Failure Patterns
+
+- **No issuer check** — client accepts responses from any server.
+- **Multi-AS config, single trust** — all servers treated as interchangeable.
+- **Issuer checked on one step only** — token response accepted without `iss` validation.
+- **Lenient issuer comparison** — suffix/fuzzy matching lets look-alike issuers through.
+
+## Secure Implementation
+
+Pin and verify the issuer across the flow:
+
+```javascript
+const expectedIssuer = "https://auth-tenant-a.example.com";
+
+// Authorization response
+if (req.query.iss && req.query.iss !== expectedIssuer) throw new Error("mix-up");
+
+// Token response (or ID Token validation library)
+const { payload } = await jwtVerify(token, keys, {
+  issuer: expectedIssuer,       // exact match
+  audience: client_id,
+  algorithms: ["RS256"],
+});
+```
+
+## Key Rules
+
+- Only interact with pre-registered authorization servers.
+- Require the authorization server to return `iss`.
+- Validate `iss` by exact string comparison against the expected value.
+- Verify the issuer in both authorization and token responses.
+- Fail closed on any issuer mismatch.
+
+## Checklist for Code Review
+
+- Does the client support more than one authorization server?
+- Is `iss` required and validated in the authorization response?
+- Is `iss` validated in the token response / ID Token?
+- Is the comparison exact (not fuzzy or suffix-based)?
+- Are mismatched issuers rejected?

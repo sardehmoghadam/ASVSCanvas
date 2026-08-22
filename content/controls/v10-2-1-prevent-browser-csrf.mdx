@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the code flow is used, the OAuth client has protection against browser-based request forgery attacks, commonly known as CSRF, which trigger token requests, either by using proof key for code exchange (PKCE) functionality or checking the state parameter that was sent in the authorization request.
+When using the authorization code flow, the OAuth client must defend against browser-driven CSRF attacks that trigger token requests. This requires either PKCE or verifying the `state` parameter sent at the start of the authorization request.
+
+## Why This Matters
+
+In a CSRF (login/consent CSRF) attack, the victim's browser is tricked into completing an authorization flow under the attacker's control, binding the attacker's account or authorizations to the victim's session. The `state` parameter and PKCE tie the final redirect and token request back to the client's own initiated flow, so a foreign authorization cannot be silently injected.
+
+## Main Security Requirement
+
+> Verify that, if the code flow is used, the OAuth client has protection against browser-based request forgery attacks, commonly known as CSRF, which trigger token requests, either by using proof key for code exchange (PKCE) functionality or checking the state parameter that was sent in the authorization request.
+
+In practice this means round-trip verification of `state` and/or PKCE on every code-flow exchange.
+
+## Common Failure Patterns
+
+- **No `state` parameter** — the callback cannot tell its own flow apart from an injected one.
+- **Predictable `state`** — a guessable value defeats round-trip verification.
+- **PKCE missing on public clients** — code interception left possible.
+- **State checked loosely** — partial or permissive comparison.
+
+## Secure Implementation
+
+Send and verify the `state`, and use PKCE where the client is public:
+
+```javascript
+const state = crypto.randomBytes(32).toString("base64url");
+const codeVerifier = crypto.randomBytes(32).toString("base64url");
+const authUrl = buildAuthorizeUrl({
+  response_type: "code",
+  client_id,
+  redirect_uri,
+  state,                                   // round-trip CSRF protection
+  code_challenge: challenge(codeVerifier), // PKCE
+  code_challenge_method: "S256",
+  scope,
+});
+```
+
+## Key Rules
+
+- Use PKCE for the code flow, especially for public/mobile clients.
+- Always send and verify a high-entropy `state` parameter.
+- Reject callbacks with missing or mismatched `state`.
+- Use exact comparison of the round-trip values.
+- Combine with nonce/state binding for OIDC flows.
+
+## Checklist for Code Review
+
+- Is `state` (or PKCE) used to prevent CSRF on the code flow?
+- Is `state` high-entropy and unpredictable?
+- Is the callback `state` compared exactly?
+- Are missing/mismatched `state` values rejected?
+- Is PKCE enforced for public clients?

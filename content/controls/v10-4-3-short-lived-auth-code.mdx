@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the authorization code is short-lived. The maximum lifetime can be up to 10 minutes for L1 and L2 applications and up to 1 minute for L3 applications.
+Authorization codes must expire quickly. The maximum allowance is 10 minutes for Level 1 and Level 2 applications, tightening to 1 minute for Level 3 applications.
+
+## Why This Matters
+
+A code is a bearer of the right to obtain tokens, and it travels through the browser and its intermediaries. The shorter its lifetime, the smaller the window an attacker has to steal and redeem it before it becomes worthless. Tighter limits at higher assurance levels reflect the higher sensitivity of those systems.
+
+## Main Security Requirement
+
+> Verify that the authorization code is short-lived. The maximum lifetime can be up to 10 minutes for L1 and L2 applications and up to 1 minute for L3 applications.
+
+In practice this means setting and enforcing an expiry on every authorization code.
+
+## Common Failure Patterns
+
+- **Long code lifetimes** — codes valid for hours or indefinitely.
+- **No expiry enforcement** — expiry stored but never checked at redemption.
+- **Uniform lifetimes** — same long window used for high-assurance flows.
+- **Default library limit too generous** — relying on a permissive default.
+
+## Secure Implementation
+
+Set a short, level-appropriate expiry and enforce it:
+
+```javascript
+const code = {
+  value: crypto.randomBytes(32).toString("base64url"),
+  expiresAt: Date.now() + codeTtlMs(assuranceLevel), // L1/L2: 10m, L3: 1m
+};
+
+function codeTtlMs(level) {
+  return level === "L3" ? 60_000 : 10 * 60_000;
+}
+```
+
+## Key Rules
+
+- Set code lifetime to ≤10 minutes (L1/L2) or ≤1 minute (L3).
+- Store and enforce the expiry at redemption time.
+- Fail closed when a code is past its expiry.
+- Audit code lifetime per assurance level.
+- Rotate/expire codes on any error or reattempt.
+
+## Checklist for Code Review
+
+- Is the code lifetime within the L1/L2/L3 limits?
+- Is expiry actually enforced at redemption?
+- Are expired codes rejected?
+- Do higher-assurance flows use shorter lifetimes?
+- Is code lifetime tested and audited?

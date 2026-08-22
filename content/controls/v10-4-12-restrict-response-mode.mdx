@@ -25,6 +25,50 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that for a given client, the authorization server only allows the response_mode value that this client needs to use. For example, by having the authorization server validate this value against the expected values or by using pushed authorization request (PAR) or JWT-secured Authorization Request (JAR).
+For each client, the authorization server must permit only the `response_mode` values that client actually needs. This can be done by validating the value against the client's expected modes, or by moving the request into PAR (Pushed Authorization Requests) or JAR (JWT-secured Authorization Requests) so the parameters are signed and pinned.
+
+## Why This Matters
+
+`response_mode` controls how the authorization response is delivered. Allowing a client to request an unintended mode (say, switching to a mode that leaks the token into the fragment or posts it somewhere unexpected) can change the security properties of the flow mid-request. Restricting the mode per client keeps each flow within the client's approved behavior, and PAR/JAR additionally seal the set of request parameters against tampering.
+
+## Main Security Requirement
+
+> Verify that for a given client, the authorization server only allows the response_mode value that this client needs to use. For example, by having the authorization server validate this value against the expected values or by using pushed authorization request (PAR) or JWT-secured Authorization Request (JAR).
+
+In practice this means validating `response_mode` against a client-specific allowlist.
+
+## Common Failure Patterns
+
+- **Any `response_mode` accepted** — client can request arbitrary modes.
+- **No per-client restriction** — one global set for all clients.
+- **Mode not matched to response type** — incompatible combinations allowed.
+- **Response mode ignored** — request params replayed/changed without protection.
+
+## Secure Implementation
+
+Restrict `response_mode` to the client's allowed values:
+
+```javascript
+if (!client.allowed_response_modes.includes(req.query.response_mode)) {
+  throw new InvalidRequestError("response_mode not allowed for client");
+}
+// Prefer PAR so parameters arrive intact and signed
+```
+
+## Key Rules
+
+- Maintain a per-client allowlist of `response_mode` values.
+- Reject modes outside that client's allowlist.
+- Validate compatibility of mode with the requested response type.
+- Prefer PAR/JAR to pin and sign request parameters.
+- Fail closed on unexpected or missing modes.
+
+## Checklist for Code Review
+
+- Is `response_mode` restricted per client?
+- Are unexpected/foreign modes rejected?
+- Is mode–response-type compatibility validated?
+- Are PAR/JAR used to protect request parameters?
+- Is the restriction enforced always, not only in the happy path?

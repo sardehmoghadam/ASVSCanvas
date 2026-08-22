@@ -26,6 +26,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the authorization server issues only sender-constrained (Proof-of-Possession) access tokens, either with certificate-bound access tokens using mutual TLS (mTLS) or DPoP-bound access tokens (Demonstration of Proof of Possession).
+The authorization server must issue only sender-constrained (proof-of-possession) access tokens. That means every access token is cryptographically bound to the client's key — as a certificate-bound token via mutual TLS (mTLS) or as a DPoP-bound token.
+
+## Why This Matters
+
+A token that proves possession is worth much less to a thief. Whereas a bearer token is spendable by anyone who holds the string, a sender-constrained token is bound to a private key the legitimate client controls. By issuing only proof-of-possession tokens, the authorization server removes the cheapest class of token-replay attack by design.
+
+## Main Security Requirement
+
+> Verify that the authorization server issues only sender-constrained (Proof-of-Possession) access tokens, either with certificate-bound access tokens using mutual TLS (mTLS) or DPoP-bound access tokens (Demonstration of Proof of Possession).
+
+In practice this means binding each access token to the client's mTLS certificate or DPoP key when it is minted.
+
+## Common Failure Patterns
+
+- **Bearer tokens issued by default** — no `cnf` binding exists.
+- **Binding optional** — clients without a key still get bearer tokens.
+- **DPoP/mTLS declared but not enforced** — endpoint accepts plain requests.
+- **Weak binding** — public key lost or not tied to the token's `cnf`.
+
+## Secure Implementation
+
+Embed the sender binding in the issued token:
+
+```javascript
+// mTLS certificate-bound token
+const certHash = sha256(req.socket.getPeerCertificate().raw);
+const accessToken = await sign({
+  ...claims,
+  cnf: { "x5t#S256": certHash },      // proof-of-possession binding
+});
+
+// DPoP-bound token
+const accessToken = await sign({
+  ...claims,
+  cnf: { jkt: dpopThumbprint(req.headers.dpop) },
+});
+```
+
+## Key Rules
+
+- Issue only proof-of-possession access tokens.
+- Bind tokens via certificate-bound mTLS or DPoP.
+- Require the client's key at the token endpoint before minting.
+- Reject requests that don't establish a sender binding.
+- Resource servers must verify the binding (they require `cnf`).
+
+## Checklist for Code Review
+
+- Are all access tokens issued sender-constrained?
+- Is a bearer token ever issued anywhere?
+- Is the `cnf` binding present and correct (x5t#S256 / jkt)?
+- Are requests without a binding rejected?
+- Do resource servers verify the binding they rely on?

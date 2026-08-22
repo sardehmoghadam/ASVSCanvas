@@ -24,6 +24,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the authorization server ensures that the user consents to each authorization request. If the identity of the client cannot be assured, the authorization server must always explicitly prompt the user for consent.
+The authorization server must ensure the user genuinely consents to every authorization request. When the client's identity cannot be assured — for example, a dynamically-registered or unvetted client — the server must always show an explicit consent prompt rather than granting silently.
+
+## Why This Matters
+
+Consent is the user's gate on delegation. If the server auto-approves requests (or trusts an unverified client's `display: consent` wish), authorizations can be granted the user never intended, giving a malicious client access it shouldn't have. Explicit prompting for unverified clients makes sure the user has actually seen and approved each grant.
+
+## Main Security Requirement
+
+> Verify that the authorization server ensures that the user consents to each authorization request. If the identity of the client cannot be assured, the authorization server must always explicitly prompt the user for consent.
+
+In practice this means a consent step that cannot be skipped, especially for untrusted clients.
+
+## Common Failure Patterns
+
+- **Auto-consent** — grants approved without user interaction.
+- **Consent bypassed by prompt=none** — silently skipped where identity is unassured.
+- **Unverified client skipped** — consent not shown for untrusted clients.
+- **One-time consent** — future (broader) requests approved without re-consent.
+
+## Secure Implementation
+
+Require an interactive consent step for untrusted clients:
+
+```javascript
+if (client.verified !== true) {
+  // Always present the consent prompt for unverified clients
+  return renderConsentScreen({ user, client, scopes });
+}
+// Verified clients may reuse a stored consent only if scopes are unchanged
+if (!matchesStoredConsent(user, client, scopes)) {
+  return renderConsentScreen({ user, client, scopes });
+}
+```
+
+## Key Rules
+
+- Obtain user consent for each authorization request.
+- Always prompt explicitly when client identity is unassured.
+- Re-consent when scopes expand or the client changes.
+- Do not honor `prompt=none` to skip consent where consent is required.
+- Record consent decisions and honor revocations.
+
+## Checklist for Code Review
+
+- Is consent obtained for every authorization?
+- Does an unverified client always trigger an explicit prompt?
+- Can consent be skipped via prompt=none or auto-approval?
+- Is re-consent required for broader/newer requests?
+- Are consent records and revocations enforced?

@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that confidential client is authenticated for client-to-authorized server backchannel requests such as token requests, pushed authorization requests (PAR), and token revocation requests.
+Every confidential client must authenticate itself for client-to-authorization-server backchannel requests — token requests, Pushed Authorization Requests (PAR), and token revocation requests — proving which client is performing the call before the server acts.
+
+## Why This Matters
+
+Backchannel endpoints exchange and retire credentials, so they must only act for a known, authenticated client. Without client authentication, any caller who possesses (or guesses) enough material could impersonate a client, redeem codes, mint tokens, or revoke another client's grants. Authenticating the client pins these actions to an identity the server has registered.
+
+## Main Security Requirement
+
+> Verify that confidential client is authenticated for client-to-authorized server backchannel requests such as token requests, pushed authorization requests (PAR), and token revocation requests.
+
+In practice this means requiring client authentication on the token, PAR, and revocation endpoints.
+
+## Common Failure Patterns
+
+- **No client auth on revocation** — anyone can revoke with the token alone.
+- **PAR unauthenticated** — authorization requests pushed without proving the client.
+- **Client auth treated as optional** — fallback styles accept unauthenticated calls.
+- **Token request trusts public clients as confidential** — no authentication for a secret-bearing client.
+
+## Secure Implementation
+
+Require and verify client authentication on backchannel endpoints:
+
+```javascript
+app.post("/token", clientAuthentication(), async (req, res) => {
+  // req.clientAuth identifies and verifies the confidential client first
+  if (!req.clientAuth) throw new InvalidClientError();
+  // ... grant-type processing
+});
+
+app.post("/par", clientAuthentication(), pushAuthorizationRequest);
+app.post("/revoke", clientAuthentication(), revokeToken);
+```
+
+## Key Rules
+
+- Authenticate confidential clients on token, PAR, and revocation requests.
+- Verify client credentials before processing any backchannel action.
+- Reject unauthenticated or credential-mismatched requests.
+- Tie each action to the authenticated client's identity.
+- Prefer strong methods (mTLS, `private_key_jwt`, or secret+HTTPS).
+
+## Checklist for Code Review
+
+- Is the client authenticated on token requests?
+- Is PAR client-authenticated?
+- Is token revocation client-authenticated?
+- Are unauthenticated backchannel calls rejected?
+- Is client authentication mandatory (not optional)?

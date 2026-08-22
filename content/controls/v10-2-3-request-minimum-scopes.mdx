@@ -24,6 +24,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the OAuth client only requests the required scopes (or other authorization parameters) in requests to the authorization server.
+The OAuth client must ask for only the scopes and authorization parameters its function actually requires — no more. A scope request should map one-to-one to a genuine need of the client's feature set, and nothing speculative or over-broad should be included.
+
+## Why This Matters
+
+Scopes are the delegation of privilege. Over-requesting asks the user to grant more than the client needs, and if that request is approved (or the server auto-grants it), an over-privileged token circulates that could do more damage if stolen. Least privilege at request time minimizes both the consent burden and the blast radius of token compromise.
+
+## Main Security Requirement
+
+> Verify that the OAuth client only requests the required scopes (or other authorization parameters) in requests to the authorization server.
+
+In practice this means a minimal, feature-driven scope list per authorization request.
+
+## Common Failure Patterns
+
+- **Boilerplate scope lists** — copying a broad `read write` default everywhere.
+- **Speculative scopes** — requesting "future" permissions not yet needed.
+- **No per-flow scoping** — the same maximal scopes for every feature.
+- **Unused granted scopes** — token carries privileges the client never uses.
+
+## Secure Implementation
+
+Request a minimal scope set tied to the specific feature:
+
+```javascript
+const authUrl = buildAuthorizeUrl({
+  client_id,
+  redirect_uri,
+  response_type: "code",
+  code_challenge, code_challenge_method: "S256",
+  scope: "orders:read", // only what this feature needs
+});
+```
+
+## Key Rules
+
+- Request only the scopes the current feature requires.
+- Avoid default or template scope lists.
+- Map each requested scope to a specific client need.
+- Re-evaluate scope needs as features change.
+- Prefer narrow, resource-specific scopes over broad ones.
+
+## Checklist for Code Review
+
+- Is the requested scope list minimal for the feature?
+- Are any speculative or unused scopes requested?
+- Is the scope list per-flow rather than a global constant?
+- Can any requested scope be narrowed or removed?
+- Is there a process to trim scopes as features change?

@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that grant type code is always used together with pushed authorization requests (PAR).
+Whenever the authorization code grant is used, it must always be used together with Pushed Authorization Requests (PAR): the client pushes its authorization parameters to the server, receives a `request_uri`, and uses that in place of passing every parameter through the browser.
+
+## Why This Matters
+
+PAR moves the authorization request out of the browser query string, where parameters can be leaked, stored, or tampered with via open redirects and request modification. Because the client authenticates when pushing the request and the server assigns a short-lived `request_uri`, the authorization request's parameters are protected from manipulation and sent to the right place.
+
+## Main Security Requirement
+
+> Verify that grant type code is always used together with pushed authorization requests (PAR).
+
+In practice this means the authorization endpoint receives a `request_uri` rather than raw parameters.
+
+## Common Failure Patterns
+
+- **Code grant without PAR** — raw authorization params passed in the URL.
+- **PAR optional** — server falls back to plain parameters when PAR is absent.
+- **`request_uri` not bound to the authorization request** — reuse of another client's URI.
+- **PAR endpoint unauthenticated** — any party can push a request.
+
+## Secure Implementation
+
+Push parameters via PAR and author via `request_uri`:
+
+```javascript
+const { request_uri } = await post("/par", { client_auth, ...params });
+
+const authUrl = buildAuthorizeUrl({
+  client_id,
+  request_uri,              // instead of sending params directly
+});
+```
+
+## Key Rules
+
+- Always pair the code grant with PAR.
+- Authenticate the client at the PAR endpoint.
+- Bind each `request_uri` to its originating client and request.
+- Reject authorization requests that pass raw, un-pushed parameters.
+- Expire `request_uri` values quickly (single-use, short-lived).
+
+## Checklist for Code Review
+
+- Is the code grant always used with PAR?
+- Does the PAR endpoint authenticate the client?
+- Is `request_uri` bound to the originating client?
+- Are raw-inline authorization parameters rejected?
+- Are `request_uri` values single-use and short-lived?

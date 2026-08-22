@@ -26,6 +26,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the authorization server mitigates refresh token replay attacks for public clients, preferably using sender-constrained refresh tokens, i.e., DPoP or Certificate-Bound Access Tokens using mTLS. For L1 and L2 applications, refresh token rotation may be used. If refresh token rotation is used, the authorization server must invalidate the refresh token after usage, and revoke all refresh tokens for that authorization if an already used and invalidated refresh token is provided.
+For public clients, the authorization server must mitigate refresh token replay — ideally with sender-constrained refresh tokens (DPoP or certificate-bound mTLS tokens). At L1/L2, refresh token rotation is acceptable: each use invalidates the token, and if a reused, already-invalidated refresh token is presented, the server must revoke all refresh tokens for that authorization.
+
+## Why This Matters
+
+Refresh tokens are long-lived, so replay is a serious risk: if an attacker (or a race) replays a valid refresh token, they can mint their own access tokens indefinitely. Rotation plus reuse-based revocation both limits the value of a single stolen token and lets the server detect and shut down a replay in progress by revoking the whole grant.
+
+## Main Security Requirement
+
+> Verify that the authorization server mitigates refresh token replay attacks for public clients, preferably using sender-constrained refresh tokens, i.e., DPoP or Certificate-Bound Access Tokens using mTLS. For L1 and L2 applications, refresh token rotation may be used. If refresh token rotation is used, the authorization server must invalidate the refresh token after usage, and revoke all refresh tokens for that authorization if an already used and invalidated refresh token is provided.
+
+In practice this means rotation on every use, with reuse detection triggering full revocation.
+
+## Common Failure Patterns
+
+- **No rotation** — same refresh token valid across many uses.
+- **Rotation without invalidation** — old token still accepted after rotation.
+- **Reuse not reported** — server ignores a used refresh token's reuse.
+- **Rotation without sender binding** — no DPoP/mTLS for public clients.
+
+## Secure Implementation
+
+Rotate refresh tokens and revoke the family on detected reuse:
+
+```javascript
+async function refresh(oldToken, clientAuth) {
+  const row = await tokens.findByValue(oldToken);
+  if (!row) throw new InvalidGrantError();
+  if (row.invalidated) {
+    await tokens.revokeFamily(row.familyId);   // reuse detected: kill the whole grant
+    throw new InvalidGrantError("refresh token reuse");
+  }
+  const next = await tokens.rotate(row);        // invalidate old, issue new
+  return next;
+}
+```
+
+## Key Rules
+
+- Prefer sender-constrained refresh tokens (DPoP or mTLS).
+- Use refresh token rotation for L1/L2 public clients.
+- Invalidate each refresh token immediately after use.
+- Detect reuse of an invalidated token and revoke the whole authorization family.
+- Log reuse events as a security signal.
+
+## Checklist for Code Review
+
+- Is refresh token rotation (or sender binding) in place for public clients?
+- Is the refresh token invalidated on each use?
+- Is reuse of an invalidated token detected?
+- Does reuse revoke all refresh tokens for that authorization?
+- Are reuse attempts logged/alerted?

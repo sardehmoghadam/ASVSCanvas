@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the resource server only accepts access tokens that are intended for use with that service (audience). The audience may be included in a structured access token (such as the aud claim in JWT), or it can be checked using the token introspection endpoint.
+A resource server must accept only access tokens minted for it — the intended audience. The intended recipient can be validated from a structured token claim (the `aud` claim in a JWT) or by checking the token's audience through the token introspection endpoint before trusting it.
+
+## Why This Matters
+
+If every resource server accepts any token signed by the shared authorization server, a token issued for Service A can be replayed against Service B. Audience validation re-establishes the boundary: each API confirms the token names it as the intended recipient, closing cross-service replay in multi-API and multi-tenant deployments.
+
+## Main Security Requirement
+
+> Verify that the resource server only accepts access tokens that are intended for use with that service (audience). The audience may be included in a structured access token (such as the aud claim in JWT), or it can be checked using the token introspection endpoint.
+
+In practice this means checking `aud` (directly or via introspection) on every resource-server request.
+
+## Common Failure Patterns
+
+- **No audience check** — any issuer token accepted regardless of recipient.
+- **Wrong audience hard-coded** — accepts tokens meant for a different API.
+- **Missing/lenient `aud` handling** — tokens without `aud` are passed.
+- **Array `aud` mishandled** — string comparison skips legitimately matching audiences.
+
+## Secure Implementation
+
+Validate audience explicitly on the resource server:
+
+```javascript
+const { payload } = await jwtVerify(token, keys, {
+  issuer: "https://auth.example.com",
+  audience: "orders-api",   // this service's audience
+  algorithms: ["RS256"],
+});
+
+// Or via introspection
+const intro = await introspect(token, { client_auth });
+if (!intro.active || !intro.aud.includes("orders-api")) throw new ForbiddenError();
+```
+
+## Key Rules
+
+- Define a per-service audience and validate it on every request.
+- Check `aud` directly for structured tokens or via introspection for reference tokens.
+- Handle array-form `aud` correctly.
+- Reject missing or foreign audiences.
+- Combine audience with issuer and signature validation in one step.
+
+## Checklist for Code Review
+
+- Does the resource server validate the token audience?
+- Are foreign or missing `aud` values rejected?
+- Is array-form `aud` handled correctly?
+- Is introspection used (and trusted) for reference tokens?
+- Is audience checked alongside issuer and signature?

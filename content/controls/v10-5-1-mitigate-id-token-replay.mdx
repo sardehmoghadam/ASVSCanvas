@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the client (as the relying party) mitigates ID Token replay attacks. For example, by ensuring that the nonce claim in the ID Token matches the nonce value sent in the authentication request to the OpenID Provider (in OAuth2 referred to as the authorization request sent to the authorization server).
+The client, acting as a relying party, must prevent ID Token replay. The core mechanism is to verify that the `nonce` in the returned ID Token matches the `nonce` value the client sent to the OpenID Provider in the original authentication (authorization) request.
+
+## Why This Matters
+
+An ID Token is a signed assertion of authentication, so a captured one could be replayed to impersonate a user to the client. The `nonce` binds each ID Token to the single transaction that requested it. If the nonce doesn't match the client's original value, it means the token is not the answer to this client's request — it may be stale, injected, or replayed.
+
+## Main Security Requirement
+
+> Verify that the client (as the relying party) mitigates ID Token replay attacks. For example, by ensuring that the nonce claim in the ID Token matches the nonce value sent in the authentication request to the OpenID Provider (in OAuth2 referred to as the authorization request sent to the authorization server).
+
+In practice this means generating a `nonce`, sending it in the request, and validating it when the ID Token returns.
+
+## Common Failure Patterns
+
+- **No `nonce` sent** — the client can't distinguish a replayed token.
+- **`nonce` not validated** — the value is sent but never compared on return.
+- **Weak `nonce`** — short or predictable value that can be guessed.
+- **Static `nonce`** — same value reused across authentications.
+
+## Secure Implementation
+
+Send a high-entropy `nonce` and validate it when the ID Token returns:
+
+```javascript
+// Authentication request
+const nonce = crypto.randomBytes(32).toString("base64url");
+session.set("nonce", nonce);
+const authUrl = authorize({ ...params, nonce });
+
+// Token/ID Token validation
+const { payload } = await jwtVerify(idToken, keys, {
+  issuer: expectedIssuer,
+  audience: client_id,
+  nonce: session.get("nonce"),        // exact match required
+  algorithms: ["RS256"],
+});
+```
+
+## Key Rules
+
+- Send a random `nonce` in every authentication request.
+- Verify the returned `nonce` matches exactly.
+- Bind the `nonce` to the initiating session/transaction.
+- Reject ID Tokens with missing or mismatched `nonce`.
+- Use a CSPRNG for nonce generation.
+
+## Checklist for Code Review
+
+- Is a `nonce` sent in the authentication request?
+- Is the returned `nonce` validated against the original?
+- Are mismatched/missing nonces rejected?
+- Is the nonce transaction- and session-bound?
+- Is the nonce high-entropy?

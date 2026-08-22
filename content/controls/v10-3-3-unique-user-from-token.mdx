@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that if an access control decision requires identifying a unique user from an access token (JWT or related token introspection response), the resource server identifies the user from claims that cannot be reassigned to other users. Typically, it means using a combination of iss and sub claims.
+When an access-control decision needs to identify a specific user, the resource server must derive that identity from claims that cannot be reassigned to someone else. The standard pattern is the combination of `iss` (issuer) and `sub` (subject), which together uniquely and durably identify a user across the identity provider's scope.
+
+## Why This Matters
+
+A bare `sub` value is only unique *within* one issuer. Two different identity providers (or two tenants using the same provider) could both emit `sub=42` for entirely different people. Keying accounts on `sub` alone risks cross-issuer identity collision; pairing it with `iss` makes the identifier globally unambiguous and non-reassignable.
+
+## Main Security Requirement
+
+> Verify that if an access control decision requires identifying a unique user from an access token (JWT or related token introspection response), the resource server identifies the user from claims that cannot be reassigned to other users. Typically, it means using a combination of iss and sub claims.
+
+In practice this means the canonical user key is `iss + sub` (or equivalent), never `sub` alone.
+
+## Common Failure Patterns
+
+- **`sub`-only identity** — collisions across issuers or tenants.
+- **Reassignable claims used** — relying on `email` or `username` that can change owner.
+- **Issuer not included** — the identity is ambiguous across providers.
+- **No separator/normalization** — inconsistent concatenations produce different keys.
+
+## Secure Implementation
+
+Build the canonical user identifier from `iss` + `sub`:
+
+```javascript
+function userKey(iss, sub) {
+  return `${iss}|${sub}`;          // stable, non-colliding composite key
+}
+
+const { payload } = await jwtVerify(token, keys, {
+  issuer: "https://auth.example.com",
+  audience: "api.example.com",
+  algorithms: ["RS256"],
+});
+
+const account = await users.findById(userKey(payload.iss, payload.sub));
+```
+
+## Key Rules
+
+- Identify users by non-reassignable claims (typically `iss` + `sub`).
+- Never key identity on `sub` alone across multiple issuers.
+- Avoid reassignable attributes (email, username) as the identity key.
+- Use a consistent, unambiguous composite-identifier format.
+- Apply the same rule to introspection responses.
+
+## Checklist for Code Review
+
+- Is the user identity derived from `iss` + `sub`?
+- Could a `sub` value collide across issuers?
+- Are reassignable claims (email/username) used as keys anywhere?
+- Is the composite key format consistent across the codebase?
+- Is identity handled identically for JWT and introspection paths?

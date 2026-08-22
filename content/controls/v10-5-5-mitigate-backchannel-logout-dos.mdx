@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, when using OIDC back-channel logout, the relying party mitigates denial of service through forced logout and cross-JWT confusion in the logout flow. The client must verify that the logout token is correctly typed with a value of logout+jwt, contains the event claim with the correct member name, and does not contain a nonce claim. Note that it is also recommended to have a short expiration (e.g., 2 minutes).
+When using OIDC back-channel logout, the relying party must protect against forced-logout DoS and cross-JWT confusion. It has to verify that the logout token is typed `logout+jwt`, carries the `events` claim with the correct member, and contains no `nonce` claim — and it should enforce a short expiration (about 2 minutes).
+
+## Why This Matters
+
+Back-channel logout delivers JWT-shaped messages straight to the client's logout handler. An attacker (or a confused token) could push a signed but wrong-kind JWT — for instance a normal ID token — to force logouts or to trick the handler into acting on an unrelated token. Requiring the exact logout-token `typ`, a valid `events` claim, and no `nonce` confines the handler to genuine logout messages only, and a short expiry limits replay.
+
+## Main Security Requirement
+
+> Verify that, when using OIDC back-channel logout, the relying party mitigates denial of service through forced logout and cross-JWT confusion in the logout flow. The client must verify that the logout token is correctly typed with a value of logout+jwt, contains the event claim with the correct member name, and does not contain a nonce claim. Note that it is also recommended to have a short expiration (e.g., 2 minutes).
+
+In practice this means validating `typ`, `events`, the absence of `nonce`, and the expiry on every logout token.
+
+## Common Failure Patterns
+
+- **`typ` not checked** — any signed JWT is accepted as a logout token.
+- **`events` ignored** — logout proceeds without a valid event claim.
+- **`nonce` accepted** — non-logout tokens pass through the handler.
+- **No expiry** — stale logout tokens remain re-playable.
+
+## Secure Implementation
+
+Validate the logout token's type, event, and expiry before acting:
+
+```javascript
+const { payload, protectedHeader } = await jwtVerify(logoutToken, keys, {
+  issuer, audience: client_id, algorithms: ["RS256"],
+});
+
+if (protectedHeader.typ !== "logout+jwt") throw new Error("wrong token type");
+if (!payload.events?.["http://schemas.openid.net/event/backchannel-logout"]) {
+  throw new Error("invalid logout event");
+}
+if (payload.nonce !== undefined) throw new Error("logout token must not carry nonce");
+if (now() - payload.iat > 120) throw new Error("logout token expired");
+```
+
+## Key Rules
+
+- Verify the header `typ` is exactly `logout+jwt`.
+- Require the `events` claim with the correct back-channel-logout member.
+- Reject logout tokens that contain a `nonce`.
+- Enforce a short expiry (≈2 minutes) from `iat`.
+- Validate issuer, audience, and signature first.
+
+## Checklist for Code Review
+
+- Is the logout token's `typ` checked as `logout+jwt`?
+- Is the `events` claim with the correct member required?
+- Is a `nonce`-bearing token rejected?
+- Is the expiry short and enforced?
+- Are signature, issuer, and audience validated?

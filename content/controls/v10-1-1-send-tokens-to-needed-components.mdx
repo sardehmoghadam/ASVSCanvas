@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that tokens are only sent to components that strictly need them. For example, when using a backend-for-frontend pattern for browser-based JavaScript applications, access and refresh tokens shall only be accessible for the backend.
+Tokens must only be delivered to the components that actually need them — nothing more. For single-page applications, this typically means the Backend-for-Frontend (BFF) pattern, where access and refresh tokens live on the server-side backend, never in the browser or on the user's device.
+
+## Why This Matters
+
+Every place a token is exposed is a place it can be stolen. Browser JavaScript, logs, and client-side storage are all high-risk surfaces for token theft (XSS, malicious dependencies, postMessage leaks). Confining tokens to a server-side layer shrinks the attack surface and keeps long-lived credentials out of the most hostile environment.
+
+## Main Security Requirement
+
+> Verify that tokens are only sent to components that strictly need them. For example, when using a backend-for-frontend pattern for browser-based JavaScript applications, access and refresh tokens shall only be accessible for the backend.
+
+In practice this means keeping tokens server-side for browser apps and issuing only short-lived, purpose-limited tokens where a client must hold one.
+
+## Common Failure Patterns
+
+- **Tokens in the browser** — SPA holds access/refresh tokens in JS or `localStorage`.
+- **Over-distribution** — every microservice receives a token it doesn't use.
+- **Refresh token sent to client** — long-lived credential exposed to the least trusted layer.
+- **No BFF for browser apps** — frontend talks directly to OAuth endpoints with token storage.
+
+## Secure Implementation
+
+Keep tokens server-side; the browser holds only a session cookie:
+
+```javascript
+// BFF endpoint proxies to the API using a server-held access token
+app.get("/api/orders", authenticateSession, async (req, res) => {
+  const data = await api("/orders", {
+    headers: { authorization: `Bearer ${serverAccessToken}` }, // never sent to browser
+  });
+  res.json(data);
+});
+```
+
+## Key Rules
+
+- Send tokens only to components that strictly need them.
+- Use the BFF pattern for browser-based JavaScript apps.
+- Keep refresh tokens server-side, never in the browser.
+- Prefer confidential, server-held credentials over browser-held tokens.
+- Audit every token delivery path for necessity.
+
+## Checklist for Code Review
+
+- Are any tokens exposed to the browser or client device?
+- Does the browser-based flow use a BFF proxy?
+- Are refresh tokens ever stored client-side?
+- Does every component hold only the tokens it needs?
+- Are token scopes and lifetimes minimized per component?

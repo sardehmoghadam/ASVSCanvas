@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, if the code grant is used, the authorization server mitigates authorization code interception attacks by requiring proof key for code exchange (PKCE). For authorization requests, the authorization server must require a valid code_challenge value and must not accept a code_challenge_method value of plain. For a token request, it must require validation of the code_verifier parameter.
+When the authorization code grant is used, the authorization server must require PKCE to stop code interception. It must demand a valid `code_challenge` on the authorization request, refuse the `plain` transform, and validate the `code_verifier` on the token request before issuing any token.
+
+## Why This Matters
+
+Authorization codes can be intercepted mid-flight (via stolen redirects, leaked URLs, or malicious apps). PKCE binds the code to a secret the requesting client generated, so anyone who intercepts the code still can't exchange it without that `code_verifier`. Requiring the `S256` transform prevents downgrade to a trivially guessable plaintext binding.
+
+## Main Security Requirement
+
+> Verify that, if the code grant is used, the authorization server mitigates authorization code interception attacks by requiring proof key for code exchange (PKCE). For authorization requests, the authorization server must require a valid code_challenge value and must not accept a code_challenge_method value of plain. For a token request, it must require validation of the code_verifier parameter.
+
+In practice this means mandating `S256` PKCE on every code-flow authorization and token exchange.
+
+## Common Failure Patterns
+
+- **PKCE optional** — server proceeds when `code_challenge` is absent.
+- **`plain` accepted** — weak transform permits guessing the verifier.
+- **`code_verifier` unchecked** — token endpoint skips verification.
+- **Wrong challenge at exchange** — verifier compared to nothing or an unchecked value.
+
+## Secure Implementation
+
+Enforce `S256` PKCE end to end:
+
+```javascript
+// Authorization: require a valid S256 challenge
+if (req.query.code_challenge_method !== "S256" || !req.query.code_challenge) {
+  throw new InvalidRequestError("PKCE S256 required");
+}
+storeChallenge(code, req.query.code_challenge);
+
+// Token: verify the verifier against the stored challenge
+const ok = await verifyChallenge(req.body.code_verifier, storedChallenge, "S256");
+if (!ok) throw new InvalidGrantError("invalid code_verifier");
+```
+
+## Key Rules
+
+- Require `code_challenge` on every code-flow authorization request.
+- Reject `code_challenge_method=plain`.
+- Validate `code_verifier` at the token endpoint before issuing tokens.
+- Store and compare the challenge securely (constant-time S256 check).
+- Apply PKCE to public *and* confidential clients alike.
+
+## Checklist for Code Review
+
+- Is `code_challenge` required on authorization requests?
+- Is `plain` rejected?
+- Is `code_verifier` validated at token exchange?
+- Is the challenge comparison correct (S256, constant-time)?
+- Is PKCE enforced for all client types?

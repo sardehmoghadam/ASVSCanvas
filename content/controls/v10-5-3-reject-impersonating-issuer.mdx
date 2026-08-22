@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the client rejects attempts by a malicious authorization server to impersonate another authorization server through authorization server metadata. The client must reject authorization server metadata if the issuer URL in the authorization server metadata does not exactly match the pre-configured issuer URL expected by the client.
+The client must reject a malicious authorization server's attempt to impersonate another via its published metadata. Specifically, if the issuer URL in the fetched metadata does not exactly match the pre-configured issuer URL the client expects, the client must refuse to use that metadata.
+
+## Why This Matters
+
+An attacker-controlled (or compromised) authorization server could serve metadata claiming to be the legitimate provider, steering the client to trust a fraudulent signing key or endpoint set. Pinning the issuer in metadata to the client's pre-configured expectation blocks this impersonation at the discovery step, before the client trusts any key or endpoint from the fake server.
+
+## Main Security Requirement
+
+> Verify that the client rejects attempts by a malicious authorization server to impersonate another authorization server through authorization server metadata. The client must reject authorization server metadata if the issuer URL in the authorization server metadata does not exactly match the pre-configured issuer URL expected by the client.
+
+In practice this means comparing the metadata's `issuer` to the configured issuer with exact string equality.
+
+## Common Failure Patterns
+
+- **Metadata trusted blindly** — issuer in metadata never compared.
+- **Fuzzy/prefix issuer match** — loose comparison lets look-alike issuers through.
+- **Metadata fetched from a redirect** — discovery follows an attacker-chosen URL.
+- **TLS of discovery not validated** — metadata retrieved over an insecure channel.
+
+## Secure Implementation
+
+Fetch metadata over TLS and verify the issuer matches exactly:
+
+```javascript
+const expected = "https://accounts.example.com";
+const metadata = await fetchMetadata(expected, { tls: true });   // discovery over HTTPS
+
+if (metadata.issuer !== expected) {                 // exact string comparison
+  throw new Error("issuer mismatch — possible impersonation");
+}
+```
+
+## Key Rules
+
+- Pre-configure the expected issuer URL in the client.
+- Fetch discovery metadata over HTTPS (pinned/token-fi validated).
+- Compare the metadata `issuer` to the configured value exactly.
+- Reject any metadata with a mismatched issuer.
+- Fail closed and alert on discovery failures.
+
+## Checklist for Code Review
+
+- Does the client fetch discovery metadata securely?
+- Is the metadata `issuer` compared to the configured value?
+- Is the issuer comparison exact?
+- Are mismatched issuers rejected before trusting keys/endpoints?
+- Is discovery failure handled fail-closed?

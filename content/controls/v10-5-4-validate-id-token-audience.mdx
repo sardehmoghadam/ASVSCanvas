@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the client validates that the ID Token is intended to be used for that client (audience) by checking that the aud claim from the token is equal to the client_id value for the client.
+The client must confirm that an ID Token was issued for it — and no other party — by checking that the token's `aud` (audience) claim equals the client's own `client_id`.
+
+## Why This Matters
+
+An ID Token is a credential the client will present to itself as proof of authentication. If the client accepts an ID Token meant for a different audience, it could be consuming a token issued for another client (cross-client confusion). Matching `aud` to the client's `client_id` ensures the token attests an authentication that was genuinely produced for this client.
+
+## Main Security Requirement
+
+> Verify that the client validates that the ID Token is intended to be used for that client (audience) by checking that the aud claim from the token is equal to the client_id value for the client.
+
+In practice this means passing the client's `client_id` as the required audience during token validation.
+
+## Common Failure Patterns
+
+- **No `aud` check** — any ID Token from the issuer is accepted.
+- **Wrong audience accepted** — a token meant for another client is consumed.
+- **Array `aud` ignored** — the client's id hidden in a multi-audience token.
+- **`aud` checked loosely** — partial or substring comparison.
+
+## Secure Implementation
+
+Validate the audience as the client's own `client_id`:
+
+```javascript
+const { payload } = await jwtVerify(idToken, keys, {
+  issuer: expectedIssuer,
+  audience: client_id,               // must equal this client's identifier
+  nonce,
+  algorithms: ["RS256"],
+});
+```
+
+## Key Rules
+
+- Validate `aud` equals the client's `client_id`.
+- Handle single-string and array `aud` correctly.
+- Combine audience with issuer, nonce, and signature validation.
+- Reject tokens missing or mismatching the audience.
+- Use the exact client identifier, not a derived value.
+
+## Checklist for Code Review
+
+- Is the ID Token audience checked against `client_id`?
+- Are foreign audiences rejected?
+- Is array-form `aud` handled?
+- Is audience validated together with issuer/signature/nonce?
+- Are missing `aud` values rejected?

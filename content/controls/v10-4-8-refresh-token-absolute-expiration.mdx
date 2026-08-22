@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that refresh tokens have an absolute expiration, including if sliding refresh token expiration is applied.
+Refresh tokens must have an absolute expiration — a hard upper bound beyond which they can never be used to obtain new access tokens. This holds even when sliding expiration is configured, where each use would otherwise push the token's lifetime forward.
+
+## Why This Matters
+
+A refresh token that can be renewed indefinitely becomes a de facto permanent credential. Sliding expirations alone never force a user to re-authenticate; they only require inactivity never to exceed a window. An absolute cap guarantees that eventually every refresh token dies and the user must authenticate again, limiting the lifespan of a silently stolen token.
+
+## Main Security Requirement
+
+> Verify that refresh tokens have an absolute expiration, including if sliding refresh token expiration is applied.
+
+In practice this means storing an immutable expiry that rotation/sliding cannot extend past.
+
+## Common Failure Patterns
+
+- **Endless sliding expiry** — each use resets the lifetime with no ceiling.
+- **No expiry at all** — refresh token valid forever.
+- **Absolute expiry not enforced** — stored but ignored at refresh time.
+- **Rotation resets the clock** — a hard expiry overwritten on rotation.
+
+## Secure Implementation
+
+Track a fixed absolute expiry that rotation never extends:
+
+```javascript
+const family = {
+  absoluteExpiresAt: issuedAt + MAX_ABSOLUTE_LIFETIME, // e.g. +90 days
+};
+
+// On each rotation, only the *sliding* idle window resets;
+// absoluteExpiresAt stays fixed and is checked first.
+if (Date.now() > family.absoluteExpiresAt) {
+  await tokens.revokeFamily(family.id);
+  throw new InvalidGrantError("refresh token expired");
+}
+```
+
+## Key Rules
+
+- Assign every refresh token an absolute expiration.
+- Keep the absolute expiry fixed — never extend it on use or rotation.
+- Enforce the absolute expiry before every refresh.
+- Combine with shorter sliding/idle windows as needed.
+- Revoke the grant family when the absolute expiry passes.
+
+## Checklist for Code Review
+
+- Does every refresh token have an absolute expiry?
+- Is that expiry immutable under rotation or sliding?
+- Is the absolute expiry checked on each refresh?
+- Are expired tokens rejected and revoked?
+- Is re-authentication forced after the absolute lifetime?

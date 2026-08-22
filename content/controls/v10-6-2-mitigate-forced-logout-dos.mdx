@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the OpenID Provider mitigates denial of service through forced logout. By obtaining explicit confirmation from the end-user or, if present, validating parameters in the logout request (initiated by the relying party), such as the id_token_hint.
+The OpenID Provider must prevent denial of service via forced logout. It should either obtain explicit confirmation from the end user or, when present, validate the parameters carried in a relying-party-initiated logout request — such as the `id_token_hint` — before ending the session.
+
+## Why This Matters
+
+A logout endpoint that ends sessions on a bare request lets anyone inject logout links to force users out (a logout CSRF/DoS). Requiring end-user confirmation, or validating a parameter like `id_token_hint` that only the legitimate session holder would have, breaks the unauthenticated "log out this user" primitive and makes forced logouts much harder to weaponize.
+
+## Main Security Requirement
+
+> Verify that the OpenID Provider mitigates denial of service through forced logout. By obtaining explicit confirmation from the end-user or, if present, validating parameters in the logout request (initiated by the relying party), such as the id_token_hint.
+
+In practice this means either a confirmation prompt or validation of the logout request's bound parameters.
+
+## Common Failure Patterns
+
+- **Auto-logout on GET** — navigation only triggers logout with no confirmation.
+- **`id_token_hint` ignored** — any party can pass a logout request.
+- **No session binding** — logout request not tied to the user's session.
+- **CSRF-able logout** — link-based logout with no token or confirmation.
+
+## Secure Implementation
+
+Confirm or validate before ending the session:
+
+```javascript
+// RP-initiated logout: validate the hint's signature, iss, aud against the session
+if (req.query.id_token_hint) {
+  const { payload } = await jwtVerify(req.query.id_token_hint, keys, {
+    issuer: metadata.issuer, audience: client_id, maxTokenAge: "5 minutes",
+  });
+  if (payload.sub !== session.subject) throw new Error("unrelated session");
+} else {
+  return renderLogoutConfirmation();   // require explicit user confirmation
+}
+```
+
+## Key Rules
+
+- Require explicit user confirmation when no validating parameter exists.
+- Validate `id_token_hint` (signature, issuer, audience, subject) when present.
+- Bind the logout request to the current user's session.
+- Protect logout from CSRF (same-site checks, POST, tokens).
+- Fail closed when validation fails.
+
+## Checklist for Code Review
+
+- Does a logout without confirmation require a prompt?
+- Is `id_token_hint` (or equivalent) validated when used?
+- Is the hint's subject matched to the session?
+- Is logout protected against CSRF?
+- Are invalid logout requests rejected?

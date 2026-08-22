@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that if the authorization server supports unauthenticated dynamic client registration, it mitigates the risk of malicious client applications. It must validate client metadata such as any registered URIs, ensure the user consent, and warn the user before processing an authorization request with an untrusted client application.
+If the authorization server allows unauthenticated dynamic client registration, it must compensate for that lack of vetting. It has to validate client metadata (like registered URIs), ensure explicit user consent, and warn the user before authorizing an untrusted, dynamically-registered client.
+
+## Why This Matters
+
+Dynamic registration lets strangers create clients on demand. A malicious client can register attractive-looking metadata — including a redirect URI aimed at intercepting tokens — then trick users into authorizing it. Validating metadata, requiring consent, and warning about untrusted clients give the authorization server and the user a defensive layer where inherent trust is absent.
+
+## Main Security Requirement
+
+> Verify that if the authorization server supports unauthenticated dynamic client registration, it mitigates the risk of malicious client applications. It must validate client metadata such as any registered URIs, ensure the user consent, and warn the user before processing an authorization request with an untrusted client application.
+
+In practice this means stricter validation and stronger consent for dynamically-registered (untrusted) clients.
+
+## Common Failure Patterns
+
+- **No metadata validation** — arbitrary redirect URIs accepted at registration.
+- **No consent for untrusted clients** — authorization proceeds silently.
+- **No user warning** — an untrusted client is presented as if trusted.
+- **Weak URI checks** — wildcard or unapproved schemes accepted.
+
+## Secure Implementation
+
+Validate metadata and gate untrusted clients behind consent and a warning:
+
+```javascript
+function validMetadata(meta) {
+  // Every registered redirect URI must be HTTPS and exact
+  return meta.redirect_uris.length > 0
+    && meta.redirect_uris.every(u => u.startsWith("https://"));
+}
+
+// Validate client metadata before accepting the registration
+if (!validMetadata(meta)) throw new InvalidClientMetadataError();
+
+// Ensure consent + warning for untrusted, dynamically-registered clients
+if (client.registration === "dynamic-untrusted") {
+  showConsentScreen(user, { warning: "This app is not verified", ...client });
+}
+```
+
+## Key Rules
+
+- Validate dynamically-registered client metadata (URIs, grant types, scopes).
+- Require explicit user consent for untrusted clients.
+- Warn the user before authorizing an untrusted client.
+- Restrict dynamic clients' capabilities by default.
+- Prefer authenticated or approved registration routes.
+
+## Checklist for Code Review
+
+- Is dynamic client metadata validated before use?
+- Are registered URIs checked against policy?
+- Is user consent mandatory for untrusted clients?
+- Is the user warned before consent?
+- Are dynamic clients given least-privilege defaults?

@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the resource server enforces authorization decisions based on claims from the access token that define delegated authorization. If claims such as sub, scope, and authorization_details are present, they must be part of the decision.
+The resource server must make its authorization decisions from the claims the access token carries — the delegated authorization itself. Where present, `sub` (user), `scope`, and `authorization_details` must feed into the decision about what the caller may do.
+
+## Why This Matters
+
+An access token is a signed statement of *what was delegated to this client at the user's request*. Ignoring its claims and making decisions from local state alone breaks the delegation model — a token with narrow scope could be treated as broad, or a user identity could be confused. Enforcing from the token's claims keeps the resource server honoring exactly what the authorization server authorized.
+
+## Main Security Requirement
+
+> Verify that the resource server enforces authorization decisions based on claims from the access token that define delegated authorization. If claims such as sub, scope, and authorization_details are present, they must be part of the decision.
+
+In practice this means deriving the caller's identity and permitted actions from the validated token.
+
+## Common Failure Patterns
+
+- **Scope ignored** — the token's `scope` never influences enforcement.
+- **`sub` ignored** — the caller's identity taken from elsewhere.
+- **`authorization_details` dropped** — RAR constraints not applied.
+- **Hard-coded decisions** — outcome based on client type alone, not claims.
+
+## Secure Implementation
+
+Derive identity and limitations from the validated claims:
+
+```javascript
+const { payload } = await jwtVerify(token, keys, {
+  issuer: "https://auth.example.com",
+  audience: "orders-api",
+  algorithms: ["RS256"],
+});
+
+const subject = `${payload.iss}:${payload.sub}`;         // unique user
+const scopes = (payload.scope ?? "").split(" ");
+const details = payload.authorization_details ?? [];     // RAR constraints
+
+if (!scopes.includes("orders:read")) throw new ForbiddenError();
+```
+
+## Key Rules
+
+- Make `sub`, `scope`, and `authorization_details` part of each decision.
+- Derive caller identity from the token, not from ambient state.
+- Honor the exact scopes and RAR details in the token.
+- Reject requests that exceed the delegated claims.
+- Re-check claims for every resource access, not once per session.
+
+## Checklist for Code Review
+
+- Is `sub` used to identify the caller?
+- Does `scope` constrain what actions are permitted?
+- Are `authorization_details` enforced?
+- Are decisions derived from the token rather than hard-coded?
+- Is anything beyond the delegated claims ever allowed?

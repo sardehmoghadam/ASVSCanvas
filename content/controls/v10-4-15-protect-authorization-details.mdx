@@ -26,6 +26,51 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that, for a server-side client (which is not executed on the end-user device), the authorization server ensures that the authorization_details parameter value is from the client backend and that the user has not tampered with it. For example, by requiring the usage of pushed authorization request (PAR) or JWT-secured Authorization Request (JAR).
+For server-side (non-browser) clients, the authorization server must guarantee that the `authorization_details` parameter actually came from the client backend, not from tampering by the end user. Using PAR (Pushed Authorization Requests) or JAR (JWT-secured Authorization Requests) authenticates and signs that parameter so it can be trusted.
+
+## Why This Matters
+
+`authorization_details` (Rich Authorization Requests) can carry precise, fine-grained permissions. If a user can edit that parameter in the browser, they could self-elevate — adding or broadening authorizations the backend never intended. Authenticating the source of the parameter through PAR or JAR ensures the value reflects the client's trusted request, not user spoofing.
+
+## Main Security Requirement
+
+> Verify that, for a server-side client (which is not executed on the end-user device), the authorization server ensures that the authorization_details parameter value is from the client backend and that the user has not tampered with it. For example, by requiring the usage of pushed authorization request (PAR) or JWT-secured Authorization Request (JAR).
+
+In practice this means sourcing `authorization_details` from a PAR-pushed or JAR-signed request, never raw browser input.
+
+## Common Failure Patterns
+
+- **Raw browser params trusted** — `authorization_details` read straight from the URL.
+- **PAR/JAR optional** — server accepts inline, user-editable values.
+- **No param–request binding** — marshaled parameters replace the trusted set.
+- **Server-side flow treated as public** — no client authentication on the request.
+
+## Secure Implementation
+
+Require PAR or JAR for server-side clients' `authorization_details`:
+
+```javascript
+// Server-side clients must push the authorization request
+const pushed = await getByRequestUri(req.query.request_uri);
+const details = pushed.authorization_details;   // trusted, not user-supplied
+
+if (!pushed) throw new InvalidRequestError("PAR required for authorization_details");
+```
+
+## Key Rules
+
+- Source `authorization_details` from the client backend, not the browser.
+- Require PAR or JAR for server-side clients.
+- Authenticate the client when the trusted request is established.
+- Do not accept user-editable `authorization_details` inline.
+- Verify the signing/authentication of the request before honoring it.
+
+## Checklist for Code Review
+
+- Is `authorization_details` sourced from PAR/JAR, not raw input?
+- Are server-side clients required to use PAR or JAR?
+- Is the client authenticated on the protected request?
+- Could a user tamper with `authorization_details` at any point?
+- Are unsigned/inline values rejected?
