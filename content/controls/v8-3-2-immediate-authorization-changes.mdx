@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that changes to values on which authorization decisions are made are applied immediately. Where changes cannot be applied immediately, (such as when relying on data in self-contained tokens), there must be mitigating controls to alert when a consumer performs an action when they are no longer authorized to do so and revert the change. Note that this alternative would not mitigate information leakage.
+When the underlying values an authorization decision depends on change — a role revoked, a permission removed, an account disabled — the effect must apply immediately. Where that is impossible, such as with self-contained tokens that carry stale claims, mitigating controls must detect and revert unauthorized actions and raise an alert.
+
+## Why This Matters
+
+Delayed enforcement leaves a window in which a revoked user still operates with old privileges. The longer that gap, the more damage is possible. Immediate application shrinks the exposure; where token-based staleness is unavoidable, compensating controls (alerting and revert) contain the blast radius rather than silently trusting stale data.
+
+## Main Security Requirement
+
+> Verify that changes to values on which authorization decisions are made are applied immediately. Where changes cannot be applied immediately, (such as when relying on data in self-contained tokens), there must be mitigating controls to alert when a consumer performs an action when they are no longer authorized to do so and revert the change. Note that this alternative would not mitigate information leakage.
+
+In practice this means real-time authorization or, failing that, detect-and-revert compensation.
+
+## Common Failure Patterns
+
+- **Token lifetime too long** — stale claims trusted far beyond expiry.
+- **No revalidation** — revoked user keeps acting until token expires.
+- **No alerting** — unauthorized actions go unnoticed.
+- **No revert** — detected abuse left unchanged; leakage uncounted.
+
+## Secure Implementation
+
+Revalidate promptly or compensate with alert-and-revert:
+
+```javascript
+async function authorizeAction(user, claims) {
+  const current = await loadPermissions(user.id);     // fresh from source of truth
+  if (!current.includes(claims.permission)) {
+    auditAlert("stale-token use", user.id, claims.permission);
+    await revertLastAction(user.id);
+    throw new ForbiddenError();
+  }
+}
+```
+
+## Key Rules
+
+- Apply authorization changes immediately where possible.
+- Keep token lifetimes short to limit stale-claim windows.
+- Alert on actions taken after revocation.
+- Revert unauthorized actions caused by stale data.
+- Document that compensation does not stop information leakage.
+
+## Checklist for Code Review
+
+- Do permission changes take effect immediately?
+- Are stale-token claims revalidated against a live source?
+- Is there an alert when a revoked user still acts?
+- Are unauthorized actions reverted?
+- Is the information-leakage limitation acknowledged?

@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that authorization documentation defines rules for field-level access restrictions (both read and write) based on consumer permissions and resource attributes. Note that these rules might depend on other attribute values of the relevant data object, such as state or status.
+The documentation must define field-level rules controlling which consumers can read and write individual properties of a data object, based on permissions and resource attributes. Crucially, these rules can be conditional on other properties — a field may be writable only while the object is in a certain state (e.g. "draft").
+
+## Why This Matters
+
+Without field-level rules, consumers can see or modify sensitive properties they should never touch — an invoice's internal notes, a user's privilege flag — even when function-level access is otherwise correct. Documenting per-field read/write rules (and their state dependencies) is what prevents broken object property level authorization (BOPLA) from creeping in.
+
+## Main Security Requirement
+
+> Verify that authorization documentation defines rules for field-level access restrictions (both read and write) based on consumer permissions and resource attributes. Note that these rules might depend on other attribute values of the relevant data object, such as state or status.
+
+In practice this means a documented field-level policy including state-dependent conditions.
+
+## Common Failure Patterns
+
+- **No field rules** — object-level access assumed sufficient.
+- **Read vs write not distinguished** — same rule for both.
+- **State ignored** — writable fields not gated on object status.
+- **Fields omitted** — new properties not covered by policy.
+
+## Secure Implementation
+
+Document per-field read/write rules with state conditions:
+
+```yaml
+rules:
+  - object: "order"
+    fields:
+      amount:   { read: ["customer","admin"], write: [] }
+      status:   { read: ["customer"],        write: ["admin"] }
+      comments: { read: ["support","admin"], write: ["support"], when: "status == open" }
+```
+
+## Key Rules
+
+- Define field-level rules for both read and write.
+- Base them on permissions and resource attributes.
+- Capture state/status-dependent conditions explicitly.
+- Cover every sensitive field, including new ones.
+- Keep the policy in sync with schema changes.
+
+## Checklist for Code Review
+
+- Are field-level read/write rules documented?
+- Are read and write differentiated per field?
+- Are state/status-dependent conditions captured?
+- Are all sensitive fields covered?
+- Is the policy updated on schema changes?

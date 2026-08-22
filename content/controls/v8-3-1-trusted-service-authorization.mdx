@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application enforces authorization rules at a trusted service layer and does not rely on controls that an untrusted consumer could manipulate, such as client-side JavaScript.
+Authorization rules must be enforced at a trusted backend service layer, never in code an untrusted consumer can reach or alter. Client-side JavaScript and similar front-end logic can guide the experience but can never be the authority that grants or denies access.
+
+## Why This Matters
+
+Anything running in the browser or on a consumer-controlled device is fully manipulable — a user can edit scripts, replay requests, or call APIs directly. If the only gate lives there, it is no gate at all. Enforcing at a trusted service layer means decisions are made in an environment the consumer cannot tamper with.
+
+## Main Security Requirement
+
+> Verify that the application enforces authorization rules at a trusted service layer and does not rely on controls that an untrusted consumer could manipulate, such as client-side JavaScript.
+
+In practice this means every sensitive decision is re-checked server-side.
+
+## Common Failure Patterns
+
+- **Client-only checks** — front-end hides controls, backend trusts it.
+- **Direct API calls unguarded** — endpoints callable without any check.
+- **Relying on UI state** — trusting client-sent roles or flags.
+- **Logic in API gateway only** — internal services assume upstream filtered.
+
+## Secure Implementation
+
+Enforce the rule at the trusted layer, regardless of the client:
+
+```javascript
+// backend API — the authoritative check
+app.post("/api/accounts/:id/delete", authenticate, (req, res) => {
+  if (!userCan(req.user, "account.delete", req.params.id)) {
+    return res.status(403).end();
+  }
+  service.deleteAccount(req.params.id);
+});
+```
+
+## Key Rules
+
+- Enforce authorization in a trusted backend service.
+- Never treat client-side logic as a security boundary.
+- Re-check every request server-side, even if the UI hid it.
+- Don't trust client-supplied roles, flags, or state.
+- Ensure downstream services also enforce, not assume.
+
+## Checklist for Code Review
+
+- Is the authoritative check on a trusted service layer?
+- Are any decisions left to client-side JavaScript?
+- Do direct API calls bypass the UI's checks?
+- Is any client-sent role/flag trusted?
+- Do internal services re-check rather than assume?

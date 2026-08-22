@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that multi-tenant applications use cross-tenant controls to ensure consumer operations will never affect tenants with which they do not have permissions to interact.
+In a multi-tenant application, every consumer operation must be constrained to the tenant scope the consumer is permitted to interact with. Cross-tenant controls ensure a user in one tenant can never read, modify, or affect resources belonging to another tenant, regardless of what identifiers or requests they submit.
+
+## Why This Matters
+
+Multi-tenant platforms share infrastructure, so a missing tenant boundary means one customer can reach another customer's data or disrupt their service — a catastrophic isolation failure. Cross-tenant controls make the tenant context an integral part of every query and operation, so isolation is enforced by design rather than by luck or identifier obscurity.
+
+## Main Security Requirement
+
+> Verify that multi-tenant applications use cross-tenant controls to ensure consumer operations will never affect tenants with which they do not have permissions to interact.
+
+In practice this means scoping every access to the consumer's authorized tenant(s).
+
+## Common Failure Patterns
+
+- **Missing tenant filter** — queries omit the tenant predicate.
+- **Header-based tenant spoofing** — trusting a client-supplied tenant ID.
+- **Cross-tenant ID leakage** — foreign IDs passed through unchecked.
+- **Shared admin without scoping** — platform admin bypasses tenant bounds.
+
+## Secure Implementation
+
+Bind every operation to the authorized tenant scope:
+
+```javascript
+async function listOrders(req) {
+  const tenantId = req.user.tenantId;          // from trusted token, not request body
+  return orders.find({ tenantId });            // tenant is always part of the query
+}
+
+async function getOrder(req, orderId) {
+  const order = await orders.findOne({ id: orderId, tenantId: req.user.tenantId });
+  if (!order) throw new NotFoundError();       // hide foreign-tenant resources
+}
+```
+
+## Key Rules
+
+- Derive tenant from trusted identity, never client input.
+- Include the tenant predicate in every query.
+- Deny/hide resources outside the consumer's tenants.
+- Validate cross-tenant interactions against permission.
+- Apply tenant scoping to admins and automation too.
+
+## Checklist for Code Review
+
+- Is tenant context taken from trusted identity?
+- Does every query include a tenant filter?
+- Can a client influence the tenant scope?
+- Are foreign-tenant resources denied or hidden?
+- Is cross-tenant access gated on explicit permission?

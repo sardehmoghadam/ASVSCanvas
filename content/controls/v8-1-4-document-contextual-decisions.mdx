@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that authentication and authorization documentation defines how environmental and contextual factors are used in decision-making, in addition to function-level, data-specific, and field-level authorization. This should include the attributes evaluated, thresholds for risk, and actions taken (e.g., allow, challenge, deny, step-up authentication).
+Beyond listing context attributes, the documentation must spell out how they factor into decisions: which attributes are evaluated, what thresholds mark a risk boundary, and what action each outcome triggers — allow, challenge, deny, or step-up authentication — layered on top of function, data, and field-level rules.
+
+## Why This Matters
+
+A list of signals is not a policy. Without documented thresholds and resulting actions, "risk-based" behavior becomes an opaque, unreviewable black box where no one can predict or validate why access was granted or refused. Defining the decision logic makes adaptive controls deterministic, testable, and auditable.
+
+## Main Security Requirement
+
+> Verify that authentication and authorization documentation defines how environmental and contextual factors are used in decision-making, in addition to function-level, data-specific, and field-level authorization. This should include the attributes evaluated, thresholds for risk, and actions taken (e.g., allow, challenge, deny, step-up authentication).
+
+In practice this means a documented decision matrix from context to action.
+
+## Common Failure Patterns
+
+- **Attributes listed, decisions absent** — signals catalogued but no logic defined.
+- **No thresholds** — risk scoring with undefined cut-offs.
+- **Ambiguous actions** — outcome of a risk level unspecified.
+- **Context divorced from authorization** — not layered on function/data/field rules.
+
+## Secure Implementation
+
+Document the decision logic as a clear matrix:
+
+```yaml
+decision_rules:
+  - attributes: ["ip_geo_mismatch"]
+    threshold: "risk >= high"
+    action: "deny"
+  - attributes: ["unknown_device"]
+    threshold: "risk >= medium"
+    action: "step_up_mfa"
+```
+
+## Key Rules
+
+- Document how context attributes feed decisions.
+- Define explicit risk thresholds.
+- Specify outcomes: allow, challenge, deny, step-up.
+- Layer context on top of function/data/field authorization.
+- Keep decision logic reviewable and testable.
+
+## Checklist for Code Review
+
+- Are contextual decision rules documented?
+- Are thresholds defined explicitly?
+- Are actions (allow/challenge/deny/step-up) specified?
+- Is context layered over function/data/field rules?
+- Can the decision outcome be predicted from docs?

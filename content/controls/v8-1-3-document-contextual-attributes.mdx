@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application documentation defines the environmental and contextual attributes (including but not limited to, time of day, user location, IP address, or device) that are used in the application to make security decisions, including those pertaining to authentication and authorization.
+The documentation must enumerate the environmental and contextual attributes the application relies on for security decisions — time of day, user location, IP address, device, and similar signals — across both authentication and authorization. Every such signal must be named and described.
+
+## Why This Matters
+
+Contextual attributes drive risk-based and adaptive decisions, but they are invisible unless documented. Undocumented signals mean teams don't know which factors gate access, can't assess whether they're reliable, and cannot review whether they are used consistently — leaving the door open to both over-reliance on weak signals and unnoticed gaps.
+
+## Main Security Requirement
+
+> Verify that the application documentation defines the environmental and contextual attributes (including but not limited to, time of day, user location, IP address, or device) that are used in the application to make security decisions, including those pertaining to authentication and authorization.
+
+In practice this means a catalog of context signals and where they are used.
+
+## Common Failure Patterns
+
+- **Undocumented signals** — context used but never listed.
+- **Incomplete inventory** — some attributes tracked, others hidden in code.
+- **No auth/authorization mapping** — unclear which signals affect which decisions.
+- **Unreliable signals trusted** — attributes used without assessing quality.
+
+## Secure Implementation
+
+Catalog the attributes and their role:
+
+```yaml
+contextual_attributes:
+  - name: "ip_address"
+    used_in: ["authorization"]
+    purpose: "geographic consistency check"
+  - name: "device_fingerprint"
+    used_in: ["authentication", "authorization"]
+    purpose: "known-device signal"
+```
+
+## Key Rules
+
+- Enumerate every contextual/environmental attribute used.
+- Cover time, location, IP, device, and more as applicable.
+- Map each attribute to where it affects decisions.
+- Apply to both authentication and authorization.
+- Assess the reliability of each signal.
+
+## Checklist for Code Review
+
+- Are all contextual attributes documented?
+- Are time/location/IP/device signals covered?
+- Is each mapped to its security decision?
+- Do auth and authorization both get covered?
+- Are any undocumented context signals present in code?

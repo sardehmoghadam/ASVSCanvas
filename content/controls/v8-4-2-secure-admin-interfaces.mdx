@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that access to administrative interfaces incorporates multiple layers of security, including continuous consumer identity verification, device security posture assessment, and contextual risk analysis, ensuring that network location or trusted endpoints are not the sole factors for authorization even though they may reduce the likelihood of unauthorized access.
+Administrative interfaces must be protected by multiple layers of security rather than a single gate: continuous verification of the operator's identity, an assessment of the device's security posture, and contextual risk analysis. Network location or a trusted endpoint may reduce risk but can never be the only basis for granting admin access.
+
+## Why This Matters
+
+Admin surfaces are the highest-value target — a compromised operator or host yields control of the whole system. A single factor such as "on the corporate network" fails the moment an attacker lands there. Layering continuous identity checks, device health, and contextual risk means several independent defenses must fail together, dramatically shrinking the route to privileged compromise.
+
+## Main Security Requirement
+
+> Verify that access to administrative interfaces incorporates multiple layers of security, including continuous consumer identity verification, device security posture assessment, and contextual risk analysis, ensuring that network location or trusted endpoints are not the sole factors for authorization even though they may reduce the likelihood of unauthorized access.
+
+In practice this means defense-in-depth on every admin surface.
+
+## Common Failure Patterns
+
+- **Network-only access** — trusted subnet treated as sufficient.
+- **Single factor** — one password or one certificate gates admin.
+- **No device posture** — unmanaged/compromised devices admitted.
+- **No re-verification** — identity checked once, then trusted forever.
+
+## Secure Implementation
+
+Enforce layered checks before and during admin sessions:
+
+```javascript
+async function guardAdminAccess(req, session) {
+  const identity = await verifyOperator(req.credentials);   // continuous re-verification
+  const device = await assessDevicePosture(req.deviceId);   // patch/health/rooted
+  const context = await analyzeRisk(req);                   // location, time, behavior
+  if (!identity.ok || device.failed || context.risk >= HIGH) {
+    return deny("layered check failed");
+  }
+  return allow();
+}
+```
+
+## Key Rules
+
+- Layer identity, device posture, and contextual risk.
+- Never rely on network location or endpoint trust alone.
+- Continuously re-verify the operator's identity.
+- Assess device health/management before granting access.
+- Re-evaluate context throughout the admin session.
+
+## Checklist for Code Review
+
+- Are multiple independent layers enforced?
+- Is network/endpoint trust ever the sole factor?
+- Is identity re-verified continuously?
+- Is device posture assessed before access?
+- Is contextual risk analyzed for admin sessions?

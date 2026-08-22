@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application ensures that function-level access is restricted to consumers with explicit permissions.
+Function-level access means a consumer must hold an explicit permission to invoke a given operation or endpoint. No function should be callable merely because the caller is authenticated; there must be a positive permission grant tied to that specific function.
+
+## Why This Matters
+
+Authentication proves *who* the caller is, not *what* they are allowed to do. Without explicit per-function permissions, any logged-in user can reach admin endpoints, run privileged operations, or trigger actions never meant for them. Function-level restrictions enforce least privilege at the most important boundary — the operation itself.
+
+## Main Security Requirement
+
+> Verify that the application ensures that function-level access is restricted to consumers with explicit permissions.
+
+In practice this means a deny-by-default permission check on every sensitive function.
+
+## Common Failure Patterns
+
+- **Authenticated == authorized** — any logged-in user reaches any function.
+- **Missing checks** — endpoint lacks an authorization gate entirely.
+- **Implicit/role-less access** — function callable without explicit permission.
+- **Client-hidden only** — UI hides controls but backend doesn't enforce.
+
+## Secure Implementation
+
+Deny by default; require an explicit permission per function:
+
+```javascript
+function canExecute(user, operation) {
+  return user.permissions.includes(`function:${operation}`);
+}
+
+async function handleDeleteAccount(req) {
+  if (!canExecute(req.user, "account.delete")) {
+    throw new ForbiddenError();
+  }
+  await accounts.delete(req.user.id);
+}
+```
+
+## Key Rules
+
+- Require an explicit permission for each function.
+- Deny by default when no grant exists.
+- Enforce at the backend, not just in the UI.
+- Tie permissions to functions, not to authentication state.
+- Review every endpoint for a corresponding check.
+
+## Checklist for Code Review
+
+- Does each function require an explicit permission?
+- Is access denied by default for unpermissioned callers?
+- Are checks enforced server-side?
+- Are any functions reachable by authentication alone?
+- Is the UI hiding of controls the only protection anywhere?

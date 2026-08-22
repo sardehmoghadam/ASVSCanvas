@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that access to an object is based on the originating subject (e.g., consumer) permissions, not on the permissions of any intermediary or service acting on their behalf. For example, if a consumer calls a web service using a self-contained token for authentication, and the service then requests data from a different service, the second service will use the consumer token, rather than a machine-to-machine token from the first service, to make permission decisions.
+When a service acts on a consumer's behalf, any downstream permission decision must reflect the permissions of the *originating subject* (the consumer), not those of the intermediary service. In a chain of calls, the identity of the human or entity that started the request flows through — for example as the consumer's token — rather than the calling service's own machine credentials.
+
+## Why This Matters
+
+If a downstream service authorizes using the intermediary's privileged service account, then every consumer inherits that account's broad permissions. A low-privileged user could reach data their intermediary can access but they cannot. Preserving the originating subject's permissions stops privilege elevation through the delegation chain and keeps least privilege intact end-to-end.
+
+## Main Security Requirement
+
+> Verify that access to an object is based on the originating subject (e.g., consumer) permissions, not on the permissions of any intermediary or service acting on their behalf. For example, if a consumer calls a web service using a self-contained token for authentication, and the service then requests data from a different service, the second service will use the consumer token, rather than a machine-to-machine token from the first service, to make permission decisions.
+
+In practice this means propagating the original caller's identity through the chain.
+
+## Common Failure Patterns
+
+- **Intermediary creds used downstream** — service account authorizes everything.
+- **Identity swapped at the hop** — original subject lost mid-call.
+- **Token substituted** — service replaces consumer token with its own.
+- **Blind trust in the caller** — downstream assumes caller's claims are the user.
+
+## Secure Implementation
+
+Propagate the originating subject's identity across hops:
+
+```javascript
+// Service A forwards the consumer's credential, not its own
+async function fetchOrders(consumerToken) {
+  return serviceB.get("/orders", {
+    headers: { authorization: `Bearer ${consumerToken}` }, // original subject
+  });
+}
+```
+
+## Key Rules
+
+- Base access on the originating subject's permissions.
+- Forward the consumer's token/identity across service hops.
+- Never substitute a machine token for the caller's identity.
+- Audit delegation chains for identity loss.
+- Treat intermediary service accounts as distinct from users.
+
+## Checklist for Code Review
+
+- Are downstream checks using the originating subject's permissions?
+- Is the consumer's identity propagated across calls?
+- Are any machine tokens substituted for the caller?
+- Is identity preserved at every hop?
+- Could a low-privileged user inherit a service's permissions?

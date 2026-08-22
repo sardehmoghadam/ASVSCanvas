@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that adaptive security controls based on a consumer environmental and contextual attributes (such as time of day, location, IP address, or device) are implemented for authentication and authorization decisions, as defined in the application documentation. These controls must be applied when the consumer tries to start a new session and also during an existing session.
+Authentication and authorization decisions must incorporate environmental and contextual attributes — time of day, location, IP address, device — exactly as the documentation defines. These adaptive controls apply both when a new session is being created and continuously during an already-active session, not just at login.
+
+## Why This Matters
+
+Risk is not static once a session begins. A consumer who logged in from a trusted office in the morning can have their session used from a hostile network minutes later. Adaptive controls that re-evaluate context throughout the session's life catch behavior drift that a one-time login check would miss.
+
+## Main Security Requirement
+
+> Verify that adaptive security controls based on a consumer environmental and contextual attributes (such as time of day, location, IP address, or device) are implemented for authentication and authorization decisions, as defined in the application documentation. These controls must be applied when the consumer tries to start a new session and also during an existing session.
+
+In practice this means context-aware decisions at session creation and on ongoing requests.
+
+## Common Failure Patterns
+
+- **Login-time only** — context never rechecked during the session.
+- **Not implemented** — documented but absent from code.
+- **Single weak signal** — relying on one spoofable attribute.
+- **No action on drift** — anomalies observed but access continues unchanged.
+
+## Secure Implementation
+
+Evaluate context at session start and on each request:
+
+```javascript
+function evaluateContext(request, session) {
+  const risk = scoreContext({
+    ip: request.ip, device: request.deviceId,
+    time: new Date(), geo: request.geo,
+  });
+  return risk >= session.riskThreshold
+    ? { action: "step_up_or_deny" }
+    : { action: "allow" };
+}
+```
+
+## Key Rules
+
+- Implement adaptive controls per the documentation.
+- Use context attributes on authentication and authorization.
+- Apply at session creation *and* during the session.
+- Combine multiple signals rather than one.
+- Act on drift: challenge, step-up, or deny.
+
+## Checklist for Code Review
+
+- Are adaptive controls actually implemented?
+- Are they applied at session start and mid-session?
+- Are the documented attributes used in code?
+- Are multiple context signals combined?
+- Is there a defined action when risk rises?

@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application ensures that field-level access is restricted to consumers with explicit permissions to specific fields to mitigate broken object property level authorization (BOPLA).
+Even when a consumer is authorized to access an object, individual fields within it must be separately controlled. A consumer must hold explicit permission to read or write a specific property; unpermitted fields must never be returned or accepted, on either the read path or the write path.
+
+## Why This Matters
+
+BOPLA arises when object-level checks pass but the API then hands back or mutates sensitive properties anyway — the `isAdmin` flag, the `salary` field, an internal `status`. Field-level enforcement prevents data over-exposure on read and mass-assignment on write, confining consumers to exactly the properties they are entitled to.
+
+## Main Security Requirement
+
+> Verify that the application ensures that field-level access is restricted to consumers with explicit permissions to specific fields to mitigate broken object property level authorization (BOPLA).
+
+In practice this means per-field filtering on reads and per-field allowlists on writes.
+
+## Common Failure Patterns
+
+- **Whole-object return** — all fields serialized regardless of permission.
+- **Mass assignment** — client-supplied fields written without allowlist.
+- **No write-field checks** — read filtering present, writes unguarded.
+- **Field rules absent** — object-level access assumed enough.
+
+## Secure Implementation
+
+Filter reads and allowlist writes per field:
+
+```javascript
+function authorizedRead(user, order) {
+  return pick(order, fieldsReadableBy(user));       // drop unpermitted fields
+}
+
+function authorizedWrite(user, input) {
+  return pick(input, fieldsWritableBy(user));       // ignore non-allowlisted fields
+}
+```
+
+## Key Rules
+
+- Enforce field-level permissions on read and write.
+- Never return fields the consumer cannot read.
+- Ignore/reject writes to fields the consumer cannot modify.
+- Use an allowlist (not a denylist) for writable fields.
+- Apply to nested objects and collection items too.
+
+## Checklist for Code Review
+
+- Are unreadable fields excluded from responses?
+- Are writable fields restricted by an allowlist?
+- Is mass assignment prevented on every write path?
+- Are nested fields protected?
+- Do both read and write paths enforce field rules?

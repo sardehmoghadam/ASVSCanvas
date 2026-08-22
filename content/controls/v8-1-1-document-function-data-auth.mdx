@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that authorization documentation defines rules for restricting function-level and data-specific access based on consumer permissions and resource attributes.
+The authorization documentation must lay out the rules that govern who can call which functions and access which data items — decisions based on the consumer's permissions and the resource's own attributes. This is the written access-control model the implementation must follow.
+
+## Why This Matters
+
+Authorization is only as reliable as its specification. Without documented rules, developers improvise per-endpoint checks, gaps appear, and reviewers have nothing to test against. Written function-level and data-level rules turn access control from scattered ad-hoc checks into a defined, verifiable policy.
+
+## Main Security Requirement
+
+> Verify that authorization documentation defines rules for restricting function-level and data-specific access based on consumer permissions and resource attributes.
+
+In practice this means a documented access model (RBAC/ABAC) mapping permissions and attributes to functions and data.
+
+## Common Failure Patterns
+
+- **No access-control document** — rules exist only in developers' heads.
+- **Function rules absent** — endpoints protected inconsistently.
+- **Data rules absent** — no object-level ownership/attribute rules.
+- **Docs drift from code** — documented roles don't match enforcement.
+
+## Secure Implementation
+
+Document the model explicitly; mirror it in code:
+
+```yaml
+# authorization-policy.yaml (documented)
+rules:
+  - function: "account:read"
+    consumer: "role:user"
+    resource: "account"
+    condition: "subject.id == resource.ownerId"
+  - function: "account:delete"
+    consumer: "role:admin"
+```
+
+## Key Rules
+
+- Document rules for function-level access.
+- Document rules for data-specific access.
+- Base decisions on consumer permissions and resource attributes.
+- Express ownership/relationship conditions explicitly.
+- Keep documentation in sync with implementation.
+
+## Checklist for Code Review
+
+- Is there a documented access-control model?
+- Are function-level rules defined?
+- Are data-level rules and ownership defined?
+- Are permissions and attributes the basis for decisions?
+- Does the implementation match the documentation?

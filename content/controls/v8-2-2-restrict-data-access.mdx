@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application ensures that data-specific access is restricted to consumers with explicit permissions to specific data items to mitigate insecure direct object reference (IDOR) and broken object level authorization (BOLA).
+Access to an individual data item must be restricted to consumers who have an explicit permission over *that specific item*. Passing an object identifier alone is never sufficient; the system must check the caller's rights on the referenced record before reading or mutating it.
+
+## Why This Matters
+
+IDOR/BOLA happens when an app trusts the object reference it is handed — a caller simply swaps `/orders/1234` for `/orders/1235` and reads someone else's record. Per-object authorization checks close this by verifying the caller's relationship to the specific item on every access, not just whether they can use the feature at all.
+
+## Main Security Requirement
+
+> Verify that the application ensures that data-specific access is restricted to consumers with explicit permissions to specific data items to mitigate insecure direct object reference (IDOR) and broken object level authorization (BOLA).
+
+In practice this means object-level ownership/attribute checks on every data access.
+
+## Common Failure Patterns
+
+- **Reference trusted** — object ID accepted with no ownership check.
+- **No per-record check** — only function-level permission validated.
+- **Guessable IDs** — sequential IDs facilitate enumeration.
+- **Check only on list views** — direct fetch/update bypasses ownership.
+
+## Secure Implementation
+
+Always resolve and authorize the specific object:
+
+```javascript
+async function getOrder(req, orderId) {
+  const order = await orders.findById(orderId);
+  if (!order) throw new NotFoundError();
+  if (order.ownerId !== req.user.id) throw new ForbiddenError(); // BOLA guard
+  return order;
+}
+```
+
+## Key Rules
+
+- Check permission on the specific data item, not just the function.
+- Verify ownership/relationship on every read, write, and delete.
+- Deny (or 404) on unauthorized object references.
+- Avoid relying on identifier secrecy as the control.
+- Apply data-level checks uniformly across APIs.
+
+## Checklist for Code Review
+
+- Is the caller's right to the specific object checked?
+- Does every read/write path verify ownership?
+- Can swapping an ID expose another user's data (IDOR)?
+- Are direct fetches/updates protected, not just listings?
+- Are unauthorized references denied or hidden?
