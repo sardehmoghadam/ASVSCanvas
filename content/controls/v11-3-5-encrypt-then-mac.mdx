@@ -24,6 +24,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that any combination of an encryption algorithm and a MAC algorithm is operating in encrypt-then-MAC mode.
+When an application combines an encryption algorithm with a MAC algorithm, the composition must operate in encrypt-then-MAC mode: encrypt the plaintext first, then compute the MAC over the ciphertext (and its nonce).
+
+## Why This Matters
+
+The order matters. MAC-then-encrypt and encrypt-and-MAC both leak information through the MAC and have been broken in practice, while encrypt-then-MAC is provably secure and lets the receiver reject tampered data before ever decrypting. Using the correct composition avoids subtle, historically-exploited vulnerabilities.
+
+## Main Security Requirement
+
+> Verify that any combination of an encryption algorithm and a MAC algorithm is operating in encrypt-then-MAC mode.
+
+In practice this means MAC over ciphertext, verified before decryption.
+
+## Common Failure Patterns
+
+- **MAC-then-encrypt** — integrity applied before encryption.
+- **Encrypt-and-MAC** — MAC over plaintext, not ciphertext.
+- **Nonce left out of MAC** — header tampering goes unnoticed.
+- **Decrypt before verify** — plaintext processed pre-authentication.
+
+## Secure Implementation
+
+Encrypt first, then MAC the ciphertext, and verify before decrypting:
+
+```javascript
+function encryptThenMac(plaintext, encKey, macKey) {
+  const nonce = randomBytes(NONCE_LEN);
+  const ciphertext = encrypt(plaintext, encKey, nonce);
+  const tag = hmac(macKey, nonce + ciphertext); // MAC over nonce + ciphertext
+  return { nonce, ciphertext, tag };
+}
+
+function decryptThenVerify(blob, encKey, macKey) {
+  const expected = hmac(macKey, blob.nonce + blob.ciphertext);
+  if (!timingSafeEqual(blob.tag, expected)) throw new IntegrityError();
+  return decrypt(blob.ciphertext, encKey, blob.nonce); // only after verify
+}
+```
+
+## Key Rules
+
+- Always encrypt first, then MAC the ciphertext.
+- Include the nonce/IV in the MAC input.
+- Verify the MAC before attempting decryption.
+- Reject the message if authentication fails.
+- Prefer AEAD, which builds this in automatically.
+
+## Checklist for Code Review
+
+- Is the composition encrypt-then-MAC?
+- Is the MAC computed over ciphertext (and nonce)?
+- Is the MAC verified before decryption?
+- Are nonces included in the authenticated data?
+- Is AEAD used where possible?

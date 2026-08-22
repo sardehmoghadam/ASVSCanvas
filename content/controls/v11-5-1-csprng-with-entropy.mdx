@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all random numbers and strings which are intended to be non-guessable must be generated using a cryptographically secure pseudo-random number generator (CSPRNG) and have at least 128 bits of entropy. Note that UUIDs do not respect this condition.
+Every random number or string that is meant to be non-guessable (tokens, keys, session IDs, nonces) must be produced by a cryptographically secure pseudo-random number generator (CSPRNG) and carry at least 128 bits of entropy. UUIDs do not meet this requirement.
+
+## Why This Matters
+
+Predictable "random" values are the classic way secrets get guessed: if an attacker can predict the next token or key, all downstream protections collapse. A CSPRNG seeded from real entropy plus a 128-bit output makes values unguessable in practice, whereas weak sources (and even UUIDs, which may embed timestamps/MAC addresses) leave too little uncertainty.
+
+## Main Security Requirement
+
+> Verify that all random numbers and strings which are intended to be non-guessable must be generated using a cryptographically secure pseudo-random number generator (CSPRNG) and have at least 128 bits of entropy. Note that UUIDs do not respect this condition.
+
+In practice this means a CSPRNG with a sufficient output size.
+
+## Common Failure Patterns
+
+- **`Math.random()`** — predictable PRNG for secrets.
+- **UUIDs as secrets** — low/structured entropy for tokens.
+- **Short random values** — under 128 bits of entropy.
+- **Poor seeding** — CSPRNG not properly seeded from entropy.
+
+## Secure Implementation
+
+Generate secrets with a CSPRNG and ≥128-bit output:
+
+```javascript
+import { randomBytes } from "node:crypto";
+
+function generateToken() {
+  return randomBytes(32).toString("base64url"); // 256-bit CSPRNG output
+}
+
+function generateNonce() {
+  return randomBytes(16); // 128-bit minimum
+}
+```
+
+## Key Rules
+
+- Use a CSPRNG for every non-guessable value.
+- Ensure at least 128 bits of entropy per secret.
+- Never use Math.random() or UUIDs for security values.
+- Rely on OS/CSPRNG seeding rather than custom seeding.
+- Size outputs generously (256 bits for tokens).
+
+## Checklist for Code Review
+
+- Are all secrets produced by a CSPRNG?
+- Does each secret carry ≥128 bits of entropy?
+- Is Math.random() used for any security value?
+- Are UUIDs used as tokens or identifiers?
+- Is the CSPRNG properly seeded?

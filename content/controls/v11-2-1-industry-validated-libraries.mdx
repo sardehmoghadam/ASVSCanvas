@@ -24,6 +24,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that industry-validated implementations (including libraries and hardware-accelerated implementations) are used for cryptographic operations.
+All cryptographic operations must be carried out using industry-validated implementations — mature, widely-reviewed libraries, hardware-accelerated primitives, or OS/vendor crypto modules — rather than hand-rolled algorithms or bespoke implementations.
+
+## Why This Matters
+
+Cryptography is unforgiving: subtle mistakes in a custom implementation produce something that looks right but is trivially broken. Industry-validated libraries have been built, audited, and hardened by experts and are patched against known attacks. Using them collapses a huge category of implementation risk and keeps side-channel and correctness bugs out of your own codebase.
+
+## Main Security Requirement
+
+> Verify that industry-validated implementations (including libraries and hardware-accelerated implementations) are used for cryptographic operations.
+
+In practice this means binding to vetted libraries and rejecting custom crypto.
+
+## Common Failure Patterns
+
+- **Home-grown crypto** — hand-rolled algorithms and modes.
+- **Unmaintained libraries** — abandoned or unaudited crypto code.
+- **Misused primitives** — low-level APIs invoked without defaults.
+- **Weak fallback** — custom code used when a library lacks a feature.
+
+## Secure Implementation
+
+Use a validated, high-level library for all crypto operations:
+
+```javascript
+import { secretbox, randomBytes } from "libsodium-wrappers";
+
+function encryptMessage(message, key) {
+  const nonce = randomBytes(secretbox.nonceBytes);
+  const ciphertext = secretbox.easy(message, nonce, key); // authenticated
+  return { nonce, ciphertext };
+}
+```
+
+## Key Rules
+
+- Use only industry-validated, actively-maintained libraries.
+- Prefer high-level APIs over raw primitives.
+- Leverage hardware acceleration and OS crypto modules where available.
+- Never hand-roll an algorithm or mode.
+- Track library versions and apply security updates promptly.
+
+## Checklist for Code Review
+
+- Are all crypto operations routed through validated libraries?
+- Is any custom or in-house crypto present?
+- Are libraries actively maintained and patched?
+- Are high-level APIs used rather than raw primitives?
+- Is hardware/OS crypto acceleration used where appropriate?

@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that only approved hash functions are used for general cryptographic use cases, including digital signatures, HMAC, KDF, and random bit generation. Disallowed hash functions, such as MD5, must not be used for any cryptographic purpose.
+Only approved hash functions may be used for cryptographic purposes — digital signatures, HMAC, KDFs, and random bit generation. Disallowed hashes such as MD5 must not be used for any cryptographic purpose.
+
+## Why This Matters
+
+Hash functions age: MD5 and SHA-1 are collision-broken, which breaks everything built on them (certificates, signatures, MACs). Restricting cryptographic uses to approved, still-strong hashes (the SHA-2/SHA-3 families) ensures the integrity and authenticity guarantees they provide actually hold against modern attacks.
+
+## Main Security Requirement
+
+> Verify that only approved hash functions are used for general cryptographic use cases, including digital signatures, HMAC, KDF, and random bit generation. Disallowed hash functions, such as MD5, must not be used for any cryptographic purpose.
+
+In practice this means an allowlist enforced across all crypto APIs.
+
+## Common Failure Patterns
+
+- **MD5/SHA-1 in signatures** — broken collision resistance.
+- **Legacy hash in HMAC/KDF** — weak building block upstream.
+- **Hash used for passwords** — fast hash instead of a KDF.
+- **Hash chosen by caller** — no central allowlist.
+
+## Secure Implementation
+
+Enforce an approved-hash allowlist at a single choke point:
+
+```javascript
+const APPROVED_HASHES = new Set(["SHA-256", "SHA-384", "SHA-512", "SHA3-256"]);
+
+function digest(algorithm, data) {
+  if (!APPROVED_HASHES.has(algorithm)) {
+    throw new PolicyViolationError(`${algorithm} is not approved`);
+  }
+  return crypto.digest(algorithm, data);
+}
+```
+
+## Key Rules
+
+- Use only approved hashes (SHA-2/SHA-3 families).
+- Ban MD5 and SHA-1 for all cryptographic purposes.
+- Apply the allowlist to signatures, HMAC, KDF, and RBG.
+- Centralize hash selection behind one validated function.
+- Never use a plain hash for passwords (use a KDF).
+
+## Checklist for Code Review
+
+- Are only approved hash functions used?
+- Is MD5 (or SHA-1) present anywhere?
+- Is the allowlist enforced for HMAC, KDF, and signatures?
+- Is hash selection centralized and validated?
+- Are fast hashes ever used directly on passwords?

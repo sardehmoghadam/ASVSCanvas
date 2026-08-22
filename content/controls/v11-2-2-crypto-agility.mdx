@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application is designed with crypto agility such that random number, authenticated encryption, MAC, or hashing algorithms, key lengths, rounds, ciphers and modes can be reconfigured, upgraded, or swapped at any time, to protect against cryptographic breaks. Similarly, it must also be possible to replace keys and passwords and re-encrypt data. This will allow for seamless upgrades to post-quantum cryptography (PQC), once high-assurance implementations of approved PQC schemes or standards are widely available.
+The application must be designed for crypto agility: algorithms, key lengths, rounds, ciphers, and modes must be reconfigurable and swappable at any time, and keys, passwords, and encrypted data must be replaceable/re-encryptable — enabling smooth migration to post-quantum cryptography once approved PQC schemes mature.
+
+## Why This Matters
+
+Every algorithm eventually weakens, and hardcoding a cipher or key size turns a routine upgrade into a rewrite. Agility means the system can react to a cryptographic break quickly and migrate to PQC without downtime. It also enables re-encrypting data when a key is compromised or an algorithm is deprecated.
+
+## Main Security Requirement
+
+> Verify that the application is designed with crypto agility such that random number, authenticated encryption, MAC, or hashing algorithms, key lengths, rounds, ciphers and modes can be reconfigured, upgraded, or swapped at any time, to protect against cryptographic breaks. Similarly, it must also be possible to replace keys and passwords and re-encrypt data. This will allow for seamless upgrades to post-quantum cryptography (PQC), once high-assurance implementations of approved PQC schemes or standards are widely available.
+
+In practice this means configuration-driven algorithms plus re-encryption capability.
+
+## Common Failure Patterns
+
+- **Hardcoded algorithms** — cipher/mode compiled in, not configurable.
+- **Fixed key sizes** — no path to larger keys.
+- **No re-encryption path** — data stuck under old keys/algorithms.
+- **No PQC plan** — current primitives locked in with no upgrade route.
+
+## Secure Implementation
+
+Resolve algorithms from configuration and support re-encryption:
+
+```javascript
+const config = {
+  cipher: "AES-256-GCM",
+  kdf: "Argon2id",
+  mac: "HMAC-SHA-256",
+};
+
+function encrypt(data, key) {
+  return suite(config.cipher).encrypt(data, key);
+}
+
+async function reEncrypt(records, newSuite) {
+  for (const r of records) {
+    const plaintext = decryptWithOld(r);
+    r.ciphertext = newSuite.encrypt(plaintext, r.newKey);
+  }
+}
+```
+
+## Key Rules
+
+- Make algorithms, modes, and key sizes configuration-driven.
+- Allow swapping primitives without code changes.
+- Provide a path to replace keys and re-encrypt data.
+- Keep a route to adopt PQC once standards are validated.
+- Test migration of an active dataset before relying on it.
+
+## Checklist for Code Review
+
+- Are crypto algorithms and parameters configurable?
+- Can a primitive be swapped without redeploying logic?
+- Is key/password replacement supported?
+- Can stored data be re-encrypted under new keys?
+- Is a PQC migration path in place?

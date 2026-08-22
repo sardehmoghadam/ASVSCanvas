@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that hash functions used in digital signatures, as part of data authentication or data integrity are collision resistant and have appropriate bit-lengths. If collision resistance is required, the output length must be at least 256 bits. If only resistance to second pre-image attacks is required, the output length must be at least 128 bits.
+Hash functions used in digital signatures, data authentication, and data integrity must be collision-resistant with appropriate output lengths: at least 256 bits when collision resistance is required, and at least 128 bits when only second pre-image resistance is required.
+
+## Why This Matters
+
+A signature or integrity tag built on a collision-broken or truncated hash can be forged. Matching the output length to the required security property — collision resistance vs. merely second pre-image resistance — ensures the hash provides the exact guarantee the surrounding construction depends on, and nothing weaker.
+
+## Main Security Requirement
+
+> Verify that hash functions used in digital signatures, as part of data authentication or data integrity are collision resistant and have appropriate bit-lengths. If collision resistance is required, the output length must be at least 256 bits. If only resistance to second pre-image attacks is required, the output length must be at least 128 bits.
+
+In practice this means length rules tied to the security property in use.
+
+## Common Failure Patterns
+
+- **Truncated signature hashes** — under 256 bits where collisions matter.
+- **SHA-1 in signatures** — collision resistance already broken.
+- **Property mismatch** — 128-bit output used where collisions matter.
+- **Home-grown constructions** — ad-hoc hashing with no length analysis.
+
+## Secure Implementation
+
+Select the hash length based on the required property:
+
+```javascript
+const HASH_MIN_LENGTH = {
+  "collision-resistant": 256,      // digital signatures, commitments
+  "second-preimage-only": 128,     // simple integrity checks
+};
+
+function chooseHash(property) {
+  const min = HASH_MIN_LENGTH[property];
+  return min >= 256 ? "SHA-256" : "SHA-256"; // truncate to 128b only if allowed
+}
+```
+
+## Key Rules
+
+- Use collision-resistant hashes for signatures and authentication.
+- Require at least 256-bit output where collisions matter.
+- Allow 128-bit only for second-preimage-only contexts.
+- Never truncate signature/integrity hashes below their floor.
+- Avoid SHA-1 and MD5 entirely.
+
+## Checklist for Code Review
+
+- Are signature/data-integrity hashes collision-resistant?
+- Is output length ≥ 256 bits where collisions matter?
+- Is 128-bit length used only for second-preimage contexts?
+- Are hashes ever truncated below their required length?
+- Are SHA-1/MD5 excluded from these uses?

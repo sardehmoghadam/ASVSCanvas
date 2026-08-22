@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that data minimization ensures the minimal amount of data is exposed during processing, and ensure that data is encrypted immediately after use or as soon as feasible.
+Data minimization must ensure only the minimal amount of data is exposed during processing, and data must be encrypted again immediately after use — or as soon as feasible — so plaintext's lifetime in memory is as short as possible.
+
+## Why This Matters
+
+Every extra copy of plaintext in memory is another place an attacker or a bug can reach it. Processing only what's strictly needed and re-encrypting right away shrinks the window during which sensitive data sits exposed. It pairs with full memory encryption to minimize both the breadth and the duration of in-use exposure.
+
+## Main Security Requirement
+
+> Verify that data minimization ensures the minimal amount of data is exposed during processing, and ensure that data is encrypted immediately after use or as soon as feasible.
+
+In practice this means narrow data handling plus prompt re-encryption.
+
+## Common Failure Patterns
+
+- **Whole-record processing** — full data loaded when a field would do.
+- **Plaintext lingering** — decrypted data kept in memory after use.
+- **Unnecessary copies** — duplicate buffers/temp files of plaintext.
+- **No wipe** — decrypted buffers not zeroed after processing.
+
+## Secure Implementation
+
+Process only what's needed and re-encrypt/wipe immediately:
+
+```javascript
+function processEncrypted(encryptedBlob, key) {
+  const plaintext = decrypt(encryptedBlob, key);
+  try {
+    const minimal = { field: plaintext.field }; // only the needed field
+    return compute(minimal);
+  } finally {
+    plaintext.fill(0);                          // wipe plaintext from memory
+  }
+}
+```
+
+## Key Rules
+
+- Expose only the minimum data a computation requires.
+- Avoid loading full records when a subset suffices.
+- Re-encrypt or wipe plaintext immediately after use.
+- Minimize plaintext copies and temporary buffers.
+- Zero sensitive buffers explicitly when done.
+
+## Checklist for Code Review
+
+- Is only minimal data exposed during processing?
+- Are full records decrypted where a field would suffice?
+- Is plaintext wiped or re-encrypted immediately after use?
+- Are duplicate plaintext copies avoided?
+- Are sensitive buffers zeroed on completion?

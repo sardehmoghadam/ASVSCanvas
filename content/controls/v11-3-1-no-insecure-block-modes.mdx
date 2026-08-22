@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that insecure block modes (e.g., ECB) and weak padding schemes (e.g., PKCS#1 v1.5) are not used.
+Insecure block cipher modes (such as ECB) and weak padding schemes (such as PKCS#1 v1.5) must not be used anywhere in the application.
+
+## Why This Matters
+
+ECB encrypts identical plaintext blocks to identical ciphertext blocks, leaking data structure at a glance, and PKCS#1 v1.5 padding has been broken repeatedly (Bleichenbacher). These are textbook failure modes: the algorithm is "working," but the mode or padding quietly undoes confidentiality and integrity. Banning them eliminates whole classes of ciphertext-structure and padding-oracle attacks.
+
+## Main Security Requirement
+
+> Verify that insecure block modes (e.g., ECB) and weak padding schemes (e.g., PKCS#1 v1.5) are not used.
+
+In practice this means rejecting ECB and legacy padding at configuration and review time.
+
+## Common Failure Patterns
+
+- **ECB for block ciphers** — identical blocks leak patterns.
+- **PKCS#1 v1.5** — padding oracle exploitable under RSA.
+- **CBC without care** — retained where an AEAD mode would fit.
+- **Default library modes** — insecure defaults used unknowingly.
+
+## Secure Implementation
+
+Use AEAD modes and reject known-bad configurations:
+
+```javascript
+const APPROVED = new Set(["AES-256-GCM", "AES-256-GCM-SIV", "ChaCha20-Poly1305"]);
+
+function selectMode(algo, mode) {
+  if (mode === "ECB" || mode === "CBC") {
+    throw new PolicyViolationError(`${mode} is not permitted`);
+  }
+  return `${algo}-${mode}`; // e.g., AES-256-GCM
+}
+```
+
+## Key Rules
+
+- Never use ECB for block ciphers.
+- Avoid PKCS#1 v1.5 padding for RSA.
+- Prefer authenticated encryption (GCM, Poly1305, etc.).
+- Reject insecure modes at configuration and in review.
+- Check library defaults instead of assuming them.
+
+## Checklist for Code Review
+
+- Is ECB used anywhere for block ciphers?
+- Is PKCS#1 v1.5 padding present?
+- Are AEAD modes preferred over CBC?
+- Are library defaults verified as secure?
+- Is insecure-mode use blocked by policy or code?

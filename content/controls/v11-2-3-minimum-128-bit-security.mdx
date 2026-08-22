@@ -26,6 +26,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all cryptographic primitives utilize a minimum of 128-bits of security based on the algorithm, key size, and configuration. For example, a 256-bit ECC key provides roughly 128 bits of security where RSA requires a 3072-bit key to achieve 128 bits of security.
+Every cryptographic primitive must provide at least 128 bits of security, taking into account the algorithm, key size, and configuration. Concretely: a 256-bit ECC key gives roughly 128 bits of security, whereas RSA needs 3072 bits to reach the same level.
+
+## Why This Matters
+
+"Bits of security" measures the actual work an attacker must do, not the raw key length. Choosing a key that is large enough for the algorithm is what keeps brute-force and index-calculus attacks out of reach. Under-sized parameters can make otherwise-correct crypto practically breakable, so a single floor of 128 bits ensures every primitive is meaningfully strong.
+
+## Main Security Requirement
+
+> Verify that all cryptographic primitives utilize a minimum of 128-bits of security based on the algorithm, key size, and configuration. For example, a 256-bit ECC key provides roughly 128 bits of security where RSA requires a 3072-bit key to achieve 128 bits of security.
+
+In practice this means enforcing per-algorithm minimum key sizes.
+
+## Common Failure Patterns
+
+- **1024/2048-bit RSA** — below the 3072-bit floor.
+- **192-bit ECC** — under the 256-bit recommendation.
+- **Short symmetric keys** — AES-128 used where AES-256 is required.
+- **Misread key length as security** — conflating bits of key with bits of security.
+
+## Secure Implementation
+
+Enforce algorithm-specific minimum key sizes:
+
+```javascript
+const minimumSecurity = {
+  RSA:   { bits: 3072 },
+  EC:    { bits: 256 },
+  AES:   { bits: 128 }, // 128-bit key already yields ~128-bit security
+};
+
+function assertKeyStrength(algorithm, keySize) {
+  if (keySize < minimumSecurity[algorithm].bits) {
+    throw new PolicyViolationError(`${algorithm} key too short`);
+  }
+}
+```
+
+## Key Rules
+
+- Require at least 128 bits of security for every primitive.
+- Map security level to algorithm-specific key sizes.
+- Use 3072-bit RSA or 256-bit ECC as the floor.
+- Validate key sizes at generation and import time.
+- Reject primitives that fall below the minimum.
+
+## Checklist for Code Review
+
+- Is a 128-bit security floor enforced?
+- Are algorithm-specific key sizes validated?
+- Is RSA at least 3072 bits / ECC at least 256 bits?
+- Are key sizes checked at generation and import?
+- Is raw key length confused with security level anywhere?

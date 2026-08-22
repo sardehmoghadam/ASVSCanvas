@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the random number generation mechanism in use is designed to work securely, even under heavy demand.
+The random number generation mechanism must keep working securely even under heavy demand — high concurrency, rapid key/nonce generation, or resource exhaustion must not degrade its quality or cause it to fail closed into predictability.
+
+## Why This Matters
+
+Under load, some systems deplete their entropy pool or fall back to weaker sources, silently producing predictable output just when the most secrets are being minted. A generator designed for heavy demand keeps producing CSPRNG-quality output without blocking, starving, or degrading, so bursts of traffic don't turn into bursts of guessable keys.
+
+## Main Security Requirement
+
+> Verify that the random number generation mechanism in use is designed to work securely, even under heavy demand.
+
+In practice this means a CSPRNG that stays secure at high throughput.
+
+## Common Failure Patterns
+
+- **Entropy exhaustion** — blocking or erroring when the pool drains.
+- **Fallback to weak PRNG** — degrading under load or after failure.
+- **Blocking on entropy** — generation stalls under concurrency.
+- **Shared state races** — concurrent draws corrupting the stream.
+
+## Secure Implementation
+
+Rely on the OS CSPRNG, which is designed for high demand:
+
+```javascript
+import { randomBytes } from "node:crypto";
+
+// getrandom/getentropy-backed; non-blocking after initial seed,
+// maintains security regardless of concurrency or load.
+export function secureRandom(length) {
+  return randomBytes(length);
+}
+```
+
+## Key Rules
+
+- Use an OS/kernel CSPRNG designed for high throughput.
+- Avoid generators that block or fail when entropy runs low.
+- Never fall back to a weaker PRNG under load.
+- Ensure concurrent access doesn't corrupt the generator.
+- Load-test random generation to confirm it stays secure.
+
+## Checklist for Code Review
+
+- Does the CSPRNG stay secure under heavy demand?
+- Can it block or fail when entropy is low?
+- Is there any fallback to a weaker generator?
+- Is the generator safe under concurrent access?
+- Has random generation been exercised under load?

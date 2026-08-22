@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a cryptographic inventory is maintained. This must include a documented plan that outlines the migration path to new cryptographic standards, such as post-quantum cryptography, in order to react to future threats.
+Beyond a plain inventory, the organization must maintain a documented migration plan describing how it will move to new cryptographic standards — notably post-quantum cryptography (PQC) — so it can react when current algorithms are threatened.
+
+## Why This Matters
+
+Quantum computers will eventually break RSA and ECC, and migrating a fleet of systems takes years. A documented migration path, grounded in a current inventory, lets the organization act on a schedule instead of scrambling during a crisis. It's the difference between planned replacement and forced, error-prone emergency rework.
+
+## Main Security Requirement
+
+> Verify that a cryptographic inventory is maintained. This must include a documented plan that outlines the migration path to new cryptographic standards, such as post-quantum cryptography, in order to react to future threats.
+
+In practice this means an inventory plus an executable PQC migration roadmap.
+
+## Common Failure Patterns
+
+- **No migration plan** — inventory exists but no forward path.
+- **Plan not tied to inventory** — migration goals disconnected from actual assets.
+- **PQC deferred indefinitely** — treated as optional future work.
+- **No agility prerequisite** — hardcoded algorithms block replacement.
+
+## Secure Implementation
+
+Keep a migration plan keyed to inventory entries:
+
+```javascript
+const migrationPlan = inventory.map((asset) => ({
+  asset: asset.keyId,
+  current: asset.algorithm,
+  target: "ML-KEM-1024 / ML-DSA-87",
+  trigger: "PQC standards finalized and validated",
+  phase: asset.algorithm.startsWith("RSA") ? "prioritized" : "scheduled",
+}));
+
+function nextMigrationWave(plan) {
+  return plan.filter((p) => p.phase === "prioritized");
+}
+```
+
+## Key Rules
+
+- Maintain a crypto inventory as the basis for migration.
+- Document an explicit path to post-quantum standards.
+- Prioritize migration of long-lived secrets and keys.
+- Ensure crypto agility so algorithms can actually be swapped.
+- Review and update the plan as standards mature.
+
+## Checklist for Code Review
+
+- Is a crypto inventory maintained?
+- Does a documented PQC migration plan exist?
+- Is the plan tied to specific inventory assets?
+- Are high-risk algorithms prioritized for migration?
+- Is the plan reviewed and updated over time?

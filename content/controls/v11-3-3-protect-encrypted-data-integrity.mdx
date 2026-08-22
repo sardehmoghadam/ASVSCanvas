@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that encrypted data is protected against unauthorized modification preferably by using an approved authenticated encryption method or by combining an approved encryption method with an approved MAC algorithm.
+Encrypted data must be protected against tampering, preferably by using an approved authenticated encryption mode (like AES-GCM), or by combining approved encryption with an approved MAC algorithm.
+
+## Why This Matters
+
+Plain encryption hides content but doesn't prove it wasn't modified — an attacker can flip ciphertext bits and produce valid, corrupted plaintext. Authenticated encryption or a paired MAC binds integrity to confidentiality, so any unauthorized modification is detected and rejected before the data is trusted.
+
+## Main Security Requirement
+
+> Verify that encrypted data is protected against unauthorized modification preferably by using an approved authenticated encryption method or by combining an approved encryption method with an approved MAC algorithm.
+
+In practice this means AEAD or Encrypt-then-MAC on every ciphertext.
+
+## Common Failure Patterns
+
+- **Encrypt-only** — no integrity check on ciphertext.
+- **MAC before encrypt** — integrity over plaintext, not ciphertext.
+- **Unkeyed hash as MAC** — length-extension/forgery vulnerable.
+- **MAC verified but ignored** — check computed yet not enforced.
+
+## Secure Implementation
+
+Use an authenticated encryption mode that binds integrity to ciphertext:
+
+```javascript
+import { secretbox } from "libsodium-wrappers";
+
+function seal(message, key, nonce) {
+  return secretbox.easy(message, nonce, key); // AEAD: confidentiality + integrity
+}
+
+function open(sealed, key, nonce) {
+  return secretbox.openEasy(sealed, nonce, key); // throws on tampering
+}
+```
+
+## Key Rules
+
+- Prefer approved authenticated encryption (GCM, ChaCha20-Poly1305).
+- Otherwise combine approved encryption with an approved MAC.
+- MAC the ciphertext, not the plaintext.
+- Verify integrity before using any decrypted output.
+- Reject data whose authentication tag fails.
+
+## Checklist for Code Review
+
+- Is authenticated encryption used?
+- Or is encryption paired with an approved MAC?
+- Is the MAC computed over the ciphertext?
+- Is integrity verified before plaintext is consumed?
+- Are tampered ciphertexts rejected?

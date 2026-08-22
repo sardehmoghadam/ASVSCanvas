@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all cryptographic modules fail securely, and errors are handled in a way that does not enable vulnerabilities, such as Padding Oracle attacks.
+Cryptographic modules must fail securely: when an operation errors, the error must be handled so it reveals nothing exploitable — no distinguishable padding failures, no partial plaintext, no oracle that lets an attacker probe the system.
+
+## Why This Matters
+
+Many historic attacks (Padding Oracle, Bleichenbacher) worked because error handling leaked a yes/no signal about the padding or key. By failing securely — returning a single generic error and discarding partial results — the server stops giving attackers the feedback they need to decrypt or forge data.
+
+## Main Security Requirement
+
+> Verify that all cryptographic modules fail securely, and errors are handled in a way that does not enable vulnerabilities, such as Padding Oracle attacks.
+
+In practice this means uniform error responses and no leaky decryption paths.
+
+## Common Failure Patterns
+
+- **Distinct padding errors** — "invalid padding" vs "invalid MAC" distinguishable.
+- **Timing differences** — fast-fail on bad padding, slow on good.
+- **Partial plaintext returned** — decrypted data emitted before verification.
+- **Unhandled exceptions** — stack traces leaking crypto internals.
+
+## Secure Implementation
+
+Return a single generic error regardless of failure cause:
+
+```javascript
+function decrypt(ciphertext, key) {
+  try {
+    const nonce = ciphertext.slice(0, NONCE_LEN);
+    return secretbox.open(ciphertext.slice(NONCE_LEN), nonce, key);
+  } catch {
+    // Same generic failure for padding, MAC, and format errors
+    throw new GenericCryptoError("decryption failed");
+  }
+}
+```
+
+## Key Rules
+
+- Return one generic error for all crypto failures.
+- Authenticate before decrypting and discard unverified output.
+- Avoid distinct error types for padding vs integrity failures.
+- Keep error timing uniform across failure causes.
+- Log internally without exposing details to callers.
+
+## Checklist for Code Review
+
+- Do crypto failures return a single generic error?
+- Is data authenticated before any plaintext is released?
+- Are padding vs MAC errors distinguishable to callers?
+- Is failure timing independent of the failure cause?
+- Are stack traces or internal details exposed?

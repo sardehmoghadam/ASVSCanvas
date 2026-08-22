@@ -24,6 +24,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that cryptographic discovery mechanisms are employed to identify all instances of cryptography in the system, including encryption, hashing, and signing operations.
+The organization must run automated cryptographic discovery to locate every place cryptography is used in the system — encryption, hashing, signing, key agreement — so nothing operates in the shadows of the codebase or its dependencies.
+
+## Why This Matters
+
+Manual inventories miss cryptography buried in dependencies, copied snippets, or configuration. Discovery tooling surfaces hidden usage so it can be inventoried, assessed against policy, and migrated. It turns the inventory from a best-effort document into a complete, evidence-backed picture.
+
+## Main Security Requirement
+
+> Verify that cryptographic discovery mechanisms are employed to identify all instances of cryptography in the system, including encryption, hashing, and signing operations.
+
+In practice this means automated scanning that finds crypto calls across code and dependencies.
+
+## Common Failure Patterns
+
+- **Manual-only review** — crypto usage found by eye, not tooling.
+- **Dependencies ignored** — transitive libraries not scanned for crypto.
+- **Hardcoded secrets missed** — key material not flagged by discovery.
+- **No scheduled scans** — discovery run once, never repeated.
+
+## Secure Implementation
+
+Automate discovery across source and dependencies:
+
+```javascript
+const findings = await cryptoScanner.scan(repo, {
+  rules: [
+    { pattern: /AES|RSA|ECDSA|SHA-2|Argon2/, label: "encryption" },
+    { pattern: /\.digest\(|hash\(|HMAC/,   label: "hashing" },
+    { pattern: /\.sign\(|\.verify\(/,       label: "signing" },
+  ],
+  includeDependencies: true,
+});
+
+for (const f of findings) {
+  inventory.report({ location: f.file, operation: f.label });
+}
+```
+
+## Key Rules
+
+- Use automated discovery, not manual inspection alone.
+- Detect encryption, hashing, signing, and key agreement usage.
+- Scan transitive dependencies, not just first-party code.
+- Flag hardcoded key material and weak algorithm calls.
+- Run discovery on a schedule and feed results into the inventory.
+
+## Checklist for Code Review
+
+- Is cryptographic discovery automated?
+- Does it cover encryption, hashing, and signing?
+- Are dependencies included in the scan?
+- Are results merged into the crypto inventory?
+- Does discovery run regularly?

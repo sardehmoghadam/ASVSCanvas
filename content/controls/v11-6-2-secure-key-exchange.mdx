@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that approved cryptographic algorithms are used for key exchange (such as Diffie-Hellman) with a focus on ensuring that key exchange mechanisms use secure parameters. This will prevent attacks on the key establishment process which could lead to adversary-in-the-middle attacks or cryptographic breaks.
+Key exchange must use approved cryptographic algorithms (such as Diffie-Hellman) with secure parameters, preventing attacks on the key establishment process that could lead to adversary-in-the-middle attacks or cryptographic breaks.
+
+## Why This Matters
+
+Key exchange establishes the shared secret everything else rests on. Weak parameters — small Diffie-Hellman groups, unsafe primes, or missing authentication — let attackers compute the shared secret or sit in the middle undetected. Approved algorithms with secure parameters ensure the established key is actually secret and bound to the right peers.
+
+## Main Security Requirement
+
+> Verify that approved cryptographic algorithms are used for key exchange (such as Diffie-Hellman) with a focus on ensuring that key exchange mechanisms use secure parameters. This will prevent attacks on the key establishment process which could lead to adversary-in-the-middle attacks or cryptographic breaks.
+
+In practice this means approved groups plus authentication of the exchange.
+
+## Common Failure Patterns
+
+- **Small DH groups** — 1024-bit or logjam-vulnerable parameters.
+- **Reused/static groups** — shared primes enabling precomputation.
+- **Unauthenticated exchange** — no identity binding (AitM).
+- **Legacy KEX algorithms** — obsolete or broken exchange schemes.
+
+## Secure Implementation
+
+Use approved, authenticated key exchange parameters:
+
+```javascript
+const SECURE_GROUPS = new Set([
+  "ffdhe2048",
+  "ffdhe3072",
+  "x25519",
+]);
+
+function pickKexGroup(offered) {
+  const group = offered.find((g) => SECURE_GROUPS.has(g));
+  if (!group) throw new PolicyViolationError("no secure KEX group offered");
+  return group;
+}
+```
+
+## Key Rules
+
+- Use approved key exchange algorithms.
+- Enforce secure group sizes (e.g., ffdhe2048+ or X25519).
+- Reject small or unsafe DH parameters.
+- Authenticate the exchange to prevent adversary-in-the-middle.
+- Prefer elliptic-curve key exchange where available.
+
+## Checklist for Code Review
+
+- Are key exchange algorithms approved?
+- Are DH groups large and safe (ffdhe2048+)?
+- Is the exchange authenticated to each peer?
+- Are legacy/weak KEX algorithms present?
+- Are static or reused groups avoided?

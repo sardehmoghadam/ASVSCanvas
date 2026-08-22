@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application uses approved key derivation functions with key stretching parameters when deriving secret keys from passwords. The parameters in use must balance security and performance to prevent brute-force attacks from compromising the resulting cryptographic key.
+When deriving secret keys from passwords, the application must use an approved key derivation function with key-stretching parameters (work factor, memory, iterations) tuned to balance security and performance, so brute-force attacks can't recover the resulting key.
+
+## Why This Matters
+
+Passwords are low-entropy, so a key derived from one is only as strong as the stretching applied. A fast derivation lets attackers guess passwords at scale and then compute the key directly. Key stretching makes each guess expensive, so even weak passwords resist offline brute force once they've been stretched into keys.
+
+## Main Security Requirement
+
+> Verify that the application uses approved key derivation functions with key stretching parameters when deriving secret keys from passwords. The parameters in use must balance security and performance to prevent brute-force attacks from compromising the resulting cryptographic key.
+
+In practice this means an approved KDF with explicit stretching parameters.
+
+## Common Failure Patterns
+
+- **Raw hash as KDF** — SHA-256(password) used as a key.
+- **No stretching** — single iteration, no memory hardness.
+- **Weak parameters** — cost factors too low to matter.
+- **Deterministic per password** — no salt, enabling precomputation.
+
+## Secure Implementation
+
+Derive keys with an approved, stretched KDF:
+
+```javascript
+import { scrypt } from "node:crypto";
+
+function deriveKey(password, salt, keyLength = 32) {
+  return scrypt(password, salt, keyLength, {
+    N: 1 << 17,  // CPU/memory cost
+    r: 8,
+    p: 1,
+  });
+}
+```
+
+## Key Rules
+
+- Use an approved KDF for password-derived keys.
+- Apply key stretching via work factor, memory, and iterations.
+- Salt each derivation uniquely to block precomputation.
+- Tune parameters against current hardware guidance.
+- Never use a plain hash as a key-derivation step.
+
+## Checklist for Code Review
+
+- Is an approved KDF used for password-based keys?
+- Are stretching parameters explicitly configured?
+- Is each derivation salted uniquely?
+- Are cost factors strong enough for current hardware?
+- Is any raw-hash-to-key path present?

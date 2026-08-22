@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that full memory encryption is in use that protects sensitive data while it is in use, preventing access by unauthorized users or processes.
+Full memory encryption must be in use to protect sensitive data while it is being processed, preventing access by unauthorized users or processes — including other tenants, the hypervisor, or anyone with physical memory access.
+
+## Why This Matters
+
+Data at rest and in transit get all the attention, but data in use sits unencrypted in RAM, exposed to cold-boot attacks, DMA probes, and cross-tenant snooping in shared infrastructure. Full memory encryption (TEEs, secure enclaves, or memory encryption technologies) keeps plaintext out of reach even while a computation is running, closing the "in-use" gap.
+
+## Main Security Requirement
+
+> Verify that full memory encryption is in use that protects sensitive data while it is in use, preventing access by unauthorized users or processes.
+
+In practice this means confidential computing or memory encryption for sensitive workloads.
+
+## Common Failure Patterns
+
+- **Unprotected RAM** — sensitive data processed as plaintext in memory.
+- **No TEE/enclave** — no isolation from host or other tenants.
+- **Memory encryption disabled** — hardware feature present but off.
+- **Secrets paged out** — plaintext swapped to unprotected disk.
+
+## Secure Implementation
+
+Run sensitive workloads inside a confidential-computing boundary:
+
+```javascript
+// Provision a secure enclave for in-use protection
+const enclave = await confidential.provisionEnclave({
+  measurement: expectedMeasurement,   // attestation before trust
+  memoryEncryption: true,
+});
+
+const result = await enclave.run(() => {
+  return processSensitivePayload(payload); // plaintext stays inside the enclave
+});
+```
+
+## Key Rules
+
+- Enable full memory encryption for sensitive in-use data.
+- Use TEEs/enclaves where cross-tenant or host isolation is required.
+- Attest the environment before loading secrets into it.
+- Prevent sensitive plaintext from paging/swapping to disk.
+- Apply this to the most sensitive workloads first.
+
+## Checklist for Code Review
+
+- Is sensitive data protected while in use?
+- Is full memory encryption enabled where available?
+- Are TEEs/enclaves used for high-sensitivity workloads?
+- Is the environment attested before secrets are loaded?
+- Is plaintext ever paged to unencrypted storage?

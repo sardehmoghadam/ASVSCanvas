@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all cryptographic operations are constant-time, with no short-circuit operations in comparisons, calculations, or returns, to avoid leaking information.
+All cryptographic operations — comparisons, calculations, and returns — must run in constant time, with no short-circuiting that changes execution duration based on secret values. Secret-dependent timing must not be observable.
+
+## Why This Matters
+
+If the time a comparison or computation takes depends on a secret, an attacker who can measure those timings can recover the secret byte-by-byte (timing side-channel attacks). Constant-time code removes the correlation between secrets and execution time, closing one of the most practical and easily-exploited side channels.
+
+## Main Security Requirement
+
+> Verify that all cryptographic operations are constant-time, with no short-circuit operations in comparisons, calculations, or returns, to avoid leaking information.
+
+In practice this means constant-time comparison and no secret-dependent branches.
+
+## Common Failure Patterns
+
+- **`===` on secrets** — early-exit string comparison of MACs/keys.
+- **Secret-dependent branches** — control flow varies with key material.
+- **Early returns** — function returns as soon as a byte differs.
+- **Non-crypto compares** — authorization tokens compared with normal equality.
+
+## Secure Implementation
+
+Compare secrets with a constant-time primitive:
+
+```javascript
+import { timingSafeEqual } from "node:crypto";
+
+function verifyMac(received, expected) {
+  const a = Buffer.from(received);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;   // length is public, OK to branch
+  return timingSafeEqual(a, b);              // no secret-dependent timing
+}
+```
+
+## Key Rules
+
+- Use constant-time comparison for all secret values.
+- Avoid secret-dependent branches and early returns.
+- Compare MACs, hashes, and tokens with timing-safe primitives.
+- Keep only non-secret conditions (like length) as early exits.
+- Treat timing as an information channel when handling secrets.
+
+## Checklist for Code Review
+
+- Are secrets compared with a constant-time primitive?
+- Do any secret-dependent branches or early returns exist?
+- Is normal `===`/`==` used on MACs, hashes, or tokens?
+- Are crypto operations free of timing variance?
+- Is length handled as public before secret comparison?

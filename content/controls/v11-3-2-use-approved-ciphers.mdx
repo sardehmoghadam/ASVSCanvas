@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that only approved ciphers and modes such as AES with GCM are used.
+Only approved ciphers and modes of operation — such as AES with GCM — may be used for encryption. Unapproved, obsolete, or broken ciphers must not appear in the system.
+
+## Why This Matters
+
+Cipher strength is not static: DES, RC4, and 3DES were once standard and are now trivially breakable. An allowlist of approved ciphers and modes ensures every encryption call meets current strength requirements and provides authenticated encryption where needed, preventing both confidentiality failures and tampering.
+
+## Main Security Requirement
+
+> Verify that only approved ciphers and modes such as AES with GCM are used.
+
+In practice this means an explicit allowlist enforced on every encryption path.
+
+## Common Failure Patterns
+
+- **Legacy ciphers** — DES, RC4, 3DES still in use.
+- **Unencrypted fallback** — "none" cipher allowed in negotiation.
+- **CBC without MAC** — confidentiality without integrity.
+- **No allowlist** — any cipher accepted by the library.
+
+## Secure Implementation
+
+Enforce an allowlist of approved cipher suites:
+
+```javascript
+const APPROVED_CIPHERS = new Set([
+  "TLS_AES_256_GCM_SHA384",
+  "TLS_CHACHA20_POLY1305_SHA256",
+  "TLS_AES_128_GCM_SHA256",
+]);
+
+function negotiateCipher(offered) {
+  const chosen = offered.find((c) => APPROVED_CIPHERS.has(c));
+  if (!chosen) throw new PolicyViolationError("no approved cipher offered");
+  return chosen;
+}
+```
+
+## Key Rules
+
+- Maintain an explicit allowlist of approved ciphers/modes.
+- Prefer AES-GCM or ChaCha20-Poly1305.
+- Disallow legacy ciphers like DES, RC4, and 3DES.
+- Never allow a "null"/unencrypted cipher.
+- Validate the negotiated cipher at runtime, not just in config.
+
+## Checklist for Code Review
+
+- Is an allowlist of approved ciphers enforced?
+- Are AES-GCM/ChaCha20-Poly1305 used?
+- Are DES, RC4, or 3DES present anywhere?
+- Is a "none"/null cipher permitted?
+- Is cipher negotiation validated at runtime?

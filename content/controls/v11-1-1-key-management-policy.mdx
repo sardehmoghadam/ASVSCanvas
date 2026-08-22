@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that there is a documented policy for management of cryptographic keys and a cryptographic key lifecycle that follows a key management standard such as NIST SP 800-57. This should include ensuring that keys are not overshared (for example, with more than two entities for shared secrets and more than one entity for private keys).
+There must be a written policy governing how cryptographic keys are created, distributed, rotated, backed up, and destroyed, following a recognized key management standard such as NIST SP 800-57. The policy must also prevent oversharing — shared secrets should be known to no more than two entities, and private keys to no more than one.
+
+## Why This Matters
+
+Keys are the trust anchor of every cryptographic operation, so weak lifecycle management undermines even the strongest algorithms. Without documented rules, keys drift into unauthorized hands, outlive their usefulness, or get reused in ways that violate their purpose. A written, standard-aligned policy makes key handling predictable, auditable, and resistant to misuse.
+
+## Main Security Requirement
+
+> Verify that there is a documented policy for management of cryptographic keys and a cryptographic key lifecycle that follows a key management standard such as NIST SP 800-57. This should include ensuring that keys are not overshared (for example, with more than two entities for shared secrets and more than one entity for private keys).
+
+In practice this means a published policy plus enforcement that limits each key's exposure.
+
+## Common Failure Patterns
+
+- **No policy** — key handling left to individual developer discretion.
+- **Overshared secrets** — a shared key distributed to many parties.
+- **Shared private keys** — a private key copied beyond its single owner.
+- **No rotation/retirement** — keys live forever with no lifecycle stages.
+
+## Secure Implementation
+
+Define and enforce a lifecycle with clear stages and ownership:
+
+```javascript
+const keyLifecycle = {
+  creation:   { owner: "key-custodian",  sharedWith: [] },
+  storage:    { medium: "HSM",           access: "least-privilege" },
+  rotation:   { periodDays: 90,          scheme: "scheduled" },
+  retirement: { at: "compromised-or-expired" },
+};
+
+// Reject any key that would exceed the sharing limit
+function assertSharingLimit(key, allowedParties) {
+  if (key.type === "private" && allowedParties.length > 1) {
+    throw new PolicyViolationError("private keys must have a single owner");
+  }
+  if (key.type === "secret" && allowedParties.length > 2) {
+    throw new PolicyViolationError("shared secrets limited to two entities");
+  }
+}
+```
+
+## Key Rules
+
+- Maintain a documented key management policy aligned to a standard.
+- Define explicit lifecycle stages: creation, storage, use, rotation, destruction.
+- Limit shared secrets to at most two entities, private keys to one.
+- Rotate keys on a defined schedule and retire them on compromise.
+- Track ownership and custodianship for every key.
+
+## Checklist for Code Review
+
+- Is a key management policy documented and referenced?
+- Does it follow a recognized standard such as NIST SP 800-57?
+- Are lifecycle stages defined for every key?
+- Is sharing limited to the required number of entities?
+- Are rotation and retirement schedules enforced?

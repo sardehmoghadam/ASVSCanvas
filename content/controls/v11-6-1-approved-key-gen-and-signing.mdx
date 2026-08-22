@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that only approved cryptographic algorithms and modes of operation are used for key generation and seeding, and digital signature generation and verification. Key generation algorithms must not generate insecure keys vulnerable to known attacks, for example, RSA keys which are vulnerable to Fermat factorization.
+Only approved cryptographic algorithms and modes may be used for key generation, seeding, and digital signature generation/verification. Key generation must never produce keys vulnerable to known attacks — for example, RSA keys weak to Fermat factorization.
+
+## Why This Matters
+
+A signature or key is only trustworthy if it was generated correctly. Weak key generation (closely-spaced RSA primes, predictable parameters) produces keys that look valid but factor or forge trivially. Approving the algorithms and validating the generated keys' properties closes the door on these structural weaknesses.
+
+## Main Security Requirement
+
+> Verify that only approved cryptographic algorithms and modes of operation are used for key generation and seeding, and digital signature generation and verification. Key generation algorithms must not generate insecure keys vulnerable to known attacks, for example, RSA keys which are vulnerable to Fermat factorization.
+
+In practice this means approved algorithms plus structural key validation.
+
+## Common Failure Patterns
+
+- **Weak RSA primes** — closely spaced primes (Fermat-vulnerable).
+- **Legacy signature algorithms** — RSA-PKCS#1 v1.5 signatures.
+- **Custom key generation** — hand-rolled prime/parameter selection.
+- **No post-generation validation** — keys accepted without checks.
+
+## Secure Implementation
+
+Use an approved algorithm and validate generated keys:
+
+```javascript
+import { generateKeyPairSync } from "node:crypto";
+
+const { privateKey } = generateKeyPairSync("rsa", {
+  modulusLength: 3072,
+  publicExponent: 0x10001,
+});
+
+function assertPrimesWellSeparated(p, q) {
+  if (Math.abs(p - q) < 2 ** (256 / 2)) {
+    throw new PolicyViolationError("RSA primes too close (Fermat risk)");
+  }
+}
+```
+
+## Key Rules
+
+- Use approved algorithms for key generation and seeding.
+- Use approved signature algorithms for sign/verify.
+- Generate RSA primes with sufficient separation.
+- Validate generated keys against known weaknesses.
+- Reject insecure keys at generation and import time.
+
+## Checklist for Code Review
+
+- Are key generation algorithms approved?
+- Are signature algorithms approved?
+- Is RSA key generation protected against Fermat factorization?
+- Are generated keys structurally validated?
+- Are insecure keys rejected at import?

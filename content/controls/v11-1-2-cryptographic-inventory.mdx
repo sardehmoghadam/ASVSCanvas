@@ -24,6 +24,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a cryptographic inventory is performed, maintained, regularly updated, and includes all cryptographic keys, algorithms, and certificates used by the application. It must also document where keys can and cannot be used in the system, and the types of data that can and cannot be protected using the keys.
+The application must keep an up-to-date inventory of every cryptographic asset it uses — keys, algorithms, and certificates — and record the boundaries around each: where keys may and may not be used, and which kinds of data they may and may not protect.
+
+## Why This Matters
+
+You can't secure or migrate what you can't see. An accurate inventory is the foundation for key rotation, algorithm deprecation, and post-quantum planning. Without it, obsolete keys and algorithms linger invisibly, and keys get used for purposes they were never approved for, silently weakening the whole system.
+
+## Main Security Requirement
+
+> Verify that a cryptographic inventory is performed, maintained, regularly updated, and includes all cryptographic keys, algorithms, and certificates used by the application. It must also document where keys can and cannot be used in the system, and the types of data that can and cannot be protected using the keys.
+
+In practice this means a maintained register that constrains each asset's purpose.
+
+## Common Failure Patterns
+
+- **Inventory missing** — crypto assets unrecorded and unmanaged.
+- **Stale inventory** — new keys/algorithms never added after initial audit.
+- **No usage boundaries** — keys used anywhere without restriction.
+- **Certificates omitted** — TLS/mTLS certs tracked outside the register.
+
+## Secure Implementation
+
+Maintain a structured, regularly-updated crypto inventory:
+
+```javascript
+const cryptoInventory = [
+  {
+    keyId: "k-7f3a",
+    type: "symmetric",
+    algorithm: "AES-256-GCM",
+    certificates: [],
+    canProtect: ["session-data", "field-level-PII"],
+    cannotProtect: ["long-term-archives"],
+    usage: ["encrypt-session"],
+  },
+  {
+    keyId: "cert-9c21",
+    type: "certificate",
+    algorithm: "RSA-3072",
+    certificates: ["tls.example.com"],
+    canProtect: ["transport"],
+    cannotProtect: ["storage"],
+    usage: ["tls-server-auth"],
+  },
+];
+```
+
+## Key Rules
+
+- Perform and maintain a complete cryptographic inventory.
+- Update the inventory on every key, algorithm, or certificate change.
+- Document where each key can and cannot be used.
+- Record which data types each key may and may not protect.
+- Reconcile the inventory regularly against live systems.
+
+## Checklist for Code Review
+
+- Is a cryptographic inventory present and complete?
+- Does it cover keys, algorithms, and certificates?
+- Is it updated as assets change?
+- Are key usage boundaries documented?
+- Are protected/unprotected data types recorded per key?

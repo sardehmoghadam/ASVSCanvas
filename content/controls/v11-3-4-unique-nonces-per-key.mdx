@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that nonces, initialization vectors, and other single-use numbers are not used for more than one encryption key and data-element pair. The method of generation must be appropriate for the algorithm being used.
+Nonces, initialization vectors, and other single-use numbers must never be reused for more than one (key, data-element) pair, and they must be generated using a method appropriate to the algorithm in use.
+
+## Why This Matters
+
+Reusing a nonce/IV with the same key can be catastrophic: for stream ciphers and GCM it can expose plaintext or even recover the authentication key entirely. Generating nonces appropriately per algorithm (random for some, strictly unique/counter for others) keeps every encryption independent and safe.
+
+## Main Security Requirement
+
+> Verify that nonces, initialization vectors, and other single-use numbers are not used for more than one encryption key and data-element pair. The method of generation must be appropriate for the algorithm being used.
+
+In practice this means per-encryption nonces generated the right way.
+
+## Common Failure Patterns
+
+- **Fixed IV** — same IV reused across messages.
+- **Counter reset** — nonce sequence restarts with a new message.
+- **Random nonce too short** — birthday-bound collision for GCM.
+- **Wrong generation method** — random where a counter is required.
+
+## Secure Implementation
+
+Generate a fresh, appropriately-sized nonce per operation:
+
+```javascript
+import { randomBytes } from "node:crypto";
+
+const NONCE_LEN = 12; // 96-bit for AES-GCM
+
+function encrypt(data, key) {
+  const nonce = randomBytes(NONCE_LEN); // fresh random nonce per call
+  const ciphertext = gcmEncrypt(data, key, nonce);
+  return { nonce, ciphertext };          // store/transmit nonce with ciphertext
+}
+```
+
+## Key Rules
+
+- Use a fresh nonce/IV for every encryption under a key.
+- Generate nonces with the method the algorithm requires.
+- Size nonces/IVs per the algorithm (e.g., 96-bit for GCM).
+- Never reuse a (key, nonce) pair, including after restarts.
+- Store or transmit the nonce alongside the ciphertext.
+
+## Checklist for Code Review
+
+- Is a unique nonce/IV used per encryption?
+- Is the generation method appropriate for the algorithm?
+- Are nonce/IV lengths correct for the cipher?
+- Could a (key, nonce) pair ever repeat?
+- Is the nonce persisted with the ciphertext?
