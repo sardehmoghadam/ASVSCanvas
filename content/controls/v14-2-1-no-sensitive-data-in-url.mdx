@@ -24,6 +24,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that sensitive data is only sent to the server in the HTTP message body or header fields, and that the URL and query string do not contain sensitive information, such as an API key or session token.
+Sensitive data must travel only in the HTTP message body or header fields. The URL and query string must never carry sensitive values such as API keys or session tokens.
+
+## Why This Matters
+
+The URL leaks everywhere: browser history, server access logs, proxy logs, referrer headers, CDN analytics, bookmark sync. A session token embedded in a query string ends up in every log along the path and gets sent in the `Referer` header to third parties. Keeping secrets out of the URL confines them to channels you actually control.
+
+## Main Security Requirement
+
+> Verify that sensitive data is only sent to the server in the HTTP message body or header fields, and that the URL and query string do not contain sensitive information, such as an API key or session token.
+
+In practice this means sensitive values in bodies and headers, never in path or query.
+
+## Common Failure Patterns
+
+- **Query-param API keys** — `?api_key=...` in request URLs.
+- **Session token in URL** — `?sid=...` or `?token=...` in links.
+- **IDs that encode secrets** — sensitive data in path segments.
+- **Referrer leakage** — nav from a token-bearing URL to a third party.
+
+## Secure Implementation
+
+Send secrets in headers or a body, never a query string:
+
+```javascript
+// WRONG: fetch(`/api/user?api_key=${key}`)   // leaks into logs, referrer
+// RIGHT: send the key in a header, token in body
+const res = await fetch("/api/user", {
+  method: "GET",
+  headers: {
+    "Authorization": `Bearer ${token}`,
+    "X-API-Key": apiKey,
+  },
+});
+```
+
+## Key Rules
+
+- Send sensitive data in body or header fields only.
+- Keep API keys and tokens out of URLs and query strings.
+- Avoid embedding secrets in path segments.
+- Use POST for operations that must submit secret values.
+- Review links/redirects for accidental `Referer` exposure.
+
+## Checklist for Code Review
+
+- Are query strings free of API keys and tokens?
+- Are sensitive values in headers or bodies only?
+- Do path segments contain encoded secrets?
+- Does any token-bearing URL leak via `Referer`?
+- Are logs confirmed free of secret-bearing URLs?

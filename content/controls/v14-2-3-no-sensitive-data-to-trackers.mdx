@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that defined sensitive data is not sent to untrusted parties (e.g., user trackers) to prevent unwanted collection of data outside of the application control.
+Data classified as sensitive must not be sent to untrusted parties — third-party trackers, analytics SDKs, ad networks, or any destination outside the application's control.
+
+## Why This Matters
+
+A tracker script included on a page can read the page, capture form input, and phone home with whatever it sees — names, emails, account details — into third-party reservoirs you can't audit or delete. Because trackers execute in the page's context, they see nearly everything unless explicitly blocked. Keeping sensitive data away from them keeps it inside your privacy boundary.
+
+## Main Security Requirement
+
+> Verify that defined sensitive data is not sent to untrusted parties (e.g., user trackers) to prevent unwanted collection of data outside of the application control.
+
+In practice this means third-party scripts/integrations never receive classified data.
+
+## Common Failure Patterns
+
+- **Tracker reads forms** — analytics captures entered PII.
+- **Sensitive values in telemetry** — user IDs, emails evented out.
+- **Unvetted third-party SDKs** — libraries beacon data home.
+- **No allowlist** — any third-party can receive data.
+
+## Secure Implementation
+
+Restrict what third parties receive and gate them behind consent:
+
+```javascript
+// Only send non-sensitive, aggregated events to analytics
+function track(event) {
+  const allowedFields = ["page", "timestamp", "anonymized_id"];
+  const sanitized = Object.fromEntries(
+    Object.entries(event).filter(([k]) => allowedFields.includes(k))
+  );
+  analytics.send(sanitized);           // no PII/sensitive fields leak out
+}
+
+// Load tracker only after explicit consent
+if (consentGiven("analytics")) loadAnalytics();
+```
+
+## Key Rules
+
+- Never send classified/sensitive data to third parties.
+- Allowlist exactly which fields telemetry may transmit.
+- Load third-party trackers only after consent.
+- Vet SDKs for hidden data exfiltration.
+- Redact/anonymize before sending anything externally.
+
+## Checklist for Code Review
+
+- Do trackers receive any classified data?
+- Is telemetry field-allowlisted and redacted?
+- Are third-party SDKs vetted and consented?
+- Are form inputs excluded from analytics capture?
+- Is external data sharing restricted to approved parties?

@@ -25,6 +25,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application only returns the minimum required sensitive data for the application functionality. For example, only returning some of the digits of a credit card number and not the full number. If the complete data is required, it should be masked in the user interface unless the user specifically views it.
+The application must return only the minimum sensitive data needed for the current function — e.g. the last four digits of a card, not the full number — and mask complete data in the UI until the user explicitly chooses to reveal it.
+
+## Why This Matters
+
+Sending more sensitive data than a screen needs expands the attack surface for free: full card numbers, SSNs, or credentials ride through every API call, log, UI render, and memory dump even when the user only needs to confirm an account. Returning only the minimal slice — and masking the rest behind an explicit action — shrinks what an attacker, a logger, or a scraper can ever capture.
+
+## Main Security Requirement
+
+> Verify that the application only returns the minimum required sensitive data for the application functionality. For example, only returning some of the digits of a credit card number and not the full number. If the complete data is required, it should be masked in the user interface unless the user specifically views it.
+
+In practice this means data minimization in responses plus reveal-on-demand masking.
+
+## Common Failure Patterns
+
+- **Full record returned** — DTO dumps everything by default.
+- **Full PAN/SSN shown** — unmasked full numbers in UI.
+- **No reveal gate** — mask is cosmetic, full value already sent.
+- **Over-fetching** — API returns fields the UI never uses.
+
+## Secure Implementation
+
+Return a redacted view and mask full values until revealed:
+
+```javascript
+app.get("/api/payment-methods/:id", (req, res) => {
+  const pm = getPaymentMethod(req.params.id);
+  res.json({
+    brand: pm.brand,
+    last4: pm.number.slice(-4),          // minimum: only last 4 digits
+    // full number intentionally omitted from the response
+  });
+});
+```
+
+```jsx
+// client: reveal full data only on explicit user action
+<button onClick={() => setRevealed(true)}>Show full number</button>
+{revealed ? fullNumber : `•••• ${masked.last4}`}
+```
+
+## Key Rules
+
+- Return only the minimum sensitive data required.
+- Redact/pad sensitive values in API responses.
+- Mask full values in the UI by default.
+- Reveal complete data only on explicit user action.
+- Avoid over-fetching fields the UI doesn't need.
+
+## Checklist for Code Review
+
+- Do responses return only minimal sensitive data?
+- Are card/identifier values truncated server-side?
+- Is full sensitive data masked by default in the UI?
+- Is reveal gated behind explicit user action?
+- Are API DTOs free of unused sensitive fields?

@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that communications between backend application components that do not support the application standard user session mechanism, including APIs, middleware, and data layers, are authenticated. Authentication must use individual service accounts, short-term tokens, or certificate-based authentication and not unchanging credentials such as passwords, API keys, or shared accounts with privileged access.
+Backend-to-backend communications that don't ride the normal user session — APIs, middleware, data layers — must still be authenticated, using individual service accounts, short-lived tokens, or certificate-based authentication, never static passwords, long-lived API keys, or shared privileged accounts.
+
+## Why This Matters
+
+Internal hops are prime targets for lateral movement, and a single shared, never-changing credential means one theft authenticates the attacker everywhere, forever. Per-component identities with short-lived or certificate-based credentials contain the blast radius: a leaked identity is narrow, expiring, and revocable.
+
+## Main Security Requirement
+
+> Verify that communications between backend application components that do not support the application standard user session mechanism, including APIs, middleware, and data layers, are authenticated. Authentication must use individual service accounts, short-term tokens, or certificate-based authentication and not unchanging credentials such as passwords, API keys, or shared accounts with privileged access.
+
+In practice this means per-service ephemeral/certificate identity.
+
+## Common Failure Patterns
+
+- **No auth between components** — internal APIs are anonymous.
+- **Shared privileged account** — one admin account used by all.
+- **Long-lived API keys** — static, never expiring keys.
+- **Passwords for services** — human-style password auth for machines.
+
+## Secure Implementation
+
+Authenticate with short-lived workload identity (e.g., OAuth client-credentials):
+
+```javascript
+const creds = await workloadIdentity.renewToken({ // short-lived, auto-rotated
+  audience: "payments-service",
+  expiresIn: "15m",
+});
+
+const res = await fetch("https://payments.internal/charge", {
+  headers: { authorization: `Bearer ${creds.token}` },
+});
+```
+
+## Key Rules
+
+- Authenticate all backend component communication.
+- Use individual service accounts per component.
+- Prefer short-term tokens or certificate-based auth.
+- Avoid passwords, long-lived API keys, shared accounts.
+- Auto-rotate/expire workload credentials.
+
+## Checklist for Code Review
+
+- Is every backend communication authenticated?
+- Does each component have its own service identity?
+- Are tokens short-lived or certificates used?
+- Are long-lived API keys/passwords avoided?
+- Are shared privileged accounts eliminated?

@@ -24,6 +24,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that using the HTTP TRACE method is not supported in production environments, to avoid potential information leakage.
+The HTTP TRACE method must not be supported in production. TRACE echoes the request back to the caller, which is exactly the reflector that cross-site tracing and header-leak attacks rely on.
+
+## Why This Matters
+
+TRACE exists for diagnosing proxies, but in production it turns the server into a mirror: an attacker can use it to read back headers — historically including cookies with `HttpOnly` flags — that a browser would otherwise never expose. Disabling it removes a built-in mechanism for reflecting sensitive headers to an attacker-controlled page.
+
+## Main Security Requirement
+
+> Verify that using the HTTP TRACE method is not supported in production environments, to avoid potential information leakage.
+
+In practice this means TRACE (and TRACK) return 405.
+
+## Common Failure Patterns
+
+- **TRACE enabled** — server responds to TRACE requests.
+- **TRACK not blocked** — legacy variant still answered.
+- **Method allowlist missing** — server permits any method.
+- **Config drift** — some endpoints still accept TRACE.
+
+## Secure Implementation
+
+Allow only the methods the app needs, rejecting TRACE:
+
+```javascript
+const ALLOWED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);
+
+app.use((req, res, next) => {
+  if (!ALLOWED_METHODS.has(req.method)) {
+    return res.status(405).send("method not allowed"); // TRACE rejected
+  }
+  next();
+});
+```
+
+## Key Rules
+
+- Reject TRACE and TRACK in production.
+- Allow only the HTTP methods the app actually uses.
+- Return 405 for unsupported methods.
+- Enforce method restrictions consistently across the app.
+- Test that TRACE returns 405 in prod configs.
+
+## Checklist for Code Review
+
+- Is TRACE (and TRACK) rejected in production?
+- Is there an explicit method allowlist?
+- Do unsupported methods return 405?
+- Is the restriction applied across all routes?
+- Has TRACE been verified blocked in prod?

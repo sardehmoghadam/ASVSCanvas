@@ -26,6 +26,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application documentation defines resource-management strategies for every external system or service it uses (e.g., databases, file handles, threads, HTTP connections). This should include resource-release procedures, timeout settings, failure handling, and where retry logic is implemented, specifying retry limits, delays, and back-off algorithms.
+Documentation must define a resource-management strategy for every external system or service — databases, file handles, threads, HTTP connections — covering resource release, timeouts, failure handling, and (where retries exist) retry limits, delays, and back-off algorithms.
+
+## Why This Matters
+
+Leaked handles and un-timeboxed retries are the silent killers of production systems: file descriptors and sockets leak until the process dies, and naive retries amplify load during an outage (the "retry storm"). Documenting release, timeout, and back-off policy makes resource use deterministic and prevents both leaks and self-inflicted DoS.
+
+## Main Security Requirement
+
+> Verify that the application documentation defines resource-management strategies for every external system or service it uses (e.g., databases, file handles, threads, HTTP connections). This should include resource-release procedures, timeout settings, failure handling, and where retry logic is implemented, specifying retry limits, delays, and back-off algorithms.
+
+In practice this means a documented, coded resource policy per dependency.
+
+## Common Failure Patterns
+
+- **Missing release** — resources not closed in `finally`.
+- **No timeout** — blocking calls never abandoned.
+- **Unbounded retries** — infinite or excessive retry loops.
+- **No back-off** — fixed/instant retries amplify load.
+- **Undocumented policy** — each call site behaves differently.
+
+## Secure Implementation
+
+Use a bounded, back-off retry wrapper with guaranteed release:
+
+```javascript
+async function withResource(acquire, release, work) {
+  const resource = await acquire();
+  try {
+    return await work(resource);
+  } finally {
+    release(resource);              // release in all paths
+  }
+}
+
+const retryPolicy = {
+  retries: 3,
+  minTimeout: 200,
+  factor: 2,                         // exponential back-off
+  randomize: true,                   // jitter to avoid thundering herd
+  onRetry: (e) => log.warn(e),
+};
+```
+
+## Key Rules
+
+- Document resource strategy per external dependency.
+- Release resources in finally blocks, every path.
+- Set timeouts on all blocking calls.
+- Bound retries and use exponential back-off with jitter.
+- Handle failures explicitly (fail fast or degrade).
+
+## Checklist for Code Review
+
+- Is resource release guaranteed on all paths?
+- Are timeouts set on blocking operations?
+- Are retries bounded (limit, delay, back-off)?
+- Is back-off exponential with jitter?
+- Is the policy documented and applied consistently?

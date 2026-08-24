@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that where the application connects to separate services, it follows the documented configuration for each connection, such as maximum parallel connections, behavior when maximum allowed connections is reached, connection timeouts, and retry strategies.
+When the application connects to separate services, it must actually follow the documented configuration for each connection — maximum parallel connections, behavior at the limit, connection timeouts, and retry strategies — so the code matches the policy.
+
+## Why This Matters
+
+Documentation that the code doesn't follow is security theater. If the docs say "max 20 connections, back-off retries" but the code opens unbounded sockets and retries instantly, the documented safeguards don't exist. This control closes the gap between the written plan (from V13.1) and the running behavior.
+
+## Main Security Requirement
+
+> Verify that where the application connects to separate services, it follows the documented configuration for each connection, such as maximum parallel connections, behavior when maximum allowed connections is reached, connection timeouts, and retry strategies.
+
+In practice this means runtime settings derived from documented policy.
+
+## Common Failure Patterns
+
+- **Defaults override policy** — undocumented library defaults in use.
+- **Config drift** — code diverges from the documented limits.
+- **Hardcoded values** — limits/timers embedded, not policy-driven.
+- **Missing timeout** — documented timeout not applied.
+
+## Secure Implementation
+
+Drive connection settings from a single documented config:
+
+```javascript
+const connectionConfig = {
+  payments: { maxConnections: 20, timeoutMs: 3000, retries: 3, backoff: "exp" },
+  smtp:     { maxConnections: 5,  timeoutMs: 5000, retries: 2, backoff: "linear" },
+};
+
+function createClient(service) {
+  const c = connectionConfig[service];   // from documented policy
+  if (!c) throw new Error(`no documented config for ${service}`);
+  return new Client({ max: c.maxConnections, timeout: c.timeoutMs });
+}
+```
+
+## Key Rules
+
+- Enforce documented settings in the running code.
+- Source limits/timeouts/retries from a single config.
+- Avoid hardcoded, divergent values per call site.
+- Keep code aligned with documented behavior-at-limit.
+- Verify runtime config matches policy in review/CI.
+
+## Checklist for Code Review
+
+- Does the code follow the documented connection config?
+- Are max connections and timeouts applied at runtime?
+- Is behavior-at-limit implemented as documented?
+- Are retry strategies consistent with policy?
+- Is config sourced from one place (no drift)?

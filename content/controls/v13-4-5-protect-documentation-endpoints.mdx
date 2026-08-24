@@ -25,6 +25,51 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that documentation (such as for internal APIs) and monitoring endpoints are not exposed unless explicitly intended.
+Documentation (internal API references, Swagger/OpenAPI specs) and monitoring endpoints (health, metrics, traces, admin consoles) must not be publicly exposed unless that exposure is deliberate and controlled.
+
+## Why This Matters
+
+API docs and monitoring panels are manuals for attackers: Swagger/OpenAPI specs enumerate every endpoint and parameter, and metrics/actuator endpoints leak stack traces, config, heap dumps, and environment variables. Hiding or protecting these by default keeps the instruction manual out of an attacker's hands.
+
+## Main Security Requirement
+
+> Verify that documentation (such as for internal APIs) and monitoring endpoints are not exposed unless explicitly intended.
+
+In practice this means docs/monitoring are internal-only, gated, or removed in prod.
+
+## Common Failure Patterns
+
+- **Swagger in prod** — interactive API docs public.
+- **Actuator open** — `/actuator/*` unauthenticated, dumps internals.
+- **Metrics public** — endpoint reveals architecture and traffic.
+- **Debug/admin consoles** — monitoring UI reachable anonymously.
+
+## Secure Implementation
+
+Gate docs and monitoring behind auth and internal-only access:
+
+```java
+// Spring Boot: restrict management/actuator to authenticated, internal users
+http.authorizeHttpRequests(auth -> auth
+    .requestMatchers("/actuator/**").hasRole("OPS")
+    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").hasRole("OPS")
+    .anyRequest().authenticated());
+```
+
+## Key Rules
+
+- Don't expose internal docs/monitoring publicly by default.
+- Gate Swagger/OpenAPI and actuator/metrics behind auth.
+- Restrict monitoring to internal networks or operational roles.
+- Disable docs/monitoring in production unless needed.
+- Explicitly approve any intended public exposure.
+
+## Checklist for Code Review
+
+- Are internal API docs exposed publicly?
+- Are monitoring/actuator endpoints authenticated?
+- Is metrics/health restricted to internal access?
+- Are docs/console disabled in production when unused?
+- Is any public exposure explicitly intended and approved?

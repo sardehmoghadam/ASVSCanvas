@@ -24,6 +24,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that web servers do not expose directory listings to clients unless explicitly intended.
+Web servers must not return directory listings (a browsable index of files) to clients, unless a listing is explicitly and intentionally required for a specific path.
+
+## Why This Matters
+
+A directory listing is an unearned index of everything in a folder — source files, backups, configs with secrets, hidden `.env` files. It turns a single guessable URL into a complete map of files to download and mine. Disabling it removes the server's cheerful willingness to enumerate its own contents.
+
+## Main Security Requirement
+
+> Verify that web servers do not expose directory listings to clients unless explicitly intended.
+
+In practice this means no auto-generated index pages.
+
+## Common Failure Patterns
+
+- **Autoindex enabled** — listing on by default or mis-set.
+- **Backup/archive files indexed** — `.bak`, `.old`, `.zip` exposed.
+- **No default doc** — directory with no `index.*` lists files.
+- **Config drift** — some vhosts still list directories.
+
+## Secure Implementation
+
+Turn directory listing off unless a path explicitly opts in:
+
+```nginx
+server {
+    autoindex off;               # no directory listings by default
+    location / { }
+
+    location /public-downloads/ {
+        autoindex on;            # explicit, intended listing only
+    }
+}
+```
+
+## Key Rules
+
+- Disable directory listings by default.
+- Opt in a listing only where explicitly intended.
+- Ensure directories without index files don't enumerate.
+- Keep archives/backups/configs out of web roots.
+- Audit all vhosts for stray autoindex settings.
+
+## Checklist for Code Review
+
+- Is `autoindex`/directory listing off by default?
+- Are any listings explicitly and intentionally enabled?
+- Do directories without index files stay non-listing?
+- Are backups/configs absent from the web root?
+- Are all vhosts configured consistently?

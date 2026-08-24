@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application sets sufficient anti-caching HTTP response header fields (i.e., Cache-Control: no-store) so that sensitive data is not cached in browsers.
+Responses containing sensitive data must carry anti-caching headers — at minimum `Cache-Control: no-store` — so browsers don't retain them in their HTTP cache or history.
+
+## Why This Matters
+
+The browser cache persists responses to disk long after the session is over. If a sensitive response (account details, a document, a token-bearing page) lacks `no-store`, anyone who uses the same browser can revisit it without re-authenticating — including after logout or on a shared machine. `no-store` tells the browser to keep nothing, so sensitive data stays out of a recoverable on-disk store.
+
+## Main Security Requirement
+
+> Verify that the application sets sufficient anti-caching HTTP response header fields (i.e., Cache-Control: no-store) so that sensitive data is not cached in browsers.
+
+In practice this means `Cache-Control: no-store` on every sensitive response.
+
+## Common Failure Patterns
+
+- **Missing headers** — sensitive pages cacheable by default.
+- **Weak directive** — `no-cache` used instead of `no-store`.
+- **Public caching** — `public, max-age` on private data.
+- **Header dropped** — downstream proxy strips `Cache-Control`.
+
+## Secure Implementation
+
+Set `no-store` on every sensitive response:
+
+```javascript
+app.use((req, res, next) => {
+  // default deny: no sensitive response is cacheable
+  res.set("Cache-Control", "no-store");
+  res.set("Pragma", "no-cache");          // legacy client fallback
+  next();
+});
+
+app.get("/api/account", (req, res) => {
+  res.json(account);                      // inherits no-store
+});
+```
+
+## Key Rules
+
+- Set `Cache-Control: no-store` on sensitive responses.
+- Prefer `no-store` over weaker `no-cache`.
+- Apply anti-caching by default to authenticated routes.
+- Include `Pragma: no-cache` for legacy clients.
+- Verify headers survive any intermediary proxy.
+
+## Checklist for Code Review
+
+- Do sensitive responses carry `Cache-Control: no-store`?
+- Is `no-store` used (not just `no-cache`)?
+- Are authenticated routes non-cacheable by default?
+- Is legacy `Pragma: no-cache` included?
+- Are anti-caching headers preserved through proxies?

@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that for each service the application uses, the documentation defines the maximum number of concurrent connections (e.g., connection pool limits) and how the application behaves when that limit is reached, including any fallback or recovery mechanisms, to prevent denial of service conditions.
+For every service the application uses, the documentation must define the maximum number of concurrent connections (such as connection-pool limits) and what the application does when that limit is hit — including fallback and recovery — so exhaustion can't cascade into a denial of service.
+
+## Why This Matters
+
+An unbounded pool or a pool that blocks forever under load turns a transient slowdown into a full outage: threads pile up, timeouts never fire, and one busy dependency drags the whole app down. Documenting per-service limits and their failure behavior keeps load contained and fail-fast or degrade gracefully rather than hang.
+
+## Main Security Requirement
+
+> Verify that for each service the application uses, the documentation defines the maximum number of concurrent connections (e.g., connection pool limits) and how the application behaves when that limit is reached, including any fallback or recovery mechanisms, to prevent denial of service conditions.
+
+In practice this means documented pool caps plus defined saturation behavior.
+
+## Common Failure Patterns
+
+- **No pool cap** — unbounded connection growth.
+- **Unbounded queueing** — requests wait forever at the limit.
+- **No timeout** — hung connections never released.
+- **Undocumented behavior** — limit reached, behavior undefined.
+- **No fallback** — no degraded or circuit-breaker path.
+
+## Secure Implementation
+
+Document and encode per-service limits with fail-fast behavior:
+
+```javascript
+const dbPool = createPool({
+  max: 20,                 // maximum concurrent connections
+  acquireTimeoutMillis: 3000,  // fail fast when the pool is saturated
+  idleTimeoutMillis: 10000,    // release idle connections promptly
+});
+
+try {
+  const client = await dbPool.connect();
+  // use the connection, then release in finally
+} catch (err) {
+  return circuitBreaker.fallback(err);  // degrade instead of hanging
+}
+```
+
+## Key Rules
+
+- Define a maximum concurrent-connection count per service.
+- Fail fast or degrade when the limit is reached.
+- Set acquire/idle timeouts to release resources.
+- Document fallback and recovery behavior per service.
+- Prevent one saturated dependency from blocking the app.
+
+## Checklist for Code Review
+
+- Is a max concurrent-connection limit defined per service?
+- Is behavior at the limit explicitly documented?
+- Are acquire and idle timeouts configured?
+- Is there a fallback/degrades path when saturated?
+- Can exhaustion cascade into a full outage?

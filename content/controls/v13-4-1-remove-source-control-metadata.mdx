@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application is deployed either without any source control metadata, including the .git or .svn folders, or in a way that these folders are inaccessible both externally and to the application itself.
+The deployed application must not include source-control metadata such as `.git` or `.svn` folders — or, if present, those folders must be unreachable both from outside and from the application itself.
+
+## Why This Matters
+
+A directory called `.git` is a map of the entire product: commit history, source code, credentials previously committed, deployment scripts. If it ships with the app and is reachable over HTTP, an attacker can reconstruct the repository and mine it for secrets and vulnerabilities. Shipping without it (or blocking access entirely) removes that goldmine.
+
+## Main Security Requirement
+
+> Verify that the application is deployed either without any source control metadata, including the .git or .svn folders, or in a way that these folders are inaccessible both externally and to the application itself.
+
+In practice this means no VCS metadata in the deployed artifact, and no HTTP route to it.
+
+## Common Failure Patterns
+
+- **`.git` shipped** — build copies the whole workspace.
+- **`.svn`/`.hg` present** — other VCS folders included.
+- **Server serves dotfiles** — web server exposes `.git/config`.
+- **App can read its own VCS metadata** — LFI to `.git`.
+
+## Secure Implementation
+
+Exclude VCS metadata from the deploy artifact and block dotfiles:
+
+```dockerfile
+# Build stage copies only what's needed, never the VCS metadata
+FROM node:20 AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY src ./src
+RUN npm run build
+
+FROM node:20-alpine
+COPY --from=build /app/dist /app   # only built output is shipped
+```
+
+## Key Rules
+
+- Exclude `.git`, `.svn`, `.hg`, and similar from deployments.
+- Build artifacts from an exported snapshot, not the working tree.
+- Block serving of dotfiles/dotfolders at the web server.
+- Confirm the app itself can't read its VCS metadata.
+- Verify production deploys contain no VCS directories.
+
+## Checklist for Code Review
+
+- Are `.git`/`.svn` folders absent from the artifact?
+- Is the build copying only intended sources?
+- Does the web server block dotfile requests?
+- Can the app read its own VCS metadata?
+- Is a deploy-time scan for VCS folders in place?

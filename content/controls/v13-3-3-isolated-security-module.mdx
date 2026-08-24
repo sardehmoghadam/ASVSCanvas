@@ -25,6 +25,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all cryptographic operations are performed using an isolated security module (such as a vault or hardware security module) to securely manage and protect key material from exposure outside of the security module.
+All cryptographic operations must run inside an isolated security module — a vault or HSM — so key material never leaves that boundary. Applications call the module to sign, encrypt, or decrypt; the keys stay protected inside.
+
+## Why This Matters
+
+When keys live in application memory, a memory-scrape or debug dump exposes them directly. An isolated module (ideally hardware-backed) keeps keys out of reach and forces operations through a controlled API, so even a compromised application process can misuse a key but never extract it.
+
+## Main Security Requirement
+
+> Verify that all cryptographic operations are performed using an isolated security module (such as a vault or hardware security module) to securely manage and protect key material from exposure outside of the security module.
+
+In practice this means crypto-by-reference: send data, receive result, never touch the key.
+
+## Common Failure Patterns
+
+- **Keys in app memory** — key material loaded into the process.
+- **Crypto in app code** — operations done in-process.
+- **Key export** — plaintext key returned to callers.
+- **Module bypassed** — some ops done outside the vault/HSM.
+
+## Secure Implementation
+
+Perform crypto inside the module by reference:
+
+```javascript
+// The key never leaves the HSM — the module does the signing
+const signature = await vault.sign({
+  key: "signing-key-v1",
+  algorithm: "RS256",
+  input: Buffer.from(payload),
+});
+// Application receives only the signature, never the key material
+```
+
+## Key Rules
+
+- Run cryptographic operations inside an isolated module.
+- Keep key material inside the module at all times.
+- Use reference/capability calls, never export keys.
+- Prefer hardware-backed modules (HSM) for high-value keys.
+- Log and audit crypto operations via the module.
+
+## Checklist for Code Review
+
+- Are all crypto operations performed in a vault/HSM?
+- Does key material ever leave the module?
+- Are keys exported to application code anywhere?
+- Is hardware backing used for critical keys?
+- Are operations auditable through the module?

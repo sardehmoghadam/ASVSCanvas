@@ -24,6 +24,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that data stored in browser storage (such as localStorage, sessionStorage, IndexedDB, or cookies) does not contain sensitive data, with the exception of session tokens.
+Browser storage — `localStorage`, `sessionStorage`, `IndexedDB`, and cookies — must not hold sensitive data, with session tokens as the sole exception.
+
+## Why This Matters
+
+Browser storage is readable by any script running in the page, accessible to extensions, exposed on a shared machine, and it survives the session (in `localStorage`/`cookies`' case). Storing passwords, SSNs, or full account records there puts them one `document.cookie` read or one stray XSS payload away from exfiltration — and they persist long after they're needed. Confining storage to the unavoidable minimum (session tokens only) keeps secrets out of a client-controlled, script-readable vault.
+
+## Main Security Requirement
+
+> Verify that data stored in browser storage (such as localStorage, sessionStorage, IndexedDB, or cookies) does not contain sensitive data, with the exception of session tokens.
+
+In practice this means no PII/secrets in client storage — tokens only, ideally `HttpOnly` cookies.
+
+## Common Failure Patterns
+
+- **PII in localStorage** — profiles, SSNs, card data persisted client-side.
+- **Secrets in IndexedDB** — API keys, credentials cached.
+- **Sensitive cookies** — non-token data or non-HttpOnly tokens.
+- **Token in localStorage** — session token readable by any script.
+
+## Secure Implementation
+
+Store tokens in `HttpOnly` cookies, nothing sensitive in JS-readable storage:
+
+```javascript
+// session token in an HttpOnly cookie (not readable by page scripts)
+res.cookie("session", token, {
+  httpOnly: true,             // JS cannot read it via document.cookie
+  secure: true,               // HTTPS only
+  sameSite: "Lax",
+});
+
+// keep client storage free of sensitive data — none of this:
+localStorage.clear();         // no PII, no secrets, no session tokens
+```
+
+## Key Rules
+
+- Store no sensitive data in browser storage.
+- Allow session tokens as the only exception.
+- Prefer `HttpOnly` cookies for tokens over JS-readable storage.
+- Never persist PII, credentials, or keys client-side.
+- Audit all uses of localStorage/sessionStorage/IndexedDB/cookies.
+
+## Checklist for Code Review
+
+- Is localStorage/sessionStorage/IndexedDB free of sensitive data?
+- Are session tokens the only exception?
+- Are tokens in `HttpOnly` cookies rather than JS storage?
+- Do cookies contain anything beyond the token?
+- Has a client-storage audit been performed?

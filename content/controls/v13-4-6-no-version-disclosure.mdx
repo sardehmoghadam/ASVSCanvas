@@ -24,6 +24,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application does not expose detailed version information of backend components.
+The application must not reveal detailed version information about its backend components — framework versions, server software, libraries — through headers, error pages, or responses.
+
+## Why This Matters
+
+Version numbers are the first thing a scanner looks for, because they map directly to known CVEs. `X-Powered-By: Express/4.17.1` or `Server: Apache/2.4.49` tells an attacker exactly which exploits to try. Suppressing version banners removes the free fingerprint that automates targeted exploitation.
+
+## Main Security Requirement
+
+> Verify that the application does not expose detailed version information of backend components.
+
+In practice this means stripped server/framework header banners and generic errors.
+
+## Common Failure Patterns
+
+- **Server banner** — `Server: nginx/1.24.0` present.
+- **Framework header** — `X-Powered-By: PHP/8.1.0`.
+- **Version in errors** — stack/version in error pages.
+- **Library fingerprints** — package versions in JSON responses.
+
+## Secure Implementation
+
+Strip server/framework version headers:
+
+```javascript
+app.disable("x-powered-by");                 // remove framework banner
+app.use((req, res, next) => {
+  res.removeHeader("Server");                // drop server version header
+  next();
+});
+
+app.use((err, req, res, next) => {
+  res.status(500).send("Internal Server Error"); // no version/stack detail
+});
+```
+
+## Key Rules
+
+- Remove or genericize Server and X-Powered-By headers.
+- Keep version numbers out of error pages and responses.
+- Avoid framework/library version fields in APIs.
+- Centralize ahead of proxies to strip banners.
+- Test responses for version fingerprints.
+
+## Checklist for Code Review
+
+- Are `Server`/`X-Powered-By` headers absent or generic?
+- Do error pages reveal framework/server versions?
+- Do API responses include library versions?
+- Are banners stripped at the edge/proxy too?
+- Has a fingerprint scan been run on responses?

@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the web tier is configured to only serve files with specific file extensions to prevent unintentional information, configuration, and source code leakage.
+The web tier must be configured to serve only files with specific, safe extensions — rather than serving anything in the content directory — so configuration, source code, and other sensitive files can't be fetched by extension.
+
+## Why This Matters
+
+A web root that serves arbitrary files is a one-stop leak: request `config.php.bak`, `web.config`, or `app.js.map` and the server hands over config, source, and infrastructure details. Restricting to an allowlist of safe extensions (`.html`, `.css`, `.js`, images) cuts off accidental delivery of everything else.
+
+## Main Security Requirement
+
+> Verify that the web tier is configured to only serve files with specific file extensions to prevent unintentional information, configuration, and source code leakage.
+
+In practice this means an extension allowlist with everything else denied.
+
+## Common Failure Patterns
+
+- **Serve-all-anything** — any file in the web root is served.
+- **Backup/source extensions served** — `.bak`, `.php`, `.config`, `.map`.
+- **Case/bypass tricks** — `file.php`, `file.PHP`, `file.php%20`.
+- **Dotfiles served** — `.env`, `.gitignore` returned.
+
+## Secure Implementation
+
+Serve only an allowlisted set of extensions:
+
+```nginx
+location / {
+    # deny sensitive patterns outright
+    location ~* \.(bak|config|sql|log|map|env|git|svn)$ { deny all; }
+
+    # only these static extensions are served
+    location ~* \.(html?|css|js|png|jpe?g|gif|svg|woff2?)$ {
+        try_files $uri =404;
+    }
+    return 404;                 # everything else is not served
+}
+```
+
+## Key Rules
+
+- Serve only an allowlist of safe file extensions.
+- Deny backup/config/source/dotfile extensions.
+- Normalize extension checks (case, encoding bypasses).
+- Keep sensitive files out of the web root entirely.
+- Return 404 for disallowed extensions.
+
+## Checklist for Code Review
+
+- Is an explicit extension allowlist configured?
+- Are `.bak`/`.config`/`.sql`/`.map`/dotfiles denied?
+- Are extension checks bypass-resistant (case/encoding)?
+- Are sensitive files outside the web root?
+- Do disallowed extensions return 404?

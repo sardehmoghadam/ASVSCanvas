@@ -24,6 +24,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application prevents sensitive data from being cached in server components, such as load balancers and application caches, or ensures that the data is securely purged after use.
+The application must prevent sensitive data from being cached in server-side components — load balancers, reverse proxies, app caches, in-memory caches — or, where caching is unavoidable, ensure the data is securely purged after use.
+
+## Why This Matters
+
+Server-side caches sit between the client and the origin, retaining copies of responses long after the request is done. A cached response containing an account number, a token, or PII can be served to someone else (cache confusion) or mined from a dumped cache. Either keep sensitive responses out of the cache or make their eviction/purge deliberate and secure.
+
+## Main Security Requirement
+
+> Verify that the application prevents sensitive data from being cached in server components, such as load balancers and application caches, or ensures that the data is securely purged after use.
+
+In practice this means no-cache directives for sensitive responses, and purge routines where caching is used.
+
+## Common Failure Patterns
+
+- **Sensitive responses cached** — account pages served from cache.
+- **No purge** — cached data never evicted.
+- **Cache keys collide** — shared cache across users.
+- **Vary-header omission** — user-specific content keyed wrong.
+
+## Secure Implementation
+
+Mark sensitive responses non-cacheable and key caches by user:
+
+```javascript
+app.get("/api/account", (req, res) => {
+  res.set("Cache-Control", "no-store, private");  // don't cache sensitive data
+  // private ensures shared caches won't store user-specific content
+  res.json(account);
+});
+
+// server cache keyed by user prevents cross-account cache hits
+const key = `account:${req.user.id}`;
+```
+
+## Key Rules
+
+- Prevent sensitive data from being cached server-side.
+- Use `Cache-Control: no-store, private` on sensitive responses.
+- Key caches by user to avoid cross-account leakage.
+- Purge cached sensitive data securely after use.
+- Avoid caching inherently sensitive resources at all.
+
+## Checklist for Code Review
+
+- Are sensitive responses marked non-cacheable?
+- Do shared caches key per user (Vary/private)?
+- Is sensitive data purged from caches after use?
+- Are load balancer/proxy caches covered?
+- Are cache keys free of sensitive values?

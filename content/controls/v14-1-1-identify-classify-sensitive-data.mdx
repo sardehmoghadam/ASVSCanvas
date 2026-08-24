@@ -24,6 +24,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all sensitive data created and processed by the application has been identified and classified into protection levels. This includes data that is only encoded and therefore easily decoded, such as Base64 strings or the plaintext payload inside a JWT. Protection levels need to take into account any data protection and privacy regulations and standards which the application is required to comply with.
+Every piece of sensitive data the application creates or handles must be identified and assigned a protection level, including data that is merely *encoded* (not encrypted) and therefore trivially readable — Base64 strings, the payload inside a JWT, etc.
+
+## Why This Matters
+
+Classification is the foundation of data protection: you can't protect data you haven't named. It also closes the gap where teams mistake encoding for encryption — a JWT payload is Base64, not secret, and a Base64 API key is as readable as plaintext. Assigning explicit levels (and capturing regulatory obligations like GDPR, HIPAA, PCI DSS) makes every downstream control — encryption, retention, logging — targeted instead of guesswork.
+
+## Main Security Requirement
+
+> Verify that all sensitive data created and processed by the application has been identified and classified into protection levels. This includes data that is only encoded and therefore easily decoded, such as Base64 strings or the plaintext payload inside a JWT. Protection levels need to take into account any data protection and privacy regulations and standards which the application is required to comply with.
+
+In practice this means a data inventory with classification and legal mapping.
+
+## Common Failure Patterns
+
+- **No inventory** — no one knows where sensitive data lives.
+- **Encoding misread as encryption** — Base64/JWT payloads treated as protected.
+- **One flat level** — everything "secret" with no gradation.
+- **Regulations ignored** — classification omits GDPR/HIPAA/PCI obligations.
+
+## Secure Implementation
+
+Classify data into explicit levels and flag encoding-only fields:
+
+```yaml
+sensitive_data:
+  - name: user_password_hash
+    level: restricted            # encryption at rest + in transit
+    encoding_only: false
+    regulation: [GDPR, NIS2]
+  - name: jwt_payload_subject
+    level: confidential
+    encoding_only: true          # Base64 => readable, must be referenced,
+                                 # not relied on for confidentiality
+  - name: session_token
+    level: restricted
+    regulation: [GDPR]
+```
+
+## Key Rules
+
+- Identify and classify every sensitive data item.
+- Treat encoded (Base64/JWT) data as readable, not protected.
+- Use graduated levels, not a single "secret" bucket.
+- Map each level to applicable privacy regulations/standards.
+- Keep the inventory current as data changes.
+
+## Checklist for Code Review
+
+- Is there a data inventory covering all sensitive data?
+- Are encoded-only fields (Base64, JWT payload) flagged?
+- Are multiple, distinct protection levels defined?
+- Are regulations/standards mapped per level?
+- Is the inventory maintained as data changes?

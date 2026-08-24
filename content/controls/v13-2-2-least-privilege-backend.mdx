@@ -24,6 +24,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that communications between backend application components, including local or operating system services, APIs, middleware, and data layers, are performed with accounts assigned the least necessary privileges.
+Every backend communication — local/OS services, APIs, middleware, data layers — must run under an account that has only the privileges that specific interaction requires, nothing more.
+
+## Why This Matters
+
+If a backend component's account is over-privileged (say a service account with broad admin rights over the whole data store), any compromise of that component becomes a compromise of everything it could touch. Least privilege shrinks the damage radius so a single breached component can't pivot outward to unrelated systems.
+
+## Main Security Requirement
+
+> Verify that communications between backend application components, including local or operating system services, APIs, middleware, and data layers, are performed with accounts assigned the least necessary privileges.
+
+In practice this means scoped, per-interaction permissions.
+
+## Common Failure Patterns
+
+- **Broad admin accounts** — service runs as root/dbadmin.
+- **Shared over-privileged role** — one role for many tasks.
+- **Write when read suffices** — needless write grants.
+- **No scoping** — account can reach unrelated resources.
+
+## Secure Implementation
+
+Grant the narrowest role each interaction needs:
+
+```javascript
+// Database account scoped to exactly what this service does
+await db.grant({
+  role: "orders_reader",
+  account: "orders-service",
+  privileges: ["SELECT"],             // read-only — no UPDATE/DELETE
+  scope: "orders_table",              // limited to the needed table only
+  host: "orders.internal",            // locked to this service's identity
+});
+```
+
+## Key Rules
+
+- Assign each account only the privileges it needs.
+- Scope accounts to the specific resource and operation.
+- Avoid admin/root-level service accounts.
+- Grant read vs. write separately per interaction.
+- Audit account privileges against actual usage.
+
+## Checklist for Code Review
+
+- Does each backend account hold only needed privileges?
+- Are accounts scoped to specific resources?
+- Are admin-level service accounts avoided?
+- Are read and write rights granted separately?
+- Is privileged access audited against real usage?

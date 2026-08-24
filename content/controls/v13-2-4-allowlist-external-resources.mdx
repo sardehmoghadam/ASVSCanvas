@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that an allowlist is used to define the external resources or systems with which the application is permitted to communicate (e.g., for outbound requests, data loads, or file access). This allowlist can be implemented at the application layer, web server, firewall, or a combination of different layers.
+An explicit allowlist must define which external resources or systems the application may communicate with — for outbound requests, data loads, or file access — enforced at the application layer, web server, firewall, or some combination.
+
+## Why This Matters
+
+Without an allowlist, an SSRF bug or a compromised dependency can reach any host on the internet (or the internal network), exfiltrating data or probing infrastructure. An allowlist turns "connect to anything" into "connect only to these known destinations," making outbound traffic conform to the documented inventory.
+
+## Main Security Requirement
+
+> Verify that an allowlist is used to define the external resources or systems with which the application is permitted to communicate (e.g., for outbound requests, data loads, or file access). This allowlist can be implemented at the application layer, web server, firewall, or a combination of different layers.
+
+In practice this means a deny-by-default outbound policy.
+
+## Common Failure Patterns
+
+- **No allowlist** — any destination permitted.
+- **No enforcement** — allowlist documented but never enforced.
+- **Wildcard hosts** — allowlist includes `*.com` or `0.0.0.0/0`.
+- **Client-side only** — egress left open at the network layer.
+
+## Secure Implementation
+
+Enforce deny-by-default outbound at the application layer:
+
+```javascript
+const ALLOWED = new Set(["api.payments.example.com", "cdn.example.com"]);
+
+function fetchExternal(url) {
+  const host = new URL(url).hostname;
+  if (!ALLOWED.has(host)) {
+    throw new Error(`destination not allowlisted: ${host}`); // deny by default
+  }
+  return fetch(url);
+}
+```
+
+## Key Rules
+
+- Define an allowlist of permitted external destinations.
+- Enforce deny-by-default for outbound traffic.
+- Avoid wildcards — list exact hosts/resources.
+- Enforce at app, web server, and/or firewall layers.
+- Keep the allowlist aligned with the documented inventory.
+
+## Checklist for Code Review
+
+- Is there an explicit external-destination allowlist?
+- Is outbound traffic deny-by-default?
+- Are wildcards avoided (exact hosts only)?
+- Is the allowlist enforced, not just documented?
+- Is it synced with the communication inventory?

@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that caching mechanisms are configured to only cache responses which have the expected content type for that resource and do not contain sensitive, dynamic content. The web server should return a 404 or 302 response when a non-existent file is accessed rather than returning a different, valid file. This should prevent Web Cache Deception attacks.
+Caching mechanisms must cache only responses whose content type matches the resource and that contain no sensitive, dynamic content. When a non-existent file is requested, the server must return 404 or 302 rather than a different valid file — preventing Web Cache Deception.
+
+## Why This Matters
+
+In a web cache deception attack, an attacker requests a URL that looks static (e.g. `/account/profile.css`) but resolves to a sensitive dynamic page because the server is lenient about the extension — and the cache stores the victim's response under a static URL the attacker can later fetch. Enforcing content-type discipline and honest 404s stops the cache from being tricked into storing and handing over other users' data.
+
+## Main Security Requirement
+
+> Verify that caching mechanisms are configured to only cache responses which have the expected content type for that resource and do not contain sensitive, dynamic content. The web server should return a 404 or 302 response when a non-existent file is accessed rather than returning a different, valid file. This should prevent Web Cache Deception attacks.
+
+In practice this means strict extension/content-type matching and real 404s.
+
+## Common Failure Patterns
+
+- **Extension flexibility** — `/page.css` serves dynamic HTML.
+- **Cache stores dynamic content** — sensitive pages cached as static.
+- **Lenient 200s** — missing file returns a different valid page.
+- **No cache-key/content-type check** — mismatch ignored.
+
+## Secure Implementation
+
+Cache only matching, non-sensitive static content and return real 404s:
+
+```nginx
+location ~* \.(css|js|png|jpe?g|gif|svg|woff2?)$ {
+    try_files $uri =404;          # missing file => 404, never a fallback page
+    # only these static content types are cached; dynamic HTML is excluded
+    add_header Cache-Control "public, max-age=3600";
+}
+
+location / {
+    add_header Cache-Control "no-store";   # dynamic/sensitive never cached
+    # ... route to app
+}
+```
+
+## Key Rules
+
+- Cache only responses whose content type matches the resource.
+- Never cache responses with sensitive, dynamic content.
+- Return 404/302 for non-existent files, not substitute pages.
+- Enforce strict extension-to-content-type mapping.
+- Mark dynamic/auth'd responses no-store.
+
+## Checklist for Code Review
+
+- Do caches store only matching content types?
+- Are sensitive/dynamic responses excluded from caching?
+- Do non-existent files return 404/302?
+- Is extension handling strict (no fallback to dynamic)?
+- Are authenticated responses cache-control no-store?

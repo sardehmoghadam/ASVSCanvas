@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that sensitive information is subject to data retention classification, ensuring that outdated or unnecessary data is deleted automatically, on a defined schedule, or as the situation requires.
+Sensitive information must be assigned a retention period, and outdated or unnecessary data must be deleted automatically, on a defined schedule, or promptly when the situation requires it.
+
+## Why This Matters
+
+Data you no longer need is pure liability: every stale record is one more thing a breach can expose and one more thing a privacy regulator can find you keeping longer than lawful. A defined retention schedule that actually runs converts "we'll delete it sometime" into a provable, automated obligation — minimizing what exists to be stolen.
+
+## Main Security Requirement
+
+> Verify that sensitive information is subject to data retention classification, ensuring that outdated or unnecessary data is deleted automatically, on a defined schedule, or as the situation requires.
+
+In practice this means retention periods plus automated deletion jobs.
+
+## Common Failure Patterns
+
+- **No retention period** — data kept indefinitely by default.
+- **No deletion job** — policy exists, nothing runs.
+- **Backups skipped** — deletion ignores replicas/backups.
+- **Event-driven purge missing** — account closure doesn't delete.
+
+## Secure Implementation
+
+Automate deletion on the defined schedule:
+
+```python
+import datetime
+
+RETENTION_DAYS = 90
+
+def purge_expired_rows():
+    cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=RETENTION_DAYS)
+    with db:
+        deleted = db.execute(
+            "DELETE FROM sensitive_records WHERE created_at < $1", cutoff
+        ).rowcount
+    log.info("purged %d expired records", deleted)
+
+# schedule: run daily
+scheduler.every().day.at("02:00").do(purge_expired_rows)
+```
+
+## Key Rules
+
+- Assign a retention period to every sensitive data category.
+- Automate deletion on the defined schedule.
+- Purge data promptly on account closure/request.
+- Cover backups and replicas in the deletion scope.
+- Keep audit proof that deletion jobs ran.
+
+## Checklist for Code Review
+
+- Does each sensitive category have a retention period?
+- Is deletion automated and scheduled?
+- Are expired records actually removed?
+- Do backups/replicas get purged too?
+- Is event-driven deletion (closure/request) handled?

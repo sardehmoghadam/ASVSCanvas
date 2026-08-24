@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the web or application server is configured with an allowlist of resources or systems to which the server can send requests or load data or files from.
+The web or application server itself must be configured with an allowlist of the resources or systems it may send requests to or load data/files from, independent of application-level logic.
+
+## Why This Matters
+
+Application code can be bypassed or have bugs, but the server is a stable enforcement point. Restricting the server's own outbound egress (or its file/inclusion sources) provides a second, independent layer of control, so even a compromised application can't reach arbitrary destinations without tripping a server-level deny.
+
+## Main Security Requirement
+
+> Verify that the web or application server is configured with an allowlist of resources or systems to which the server can send requests or load data or files from.
+
+In practice this means server-level egress and inclusion allowlisting.
+
+## Common Failure Patterns
+
+- **Server egress open** — no allowlist at server level.
+- **App-layer only** — server still reaches anything.
+- **Overbroad rules** — allowlist covers whole CIDRs/domains.
+- **Unrestricted includes** — server can load arbitrary files/URLs.
+
+## Secure Implementation
+
+Restrict server-level egress with a proxy allowlist:
+
+```nginx
+# nginx: only permitted upstream destinations
+server {
+    location /proxy/ {
+        # allow only the known upstream endpoints
+        resolver 8.8.8.8 valid=30s;
+        set $upstream "http://api.backend.internal";
+        proxy_pass $upstream;
+    }
+    # any other destination is not defined -> denied by default
+}
+```
+
+## Key Rules
+
+- Configure a server-level allowlist for outbound destinations.
+- Restrict file/URL inclusion sources at the server.
+- Deny destinations not explicitly listed.
+- Keep server rules tight (no broad CIDR/domain).
+- Layer server allowlisting with application-level checks.
+
+## Checklist for Code Review
+
+- Is the server configured with an egress allowlist?
+- Are inclusion sources restricted at the server?
+- Are non-allowlisted destinations denied?
+- Are allowlist rules tight (exact hosts, no broad ranges)?
+- Does server-level enforcement complement app checks?

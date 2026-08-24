@@ -25,6 +25,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that authenticated data is cleared from client storage, such as the browser DOM, after the client or session is terminated. The Clear-Site-Data HTTP response header field may be able to help with this but the client-side should also be able to clear up if the server connection is not available when the session is terminated.
+Authenticated data must be cleared from client-side storage — the browser DOM, local state, memory — once the session or client ends. The `Clear-Site-Data` header can help, but the client must clean up on its own even when the server isn't reachable at termination.
+
+## Why This Matters
+
+A terminated session leaves authenticated content behind if the client doesn't scrub it: an abandoned machine shows the last user's account, tokens linger in memory, and the DOM still holds the previous session's data. Clearing on logout — locally, not relying on a server round-trip — ensures termination actually means the data is gone from that device.
+
+## Main Security Requirement
+
+> Verify that authenticated data is cleared from client storage, such as the browser DOM, after the client or session is terminated. The Clear-Site-Data HTTP response header field may be able to help with this but the client-side should also be able to clear up if the server connection is not available when the session is terminated.
+
+In practice this means local cleanup on logout that doesn't depend on the server.
+
+## Common Failure Patterns
+
+- **State left in DOM** — last user's data still rendered after logout.
+- **Server-side logout only** — client never scrubs its own state.
+- **Tokens linger** — in-memory auth data not dropped.
+- **No local restore** — cleanup skipped when offline.
+
+## Secure Implementation
+
+Clear client state locally on logout, independent of the server:
+
+```javascript
+async function logout() {
+  // Clear local state first — always runs, even if server is unreachable
+  authStore.reset();                    // drop in-memory tokens/user
+  sessionStorage.clear();
+  reactiveState = initialState;         // reset DOM-bound state
+  try { await api.logout(); }           // best-effort server call
+  catch (e) { /* server unreachable — local cleanup already done */ }
+}
+```
+
+## Key Rules
+
+- Clear authenticated data from DOM/state on termination.
+- Perform local cleanup before/independent of the server.
+- Drop in-memory and session tokens on logout.
+- Use `Clear-Site-Data` as a supplement, not the only mechanism.
+- Handle offline/invisible shutdown paths too.
+
+## Checklist for Code Review
+
+- Is authenticated data cleared from the DOM on logout?
+- Does client-side cleanup run independent of the server?
+- Are in-memory tokens and state dropped on termination?
+- Is cleanup triggered on both visible and implicit terminations?
+- Is `Clear-Site-Data` used as a supplement only?

@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that debug modes are disabled for all components in production environments to prevent exposure of debugging features and information leakage.
+Debug modes must be switched off for every component in production, so debugging features (stack traces, verbose logs, interactive debuggers, hot reload) aren't reachable and don't leak internals.
+
+## Why This Matters
+
+Debug mode is a deliberate relaxation of safety for developers, and it leaks in every direction: detailed error messages reveal file paths and query structure, debug endpoints accept remote commands, and verbose logs dump secrets. Turning it off everywhere in production removes an entire class of easy information disclosure and remote-code-execution vectors.
+
+## Main Security Requirement
+
+> Verify that debug modes are disabled for all components in production environments to prevent exposure of debugging features and information leakage.
+
+In practice this means a production config with all debug/verbose features off.
+
+## Common Failure Patterns
+
+- **DEBUG=true in prod** — framework flag left enabled.
+- **Verbose logs** — request bodies, tokens, stack traces logged.
+- **Debug endpoints live** — `/debug`, profiler, or console open.
+- **Hot reload/reload debugger** — dev tooling shipped to prod.
+
+## Secure Implementation
+
+Bind debug settings to environment and enforce prod defaults:
+
+```javascript
+const isProduction = process.env.NODE_ENV === "production";
+
+const config = {
+  debug: !isProduction,             // false in production
+  verboseLogging: !isProduction,
+  exposeStackTraces: !isProduction,
+  enableProfiler: !isProduction,
+};
+
+if (isProduction && config.debug) {
+  throw new Error("debug mode must be disabled in production");
+}
+```
+
+## Key Rules
+
+- Disable debug/verbose mode on every prod component.
+- Gate debug features behind an explicit prod-false flag.
+- Remove or block debug/profiler endpoints in production.
+- Fail closed if a debug flag is detected enabled in prod.
+- Ship production builds (minified, no source maps).
+
+## Checklist for Code Review
+
+- Is debug mode disabled for all prod components?
+- Are verbose logs and stack traces suppressed?
+- Are debug/profiler endpoints absent or blocked?
+- Is there a fail-closed guard against debug-in-prod?
+- Are production builds non-debug (no source maps)?

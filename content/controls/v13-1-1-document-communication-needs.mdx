@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all communication needs for the application are documented. This must include external services which the application relies upon and cases where an end user might be able to provide an external location to which the application will then connect.
+Every communication need of the application must be documented: the external services it depends on, plus any case where an end user can supply an external location (a URL, host, or endpoint) that the application will then connect to.
+
+## Why This Matters
+
+You can't secure or constrain what you haven't catalogued. If the list of outbound destinations isn't documented, user-supplied locations can turn the application into an SSRF proxy, and undocumented dependencies become a hidden attack surface. A complete inventory is the precondition for allowlisting, least privilege, and resource management.
+
+## Main Security Requirement
+
+> Verify that all communication needs for the application are documented. This must include external services which the application relies upon and cases where an end user might be able to provide an external location to which the application will then connect.
+
+In practice this means a maintained inventory of outbound destinations.
+
+## Common Failure Patterns
+
+- **No inventory** — outbound destinations unknown.
+- **User-supplied URLs unrecorded** — SSRF-prone inputs not flagged.
+- **Third-party SDK calls omitted** — hidden telemetry/beacon endpoints.
+- **Stale documentation** — inventory not updated on change.
+
+## Secure Implementation
+
+Keep a machine-readable inventory of destinations:
+
+```yaml
+communication_allowlist:
+  - destination: https://api.payments.example.com
+    purpose: payment processing
+    provider: external
+    user_supplied: false
+  - destination: "user-provided webhook URL"
+    purpose: outbound webhook delivery
+    user_supplied: true
+    requires_validation: true
+```
+
+## Key Rules
+
+- Document every external service the app depends on.
+- Record all user-supplied outbound locations.
+- Flag user-supplied destinations for extra validation.
+- Include SDK/third-party callbacks, not just first-party code.
+- Keep the inventory current as dependencies change.
+
+## Checklist for Code Review
+
+- Is every outbound communication documented?
+- Are user-supplied destinations explicitly listed?
+- Are third-party/SDK endpoints included?
+- Are user-supplied locations marked for validation?
+- Is the inventory kept up to date?

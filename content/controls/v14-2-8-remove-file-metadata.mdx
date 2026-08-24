@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that sensitive information is removed from the metadata of user-submitted files unless storage is consented to by the user.
+User-submitted files must have sensitive information stripped from their metadata — EXIF, author, GPS, device info — unless the user has explicitly consented to that metadata being stored.
+
+## Why This Matters
+
+A file is more than its visible content: a photo's EXIF carries GPS coordinates, timestamps, and the camera model; a document's properties carry the author's name and organization. Storing uploaded files as-is silently harvests this sensitive data — often precise location data — that the user never intended to share. Stripping metadata unless explicitly consented removes an invisible privacy leak.
+
+## Main Security Requirement
+
+> Verify that sensitive information is removed from the metadata of user-submitted files unless storage is consented to by the user.
+
+In practice this means sanitizing metadata on upload by default.
+
+## Common Failure Patterns
+
+- **Files stored as-is** — full EXIF/properties retained.
+- **GPS in photos** — images retain location metadata.
+- **Author names kept** — document creator details stored.
+- **No consent branch** — metadata always kept (or always stripped).
+
+## Secure Implementation
+
+Strip metadata from uploads unless the user consents:
+
+```python
+from PIL import Image
+
+def handle_upload(raw: bytes, consent_to_metadata: bool) -> bytes:
+    img = Image.open(io.BytesIO(raw))
+    data = list(img.getdata())
+    # Rebuild without EXIF/IPTC; keep pixels only
+    clean = Image.new(img.mode, img.size)
+    clean.putdata(data)
+
+    buf = io.BytesIO()
+    clean.save(buf, format=img.format)   # metadata-free by default
+    if not consent_to_metadata:
+        return buf.getvalue()             # default: no metadata stored
+    return raw                            # only with explicit consent
+```
+
+## Key Rules
+
+- Strip sensitive metadata from uploads by default.
+- Remove EXIF/GPS/author/device fields before storage.
+- Store metadata only with explicit user consent.
+- Apply the same rule to all accepted file types.
+- Sanitize before any downstream processing/display.
+
+## Checklist for Code Review
+
+- Are uploads stripped of metadata by default?
+- Are EXIF/GPS/author fields removed?
+- Is metadata retained only with explicit consent?
+- Is stripping applied to every file type?
+- Does sanitization happen before storage/processing?
