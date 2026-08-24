@@ -19,7 +19,7 @@ tags:
   - csrf
   - origin
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Preflight is only triggered for "non-simple" requests — ones outside the CORS-
 
 ## Main Security Requirement
 
-> Verify that, if the application relies on the CORS preflight mechanism to prevent disallowed cross-origin use of sensitive functionality, it is not possible to call the functionality with a request which does not trigger a CORS-preflight request. This may require checking the values of the Origin and Content-Type request header fields or using an extra header field that is not a CORS-safelisted header-field.
+> Verify that, if the application relies on the CORS preflight mechanism to prevent disallowed cross-origin use of sensitive functionality, it is not possible to call the functionality with a request which does not trigger a CORS-preflight request. This may require checking the values of the 'Origin' and 'Content-Type' request header fields or using an extra header field that is not a CORS-safelisted header-field.
 
 In practice this means enforcing a non-simple header or content type (and rejecting absent/invalid `Origin`) on every sensitive route.
 

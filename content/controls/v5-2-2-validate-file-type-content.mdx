@@ -19,7 +19,7 @@ tags:
   - content-validation
   - file-type
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ An attacker renames `malware.exe` to `invoice.pdf` or hides an HTML/JS payload i
 
 ## Main Security Requirement
 
-> Verify that when the application accepts a file, either on its own or within an archive such as a zip file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. This includes, but is not limited to, checking the initial magic bytes, performing image re-writing, and using specialized libraries for file content validation. For L1, this can focus just on files which are used to make specific business or security decisions. For L2 and up, this must apply to all files being accepted.
+> Verify that when the application accepts a file, either on its own or within an archive such as a zip file, it checks if the file extension matches an expected file extension and validates that the contents correspond to the type represented by the extension. This includes, but is not limited to, checking the initial 'magic bytes', performing image re-writing, and using specialized libraries for file content validation. For L1, this can focus just on files which are used to make specific business or security decisions. For L2 and up, this must apply to all files being accepted.
 
 In practice this means: extension allowlist + magic-byte detection + (for images) a re-encode pass.
 

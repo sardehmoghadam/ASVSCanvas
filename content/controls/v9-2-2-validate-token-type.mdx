@@ -12,14 +12,14 @@ chapter:
 section:
   id: V9.2
   title: Token content
-level: 1
+level: 2
 tags:
   - tokens
   - jwt
   - token-type
   - purpose
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Using the wrong token type is a classic source of privilege and identity confusi
 
 ## Main Security Requirement
 
-> Verify that the service receiving a token validates the token to be the correct type and is meant for the intended purpose before accepting the token contents. For example, only access tokens can be accepted for authorization decisions and only ID Tokens can be used for proving user authentication.
+> Verify that the service receiving a token validates the token to be the correct type and is meant for the intended purpose before accepting the token's contents. For example, only access tokens can be accepted for authorization decisions and only ID Tokens can be used for proving user authentication.
 
 ## Common Failure Patterns
 

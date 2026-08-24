@@ -12,14 +12,14 @@ chapter:
 section:
   id: V6.7
   title: Cryptographic Authentication Mechanism
-level: 1
+level: 3
 tags:
   - authentication
   - certificates
   - crypto
   - integrity
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Signature validation is only as good as the key you validate against. A writable
 
 ## Main Security Requirement
 
-> Verify that the certificates used to verify cryptographic authentication assertions are stored in a way that protects them from modification.
+> Verify that the certificates used to verify cryptographic authentication assertions are stored in a way protects them from modification.
 
 In practice this means read-only, access-controlled, tamper-evident storage for trust anchors.
 

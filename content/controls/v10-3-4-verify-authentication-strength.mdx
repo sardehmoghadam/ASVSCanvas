@@ -12,7 +12,7 @@ chapter:
 section:
   id: V10.3
   title: OAuth Resource Server
-level: 1
+level: 2
 tags:
   - oauth
   - resource-server
@@ -20,7 +20,7 @@ tags:
   - amr
   - auth-time
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -36,7 +36,7 @@ Different operations warrant different proof of identity: reading a profile may 
 
 ## Main Security Requirement
 
-> Verify that, if the resource server requires specific authentication strength, methods, or recentness, it verifies that the presented access token satisfies these constraints. For example, if present, using the OIDC acr, amr and auth_time claims respectively.
+> Verify that, if the resource server requires specific authentication strength, methods, or recentness, it verifies that the presented access token satisfies these constraints. For example, if present, using the OIDC 'acr', 'amr' and 'auth_time' claims respectively.
 
 In practice this means checking `acr`/`amr`/`auth_time` against the operation's policy.
 

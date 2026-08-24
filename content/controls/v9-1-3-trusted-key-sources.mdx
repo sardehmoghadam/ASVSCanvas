@@ -19,7 +19,7 @@ tags:
   - jku
   - key-management
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ If a server fetches a key from whatever URL or inline `jwk` the token supplies, 
 
 ## Main Security Requirement
 
-> Verify that key material that is used to validate self-contained tokens is from trusted pre-configured sources for the token issuer, preventing attackers from specifying untrusted sources and keys. For JWTs and other JWS structures, headers such as jku, x5u, and jwk must be validated against an allowlist of trusted sources.
+> Verify that key material that is used to validate self-contained tokens is from trusted pre-configured sources for the token issuer, preventing attackers from specifying untrusted sources and keys. For JWTs and other JWS structures, headers such as 'jku', 'x5u', and 'jwk' must be validated against an allowlist of trusted sources.
 
 ## Common Failure Patterns
 

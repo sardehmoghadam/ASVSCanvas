@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.3
   title: OAuth Resource Server
-level: 1
+level: 2
 tags:
   - oauth
   - resource-server
   - audience
   - introspection
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ If every resource server accepts any token signed by the shared authorization se
 
 ## Main Security Requirement
 
-> Verify that the resource server only accepts access tokens that are intended for use with that service (audience). The audience may be included in a structured access token (such as the aud claim in JWT), or it can be checked using the token introspection endpoint.
+> Verify that the resource server only accepts access tokens that are intended for use with that service (audience). The audience may be included in a structured access token (such as the 'aud' claim in JWT), or it can be checked using the token introspection endpoint.
 
 In practice this means checking `aud` (directly or via introspection) on every resource-server request.
 

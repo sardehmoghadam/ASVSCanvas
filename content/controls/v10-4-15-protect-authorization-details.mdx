@@ -12,7 +12,7 @@ chapter:
 section:
   id: V10.4
   title: OAuth Authorization Server
-level: 1
+level: 3
 tags:
   - oauth
   - authorization-server
@@ -20,7 +20,7 @@ tags:
   - par
   - jar
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -36,7 +36,7 @@ For server-side (non-browser) clients, the authorization server must guarantee t
 
 ## Main Security Requirement
 
-> Verify that, for a server-side client (which is not executed on the end-user device), the authorization server ensures that the authorization_details parameter value is from the client backend and that the user has not tampered with it. For example, by requiring the usage of pushed authorization request (PAR) or JWT-secured Authorization Request (JAR).
+> Verify that, for a server-side client (which is not executed on the end-user device), the authorization server ensures that the 'authorization_details' parameter value is from the client backend and that the user has not tampered with it. For example, by requiring the usage of pushed authorization request (PAR) or JWT-secured Authorization Request (JAR).
 
 In practice this means sourcing `authorization_details` from a PAR-pushed or JAR-signed request, never raw browser input.
 

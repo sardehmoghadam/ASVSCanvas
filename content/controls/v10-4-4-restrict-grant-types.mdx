@@ -19,7 +19,7 @@ tags:
   - grant-types
   - implicit-flow
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Grant types are privilege highways; the more a client can use, the more paths an
 
 ## Main Security Requirement
 
-> Verify that for a given client, the authorization server only allows the usage of grants that this client needs to use. Note that the grants token (Implicit flow) and password (Resource Owner Password Credentials flow) must no longer be used.
+> Verify that for a given client, the authorization server only allows the usage of grants that this client needs to use. Note that the grants 'token' (Implicit flow) and 'password' (Resource Owner Password Credentials flow) must no longer be used.
 
 In practice this means a per-client allowlist of grant types, with Implicit and password grants disabled.
 

@@ -12,14 +12,14 @@ chapter:
 section:
   id: V7.6
   title: Federated Re-authentication
-level: 1
+level: 2
 tags:
   - session
   - consent
   - sso
   - silent-auth
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Silent session creation means sessions appear without any user-visible event, wh
 
 ## Main Security Requirement
 
-> Verify that creation of a session requires either the user consent or an explicit action, preventing the creation of new application sessions without user interaction.
+> Verify that creation of a session requires either the user's consent or an explicit action, preventing the creation of new application sessions without user interaction.
 
 In practice this means no background/implicit session creation.
 

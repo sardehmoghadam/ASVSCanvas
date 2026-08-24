@@ -12,14 +12,14 @@ chapter:
 section:
   id: V9.2
   title: Token content
-level: 1
+level: 2
 tags:
   - tokens
   - jwt
   - audience
   - aud
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Without audience validation, a token minted for one service can be replayed agai
 
 ## Main Security Requirement
 
-> Verify that the service only accepts tokens which are intended for use with that service (audience). For JWTs, this can be achieved by validating the aud claim against an allowlist defined in the service.
+> Verify that the service only accepts tokens which are intended for use with that service (audience). For JWTs, this can be achieved by validating the 'aud' claim against an allowlist defined in the service.
 
 ## Common Failure Patterns
 

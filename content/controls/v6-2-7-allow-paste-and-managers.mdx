@@ -19,7 +19,7 @@ tags:
   - password-manager
   - usability
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Blocking paste and password managers is cargo-cult security: it assumes a human 
 
 ## Main Security Requirement
 
-> Verify that paste functionality, browser password helpers, and external password managers are permitted.
+> Verify that "paste" functionality, browser password helpers, and external password managers are permitted.
 
 In practice this means leaving `autocomplete` enabled and not listening for paste events to suppress them.
 

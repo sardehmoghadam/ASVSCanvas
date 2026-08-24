@@ -12,13 +12,13 @@ chapter:
 section:
   id: V16.5
   title: Error Handling
-level: 1
+level: 3
 tags:
   - error-handling
   - exception-handling
   - availability
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -34,7 +34,7 @@ Any exception that escapes every handler either kills the process (availability 
 
 ## Main Security Requirement
 
-> Verify that a last resort error handler is defined which will catch all unhandled exceptions. This is both to avoid losing error details that must go to log files and to ensure that an error does not take down the entire application process, leading to a loss of availability.
+> Verify that a "last resort" error handler is defined which will catch all unhandled exceptions. This is both to avoid losing error details that must go to log files and to ensure that an error does not take down the entire application process, leading to a loss of availability.
 
 In practice this means a global exception handler plus a supervisor to restart on crash.
 

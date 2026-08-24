@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.4
   title: OAuth Authorization Server
-level: 1
+level: 3
 tags:
   - oauth
   - authorization-server
   - par
   - code-grant
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ PAR moves the authorization request out of the browser query string, where param
 
 ## Main Security Requirement
 
-> Verify that grant type code is always used together with pushed authorization requests (PAR).
+> Verify that grant type 'code' is always used together with pushed authorization requests (PAR).
 
 In practice this means the authorization endpoint receives a `request_uri` rather than raw parameters.
 

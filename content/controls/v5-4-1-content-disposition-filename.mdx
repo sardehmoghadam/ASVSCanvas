@@ -1,4 +1,4 @@
-﻿---
+---
 schemaVersion: "1.0.0"
 asvsVersion: "5.0.0"
 controlId: V5.4.1
@@ -12,14 +12,14 @@ chapter:
 section:
   id: V5.4
   title: File Download
-level: 1
+level: 2
 tags:
   - content-disposition
   - filename
   - download
   - sanitization
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -27,7 +27,7 @@ references:
 
 ## What This Control Means
 
-When a download response is generated, the filename shown to the user comes from the `Content-Disposition` header â€” and that name must be set by the application, not taken raw from the request. User-supplied filenames, whether in JSON, JSONP, or URL parameters, must be validated or simply ignored.
+When a download response is generated, the filename shown to the user comes from the `Content-Disposition` header — and that name must be set by the application, not taken raw from the request. User-supplied filenames, whether in JSON, JSONP, or URL parameters, must be validated or simply ignored.
 
 ## Why This Matters
 
@@ -41,10 +41,10 @@ In practice this means the server sets the `filename` and never reflects the use
 
 ## Common Failure Patterns
 
-- **Reflecting request filename** â€” copying the param straight into the header.
-- **CRLF injection** â€” unvalidated `\r\n` in the filename splitting headers.
-- **No Content-Disposition** â€” relying on the URL path to name downloads.
-- **Allowing control chars** â€” unescaped quotes/semicolons breaking the header.
+- **Reflecting request filename** — copying the param straight into the header.
+- **CRLF injection** — unvalidated `\r\n` in the filename splitting headers.
+- **No Content-Disposition** — relying on the URL path to name downloads.
+- **Allowing control chars** — unescaped quotes/semicolons breaking the header.
 
 ## Secure Implementation
 

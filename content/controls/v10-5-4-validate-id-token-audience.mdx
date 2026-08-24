@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.5
   title: OIDC Client
-level: 1
+level: 2
 tags:
   - oidc
   - client
   - audience
   - aud
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ An ID Token is a credential the client will present to itself as proof of authen
 
 ## Main Security Requirement
 
-> Verify that the client validates that the ID Token is intended to be used for that client (audience) by checking that the aud claim from the token is equal to the client_id value for the client.
+> Verify that the client validates that the ID Token is intended to be used for that client (audience) by checking that the 'aud' claim from the token is equal to the 'client_id' value for the client.
 
 In practice this means passing the client's `client_id` as the required audience during token validation.
 

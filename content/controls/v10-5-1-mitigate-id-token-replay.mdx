@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.5
   title: OIDC Client
-level: 1
+level: 2
 tags:
   - oidc
   - client
   - replay
   - nonce
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ An ID Token is a signed assertion of authentication, so a captured one could be 
 
 ## Main Security Requirement
 
-> Verify that the client (as the relying party) mitigates ID Token replay attacks. For example, by ensuring that the nonce claim in the ID Token matches the nonce value sent in the authentication request to the OpenID Provider (in OAuth2 referred to as the authorization request sent to the authorization server).
+> Verify that the client (as the relying party) mitigates ID Token replay attacks. For example, by ensuring that the 'nonce' claim in the ID Token matches the 'nonce' value sent in the authentication request to the OpenID Provider (in OAuth2 refereed to as the authorization request sent to the authorization server).
 
 In practice this means generating a `nonce`, sending it in the request, and validating it when the ID Token returns.
 

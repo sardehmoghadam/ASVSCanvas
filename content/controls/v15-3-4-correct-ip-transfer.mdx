@@ -12,14 +12,14 @@ chapter:
 section:
   id: V15.3
   title: Defensive Coding
-level: 1
+level: 2
 tags:
   - defensive-coding
   - ip-address
   - proxy
   - rate-limiting
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ If the app trusts `X-Forwarded-For` (or any client-set header) blindly, an attac
 
 ## Main Security Requirement
 
-> Verify that all proxying and middleware components transfer the user original IP address correctly using trusted data fields that cannot be manipulated by the end user, and the application and web server use this correct value for logging and security decisions such as rate limiting, taking into account that even the original IP address may not be reliable due to dynamic IPs, VPNs, or corporate firewalls.
+> Verify that all proxying and middleware components transfer the user's original IP address correctly using trusted data fields that cannot be manipulated by the end user, and the application and web server use this correct value for logging and security decisions such as rate limiting, taking into account that even the original IP address may not be reliable due to dynamic IPs, VPNs, or corporate firewalls.
 
 In practice this means trusted proxy configuration and overwriting client-set forwarding headers.
 

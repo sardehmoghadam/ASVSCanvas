@@ -12,14 +12,14 @@ chapter:
 section:
   id: V8.3
   title: Operation Level Authorization
-level: 1
+level: 3
 tags:
   - authorization
   - delegation
   - impersonation
   - service-accounts
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ If a downstream service authorizes using the intermediary's privileged service a
 
 ## Main Security Requirement
 
-> Verify that access to an object is based on the originating subject (e.g., consumer) permissions, not on the permissions of any intermediary or service acting on their behalf. For example, if a consumer calls a web service using a self-contained token for authentication, and the service then requests data from a different service, the second service will use the consumer token, rather than a machine-to-machine token from the first service, to make permission decisions.
+> Verify that access to an object is based on the originating subject's (e.g. consumer's) permissions, not on the permissions of any intermediary or service acting on their behalf. For example, if a consumer calls a web service using a self-contained token for authentication, and the service then requests data from a different service, the second service will use the consumer's token, rather than a machine-to-machine token from the first service, to make permission decisions.
 
 In practice this means propagating the original caller's identity through the chain.
 

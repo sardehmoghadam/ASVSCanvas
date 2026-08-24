@@ -12,14 +12,14 @@ chapter:
 section:
   id: V3.4
   title: Browser Security Mechanism Headers
-level: 1
+level: 2
 tags:
   - csp
   - frame-ancestors
   - clickjacking
   - x-frame-options
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Clickjacking works by framing your UI inside an attacker's page and tricking the
 
 ## Main Security Requirement
 
-> Verify that the web application uses the `frame-ancestors` directive of the Content-Security-Policy header field for every HTTP response to ensure that it cannot be embedded by default and that embedding of specific resources is allowed only when necessary. Note that the X-Frame-Options header field, although supported by browsers, is obsolete and may not be relied upon.
+> Verify that the web application uses the frame-ancestors directive of the Content-Security-Policy header field for every HTTP response to ensure that it cannot be embedded by default and that embedding of specific resources is allowed only when necessary. Note that the X-Frame-Options header field, although supported by browsers, is obsolete and may not be relied upon.
 
 In practice this means `frame-ancestors` on every response, defaulting to `'none'` or `'self'` and opening only named, needed origins.
 

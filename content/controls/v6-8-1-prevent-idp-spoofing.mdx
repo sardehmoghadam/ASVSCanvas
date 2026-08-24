@@ -12,14 +12,14 @@ chapter:
 section:
   id: V6.8
   title: Authentication with an Identity Provider
-level: 1
+level: 2
 tags:
   - identity-provider
   - idp
   - spoofing
   - namespace
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Without namespacing, an attacker can create an account with the same user ID on 
 
 ## Main Security Requirement
 
-> Verify that, if the application supports multiple identity providers (IdPs), the user identity cannot be spoofed via another supported identity provider (e.g., by using the same user identifier). The standard mitigation would be for the application to register and identify the user using a combination of the IdP ID (serving as a namespace) and the user ID in the IdP.
+> Verify that, if the application supports multiple identity providers (IdPs), the user's identity cannot be spoofed via another supported identity provider (eg. by using the same user identifier). The standard mitigation would be for the application to register and identify the user using a combination of the IdP ID (serving as a namespace) and the user's ID in the IdP.
 
 In practice this means a composite, provider-scoped subject, not a bare `sub`/username.
 

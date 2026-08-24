@@ -19,7 +19,7 @@ tags:
   - http-headers
   - iana
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Without an explicit charset, browsers fall back to character-set detection ("sni
 
 ## Main Security Requirement
 
-> Verify that every HTTP response with a message body contains a Content-Type header field that matches the actual content of the response, including the charset parameter to specify safe character encoding (e.g., UTF-8, ISO-8859-1) according to IANA Media Types, such as text/*, */+xml and */xml.
+> Verify that every HTTP response with a message body contains a Content-Type header field that matches the actual content of the response, including the charset parameter to specify safe character encoding (e.g., UTF-8, ISO-8859-1) according to IANA Media Types, such as "text/", "/+xml" and "/xml".
 
 In practice this means: always emit `Content-Type` explicitly, and include `; charset=utf-8` on every textual, XML-based, or notification media type.
 

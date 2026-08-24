@@ -12,14 +12,14 @@ chapter:
 section:
   id: V15.4
   title: Safe Concurrency
-level: 1
+level: 3
 tags:
   - concurrency
   - toctou
   - atomic
   - race-condition
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Between "check" and "use" there's a gap an attacker can exploit: the file you ve
 
 ## Main Security Requirement
 
-> Verify that checks on a resource state, such as its existence or permissions, and the actions that depend on them are performed as a single atomic operation to prevent time-of-check to time-of-use (TOCTOU) race conditions. For example, checking if a file exists before opening it, or verifying a user access before granting it.
+> Verify that checks on a resource's state, such as its existence or permissions, and the actions that depend on them are performed as a single atomic operation to prevent time-of-check to time-of-use (TOCTOU) race conditions. For example, checking if a file exists before opening it, or verifying a user's access before granting it.
 
 In practice this means operating on an already-opened handle or doing check+use in one locked step.
 

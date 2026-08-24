@@ -12,13 +12,13 @@ chapter:
 section:
   id: V10.2
   title: OAuth Client
-level: 1
+level: 2
 tags:
   - oauth
   - mix-up-attack
   - issuer-validation
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -34,7 +34,7 @@ A mix-up attack dupes the client into sending its `state`, code, or token reques
 
 ## Main Security Requirement
 
-> Verify that, if the OAuth client can interact with more than one authorization server, it has a defense against mix-up attacks. For example, it could require that the authorization server return the iss parameter value and validate it in the authorization response and the token response.
+> Verify that, if the OAuth client can interact with more than one authorization server, it has a defense against mix-up attacks. For example, it could require that the authorization server return the 'iss' parameter value and validate it in the authorization response and the token response.
 
 In practice this means comparing the returned `iss` to the pre-configured issuer for that flow.
 

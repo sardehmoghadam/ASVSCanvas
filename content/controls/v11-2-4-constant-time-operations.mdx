@@ -12,14 +12,14 @@ chapter:
 section:
   id: V11.2
   title: Secure Cryptography Implementation
-level: 1
+level: 3
 tags:
   - cryptography
   - constant-time
   - side-channel
   - timing-attack
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ If the time a comparison or computation takes depends on a secret, an attacker w
 
 ## Main Security Requirement
 
-> Verify that all cryptographic operations are constant-time, with no short-circuit operations in comparisons, calculations, or returns, to avoid leaking information.
+> Verify that all cryptographic operations are constant-time, with no 'short-circuit' operations in comparisons, calculations, or returns, to avoid leaking information.
 
 In practice this means constant-time comparison and no secret-dependent branches.
 

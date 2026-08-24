@@ -12,14 +12,14 @@ chapter:
 section:
   id: V14.2
   title: General Data Protection
-level: 1
+level: 2
 tags:
   - data-protection
   - trackers
   - sensitive-data
   - privacy
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ A tracker script included on a page can read the page, capture form input, and p
 
 ## Main Security Requirement
 
-> Verify that defined sensitive data is not sent to untrusted parties (e.g., user trackers) to prevent unwanted collection of data outside of the application control.
+> Verify that defined sensitive data is not sent to untrusted parties (e.g., user trackers) to prevent unwanted collection of data outside of the application's control.
 
 In practice this means third-party scripts/integrations never receive classified data.
 

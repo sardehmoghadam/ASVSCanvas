@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.6
   title: OpenID Provider
-level: 1
+level: 2
 tags:
   - oidc
   - provider
   - logout
   - dos
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ A logout endpoint that ends sessions on a bare request lets anyone inject logout
 
 ## Main Security Requirement
 
-> Verify that the OpenID Provider mitigates denial of service through forced logout. By obtaining explicit confirmation from the end-user or, if present, validating parameters in the logout request (initiated by the relying party), such as the id_token_hint.
+> Verify that the OpenID Provider mitigates denial of service through forced logout. By obtaining explicit confirmation from the end-user or, if present, validating parameters in the logout request (initiated by the relying party), such as the 'id_token_hint'.
 
 In practice this means either a confirmation prompt or validation of the logout request's bound parameters.
 

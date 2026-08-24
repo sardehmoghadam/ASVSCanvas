@@ -12,13 +12,13 @@ chapter:
 section:
   id: V3.3
   title: Cookie Setup
-level: 1
+level: 2
 tags:
   - cookies
   - host-prefix
   - domain-locking
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -34,7 +34,7 @@ Cookies without a scope lock are inherited by subdomains and can be set or overw
 
 ## Main Security Requirement
 
-> Verify that cookies have the `__Host-` prefix for the cookie name unless they are explicitly designed to be shared with other hosts.
+> Verify that cookies have the '__Host-' prefix for the cookie name unless they are explicitly designed to be shared with other hosts.
 
 In practice this means every host-scoped cookie gets the prefix, and any `Domain`-scoped cookie is an explicit, reviewed exception.
 

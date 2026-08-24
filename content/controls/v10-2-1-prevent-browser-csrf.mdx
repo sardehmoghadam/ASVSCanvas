@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.2
   title: OAuth Client
-level: 1
+level: 2
 tags:
   - oauth
   - csrf
   - pkce
   - state
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ In a CSRF (login/consent CSRF) attack, the victim's browser is tricked into comp
 
 ## Main Security Requirement
 
-> Verify that, if the code flow is used, the OAuth client has protection against browser-based request forgery attacks, commonly known as CSRF, which trigger token requests, either by using proof key for code exchange (PKCE) functionality or checking the state parameter that was sent in the authorization request.
+> Verify that, if the code flow is used, the OAuth client has protection against browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF), which trigger token requests, either by using proof key for code exchange (PKCE) functionality or checking the 'state' parameter that was sent in the authorization request.
 
 In practice this means round-trip verification of `state` and/or PKCE on every code-flow exchange.
 

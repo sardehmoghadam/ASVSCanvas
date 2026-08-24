@@ -12,14 +12,14 @@ chapter:
 section:
   id: V15.2
   title: Security Architecture and Dependencies
-level: 1
+level: 3
 tags:
   - secure-coding
   - isolation
   - sandbox
   - containerization
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ A risky parser or a shell-exec path is where compromise is most likely to happen
 
 ## Main Security Requirement
 
-> Verify that the application implements additional protections around parts of the application which are documented as containing dangerous functionality or using third-party libraries considered to be risky components. This could include techniques such as sandboxing, encapsulation, containerization or network level isolation to delay and deter attackers who compromise one part of an application from pivoting elsewhere in the application.
+> Verify that the application implements additional protections around parts of the application which are documented as containing "dangerous functionality" or using third-party libraries considered to be "risky components". This could include techniques such as sandboxing, encapsulation, containerization or network level isolation to delay and deter attackers who compromise one part of an application from pivoting elsewhere in the application.
 
 In practice this means isolating the documented danger zones.
 

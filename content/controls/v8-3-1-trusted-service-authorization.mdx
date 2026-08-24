@@ -19,7 +19,7 @@ tags:
   - trusted-layer
   - enforcement
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Anything running in the browser or on a consumer-controlled device is fully mani
 
 ## Main Security Requirement
 
-> Verify that the application enforces authorization rules at a trusted service layer and does not rely on controls that an untrusted consumer could manipulate, such as client-side JavaScript.
+> Verify that the application enforces authorization rules at a trusted service layer and doesn't rely on controls that an untrusted consumer could manipulate, such as client-side JavaScript.
 
 In practice this means every sensitive decision is re-checked server-side.
 

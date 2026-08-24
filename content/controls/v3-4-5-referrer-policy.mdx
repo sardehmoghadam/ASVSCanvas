@@ -12,13 +12,13 @@ chapter:
 section:
   id: V3.4
   title: Browser Security Mechanism Headers
-level: 1
+level: 2
 tags:
   - referrer-policy
   - privacy
   - sensitive-data
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -34,7 +34,7 @@ URLs routinely carry secrets — session-like tokens, IDs, search terms, redirec
 
 ## Main Security Requirement
 
-> Verify that the application sets a referrer policy to prevent leakage of technically sensitive data to third-party services via the Referer HTTP request header field. This can be done using the Referrer-Policy HTTP response header field or via HTML element attributes. Sensitive data could include path and query data in the URL, and for internal non-public applications also the hostname.
+> Verify that the application sets a referrer policy to prevent leakage of technically sensitive data to third-party services via the 'Referer' HTTP request header field. This can be done using the Referrer-Policy HTTP response header field or via HTML element attributes. Sensitive data could include path and query data in the URL, and for internal non-public applications also the hostname.
 
 In practice this means a single default policy on the origin, tightened further where links carry sensitive query parameters.
 

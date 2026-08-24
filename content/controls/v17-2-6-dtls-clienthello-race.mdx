@@ -12,14 +12,14 @@ chapter:
 section:
   id: V17.2
   title: Media
-level: 1
+level: 3
 tags:
   - webrtc
   - dtls
   - race-condition
   - clienthello
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -37,7 +37,7 @@ A race in DTLS handshake handling can corrupt the cryptographic state an establi
 
 ## Main Security Requirement
 
-> Verify that the media server is not susceptible to the ClientHello Race Condition vulnerability in Datagram Transport Layer Security (DTLS) by checking if the media server is publicly known to be vulnerable or by performing the race condition test.
+> Verify that the media server is not susceptible to the "ClientHello" Race Condition vulnerability in Datagram Transport Layer Security (DTLS) by checking if the media server is publicly known to be vulnerable or by performing the race condition test.
 
 ## Common Failure Patterns
 

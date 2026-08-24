@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.3
   title: OAuth Resource Server
-level: 1
+level: 2
 tags:
   - oauth
   - resource-server
   - claims
   - authorization
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ An access token is a signed statement of *what was delegated to this client at t
 
 ## Main Security Requirement
 
-> Verify that the resource server enforces authorization decisions based on claims from the access token that define delegated authorization. If claims such as sub, scope, and authorization_details are present, they must be part of the decision.
+> Verify that the resource server enforces authorization decisions based on claims from the access token that define delegated authorization. If claims such as 'sub', 'scope', and 'authorization_details' are present, they must be part of the decision.
 
 In practice this means deriving the caller's identity and permitted actions from the validated token.
 

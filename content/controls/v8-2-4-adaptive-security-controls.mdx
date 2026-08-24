@@ -12,14 +12,14 @@ chapter:
 section:
   id: V8.2
   title: General Authorization Design
-level: 1
+level: 3
 tags:
   - authorization
   - adaptive
   - context
   - risk-based
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Risk is not static once a session begins. A consumer who logged in from a truste
 
 ## Main Security Requirement
 
-> Verify that adaptive security controls based on a consumer environmental and contextual attributes (such as time of day, location, IP address, or device) are implemented for authentication and authorization decisions, as defined in the application documentation. These controls must be applied when the consumer tries to start a new session and also during an existing session.
+> Verify that adaptive security controls based on a consumer's environmental and contextual attributes (such as time of day, location, IP address, or device) are implemented for authentication and authorization decisions, as defined in the application's documentation. These controls must be applied when the consumer tries to start a new session and also during an existing session.
 
 In practice this means context-aware decisions at session creation and on ongoing requests.
 

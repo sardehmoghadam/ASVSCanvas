@@ -12,7 +12,7 @@ chapter:
 section:
   id: V15.1
   title: Secure Coding and Architecture Documentation
-level: 1
+level: 2
 tags:
   - secure-coding
   - documentation
@@ -20,7 +20,7 @@ tags:
   - async
   - queues
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -36,7 +36,7 @@ A heavy operation — export, report, image processing — is a denial-of-servic
 
 ## Main Security Requirement
 
-> Verify that the application documentation identifies functionality which is time-consuming or resource-demanding. This must include how to prevent a loss of availability due to overusing this functionality and how to avoid a situation where building a response takes longer than the consumer timeout. Potential defenses may include asynchronous processing, using queues, and limiting parallel processes per user and per application.
+> Verify that the application documentation identifies functionality which is time-consuming or resource-demanding. This must include how to prevent a loss of availability due to overusing this functionality and how to avoid a situation where building a response takes longer than the consumer's timeout. Potential defenses may include asynchronous processing, using queues, and limiting parallel processes per user and per application.
 
 In practice this means documented heavy paths plus their availability defenses.
 

@@ -12,13 +12,13 @@ chapter:
 section:
   id: V3.7
   title: Other Browser Security Considerations
-level: 1
+level: 3
 tags:
   - redirect
   - notification
   - phishing
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -34,7 +34,7 @@ Attackers use redirects to move victims from a trusted context to a phishing or 
 
 ## Main Security Requirement
 
-> Verify that the application shows a notification when the user is being redirected to a URL outside of the application control, with an option to cancel the navigation.
+> Verify that the application shows a notification when the user is being redirected to a URL outside of the application's control, with an option to cancel the navigation.
 
 In practice this means external redirection is routed through an interstitial page rather than a bare `Location` header in the initial response.
 

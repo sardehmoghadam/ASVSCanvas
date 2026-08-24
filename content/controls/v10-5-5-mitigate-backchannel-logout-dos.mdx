@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.5
   title: OIDC Client
-level: 1
+level: 2
 tags:
   - oidc
   - client
   - logout
   - dos
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Back-channel logout delivers JWT-shaped messages straight to the client's logout
 
 ## Main Security Requirement
 
-> Verify that, when using OIDC back-channel logout, the relying party mitigates denial of service through forced logout and cross-JWT confusion in the logout flow. The client must verify that the logout token is correctly typed with a value of logout+jwt, contains the event claim with the correct member name, and does not contain a nonce claim. Note that it is also recommended to have a short expiration (e.g., 2 minutes).
+> Verify that, when using OIDC back-channel logout, the relying party mitigates denial of service through forced logout and cross-JWT confusion in the logout flow. The client must verify that the logout token is correctly typed with a value of 'logout+jwt', contains the 'event' claim with the correct member name, and does not contain a 'nonce' claim. Note that it is also recommended to have a short expiration (e.g., 2 minutes).
 
 In practice this means validating `typ`, `events`, the absence of `nonce`, and the expiry on every logout token.
 

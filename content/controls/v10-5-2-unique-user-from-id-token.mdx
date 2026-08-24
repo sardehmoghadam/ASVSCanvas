@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.5
   title: OIDC Client
-level: 1
+level: 2
 tags:
   - oidc
   - client
   - user-identity
   - sub
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ If the client keys its accounts on a changeable or reassignable attribute (like 
 
 ## Main Security Requirement
 
-> Verify that the client uniquely identifies the user from ID Token claims, usually the sub claim, which cannot be reassigned to other users (for the scope of an identity provider).
+> Verify that the client uniquely identifies the user from ID Token claims, usually the 'sub' claim, which cannot be reassigned to other users (for the scope of an identity provider).
 
 In practice this means using `sub` (plus issuer) as the account key, not mutable attributes.
 

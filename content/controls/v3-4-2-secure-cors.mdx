@@ -18,7 +18,7 @@ tags:
   - access-control
   - origin
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -34,7 +34,7 @@ Naively reflecting the request's `Origin` into `Access-Control-Allow-Origin` let
 
 ## Main Security Requirement
 
-> Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header field is a fixed value by the application, or if the Origin HTTP request header field value is used, it is validated against an allowlist of trusted origins. When Access-Control-Allow-Origin: * needs to be used, verify that the response does not include any sensitive information.
+> Verify that the Cross-Origin Resource Sharing (CORS) Access-Control-Allow-Origin header field is a fixed value by the application, or if the Origin HTTP request header field value is used, it is validated against an allowlist of trusted origins. When 'Access-Control-Allow-Origin: *' needs to be used, verify that the response does not include any sensitive information.
 
 In practice: never trust `req.headers.origin` before comparing it to a static allowlist, and never combine wildcard with credentials.
 

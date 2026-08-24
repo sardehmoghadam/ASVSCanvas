@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.4
   title: OAuth Authorization Server
-level: 1
+level: 2
 tags:
   - oauth
   - authorization-server
   - dynamic-registration
   - consent
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Dynamic registration lets strangers create clients on demand. A malicious client
 
 ## Main Security Requirement
 
-> Verify that if the authorization server supports unauthenticated dynamic client registration, it mitigates the risk of malicious client applications. It must validate client metadata such as any registered URIs, ensure the user consent, and warn the user before processing an authorization request with an untrusted client application.
+> Verify that if the authorization server supports unauthenticated dynamic client registration, it mitigates the risk of malicious client applications. It must validate client metadata such as any registered URIs, ensure the user's consent, and warn the user before processing an authorization request with an untrusted client application.
 
 In practice this means stricter validation and stronger consent for dynamically-registered (untrusted) clients.
 

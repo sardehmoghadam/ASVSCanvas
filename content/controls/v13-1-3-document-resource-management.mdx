@@ -12,7 +12,7 @@ chapter:
 section:
   id: V13.1
   title: Configuration Documentation
-level: 1
+level: 3
 tags:
   - configuration
   - documentation
@@ -20,7 +20,7 @@ tags:
   - timeout
   - retry
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -36,7 +36,7 @@ Leaked handles and un-timeboxed retries are the silent killers of production sys
 
 ## Main Security Requirement
 
-> Verify that the application documentation defines resource-management strategies for every external system or service it uses (e.g., databases, file handles, threads, HTTP connections). This should include resource-release procedures, timeout settings, failure handling, and where retry logic is implemented, specifying retry limits, delays, and back-off algorithms.
+> Verify that the application documentation defines resource-management strategies for every external system or service it uses (e.g., databases, file handles, threads, HTTP connections). This should include resource-release procedures, timeout settings, failure handling, and where retry logic is implemented, specifying retry limits, delays, and back-off algorithms. For synchronous HTTP request-response operations it should mandate short timeouts and either disable retries or strictly limit retries to prevent cascading delays and resource exhaustion.
 
 In practice this means a documented, coded resource policy per dependency.
 

@@ -18,7 +18,7 @@ tags:
   - secure
   - tls
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -34,7 +34,7 @@ A cookie without `Secure` is sent over plain HTTP, where a network attacker can 
 
 ## Main Security Requirement
 
-> Verify that cookies have the Secure attribute set, and if the `__Host-` prefix is not used for the cookie name, the `__Secure-` prefix must be used for the cookie name.
+> Verify that cookies have the 'Secure' attribute set, and if the '\__Host-' prefix is not used for the cookie name, the '__Secure-' prefix must be used for the cookie name.
 
 In practice this means every session-bearing cookie is both `Secure` and named with the appropriate prefix unless it is deliberately host-shared.
 

@@ -12,14 +12,14 @@ chapter:
 section:
   id: V6.4
   title: Authentication Factor Lifecycle and Recovery
-level: 1
+level: 3
 tags:
   - password
   - reset
   - admin
   - privilege
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ If admins can set a password, they hold — and could be compelled or bribed to 
 
 ## Main Security Requirement
 
-> Verify that administrative users can initiate the password reset process for the user, but that this does not allow them to change or choose the user password. This prevents a situation where they know the user password.
+> Verify that administrative users can initiate the password reset process for the user, but that this does not allow them to change or choose the user's password. This prevents a situation where they know the user's password.
 
 In practice this means an admin-invoked reset that delivers a token to the user, not a chosen password.
 

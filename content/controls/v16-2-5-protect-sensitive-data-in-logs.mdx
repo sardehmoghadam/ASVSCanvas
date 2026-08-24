@@ -12,14 +12,14 @@ chapter:
 section:
   id: V16.2
   title: General Logging
-level: 1
+level: 2
 tags:
   - logging
   - sensitive-data
   - masking
   - data-protection
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Log files are a honeypot for attackers — credentials, tokens, PANs, and PII wr
 
 ## Main Security Requirement
 
-> Verify that when logging sensitive data, the application enforces logging based on the data protection level. For example, it may not be allowed to log certain data, such as credentials or payment details. Other data, such as session tokens, may only be logged by being hashed or masked, either in full or partially.
+> Verify that when logging sensitive data, the application enforces logging based on the data's protection level. For example, it may not be allowed to log certain data, such as credentials or payment details. Other data, such as session tokens, may only be logged by being hashed or masked, either in full or partially.
 
 In practice this means a redaction/masking policy applied at the logging boundary.
 

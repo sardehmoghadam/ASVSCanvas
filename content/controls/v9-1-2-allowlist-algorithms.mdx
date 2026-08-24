@@ -19,7 +19,7 @@ tags:
   - jwt
   - key-confusion
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Algorithm confusion is one of the most reliable ways to forge tokens. If a serve
 
 ## Main Security Requirement
 
-> Verify that only algorithms on an allowlist can be used to create and verify self-contained tokens, for a given context. The allowlist must include the permitted algorithms, ideally only either symmetric or asymmetric algorithms, and must not include the None algorithm. If both symmetric and asymmetric must be supported, additional controls will be needed to prevent key confusion.
+> Verify that only algorithms on an allowlist can be used to create and verify self-contained tokens, for a given context. The allowlist must include the permitted algorithms, ideally only either symmetric or asymmetric algorithms, and must not include the 'None' algorithm. If both symmetric and asymmetric must be supported, additional controls will be needed to prevent key confusion.
 
 ## Common Failure Patterns
 

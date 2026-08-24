@@ -12,14 +12,14 @@ chapter:
 section:
   id: V13.2
   title: Backend Communication Configuration
-level: 1
+level: 2
 tags:
   - configuration
   - authentication
   - backend
   - service-accounts
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Internal hops are prime targets for lateral movement, and a single shared, never
 
 ## Main Security Requirement
 
-> Verify that communications between backend application components that do not support the application standard user session mechanism, including APIs, middleware, and data layers, are authenticated. Authentication must use individual service accounts, short-term tokens, or certificate-based authentication and not unchanging credentials such as passwords, API keys, or shared accounts with privileged access.
+> Verify that communications between backend application components that don't support the application's standard user session mechanism, including APIs, middleware, and data layers, are authenticated. Authentication must use individual service accounts, short-term tokens, or certificate-based authentication and not unchanging credentials such as passwords, API keys, or shared accounts with privileged access.
 
 In practice this means per-service ephemeral/certificate identity.
 

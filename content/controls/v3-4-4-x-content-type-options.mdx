@@ -12,14 +12,14 @@ chapter:
 section:
   id: V3.4
   title: Browser Security Mechanism Headers
-level: 1
+level: 2
 tags:
   - content-type
   - x-content-type-options
   - mime-sniffing
   - corb
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Content sniffing is how a file that is really HTML gets rendered as HTML even th
 
 ## Main Security Requirement
 
-> Verify that all HTTP responses contain an X-Content-Type-Options: nosniff header field. This instructs browsers not to use content sniffing and MIME type guessing for the given response, and to require the response Content-Type header field value to match the destination resource. For example, the response to a request for a style is only accepted if the response Content-Type is text/css. This also enables the use of the Cross-Origin Read Blocking (CORB) functionality by the browser.
+> Verify that all HTTP responses contain an 'X-Content-Type-Options: nosniff' header field. This instructs browsers not to use content sniffing and MIME type guessing for the given response, and to require the response's Content-Type header field value to match the destination resource. For example, the response to a request for a style is only accepted if the response's Content-Type is 'text/css'. This also enables the use of the Cross-Origin Read Blocking (CORB) functionality by the browser.
 
 In practice this is a single, static, always-on header applied by shared middleware or web-server config.
 

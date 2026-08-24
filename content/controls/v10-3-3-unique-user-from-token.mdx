@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.3
   title: OAuth Resource Server
-level: 1
+level: 2
 tags:
   - oauth
   - resource-server
   - user-identity
   - iss-sub
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ A bare `sub` value is only unique *within* one issuer. Two different identity pr
 
 ## Main Security Requirement
 
-> Verify that if an access control decision requires identifying a unique user from an access token (JWT or related token introspection response), the resource server identifies the user from claims that cannot be reassigned to other users. Typically, it means using a combination of iss and sub claims.
+> Verify that if an access control decision requires identifying a unique user from an access token (JWT or related token introspection response), the resource server identifies the user from claims that cannot be reassigned to other users. Typically, it means using a combination of 'iss' and 'sub' claims.
 
 In practice this means the canonical user key is `iss + sub` (or equivalent), never `sub` alone.
 

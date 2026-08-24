@@ -12,14 +12,14 @@ chapter:
 section:
   id: V3.7
   title: Other Browser Security Considerations
-level: 1
+level: 3
 tags:
   - hsts
   - preload
   - tls
   - browser
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Header-delivered HSTS only helps after a first successful HTTPS visit, leaving t
 
 ## Main Security Requirement
 
-> Verify that the application top-level domain (e.g., site.tld) is added to the public preload list for HTTP Strict Transport Security (HSTS). This ensures that the use of TLS for the application is built directly into the main browsers, rather than relying only on the Strict-Transport-Security response header field.
+> Verify that the application's top-level domain (e.g., site.tld) is added to the public preload list for HTTP Strict Transport Security (HSTS). This ensures that the use of TLS for the application is built directly into the main browsers, rather than relying only on the Strict-Transport-Security response header field.
 
 In practice this means submitting the apex domain to hstspreload.org and meeting its strict submission requirements on every covered host.
 

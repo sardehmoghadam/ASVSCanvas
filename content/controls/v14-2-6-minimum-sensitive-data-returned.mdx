@@ -12,14 +12,14 @@ chapter:
 section:
   id: V14.2
   title: General Data Protection
-level: 1
+level: 3
 tags:
   - data-protection
   - data-minimization
   - masking
   - ui
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Sending more sensitive data than a screen needs expands the attack surface for f
 
 ## Main Security Requirement
 
-> Verify that the application only returns the minimum required sensitive data for the application functionality. For example, only returning some of the digits of a credit card number and not the full number. If the complete data is required, it should be masked in the user interface unless the user specifically views it.
+> Verify that the application only returns the minimum required sensitive data for the application's functionality. For example, only returning some of the digits of a credit card number and not the full number. If the complete data is required, it should be masked in the user interface unless the user specifically views it.
 
 In practice this means data minimization in responses plus reveal-on-demand masking.
 

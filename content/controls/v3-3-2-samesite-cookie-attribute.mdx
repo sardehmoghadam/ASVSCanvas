@@ -12,13 +12,13 @@ chapter:
 section:
   id: V3.3
   title: Cookie Setup
-level: 1
+level: 2
 tags:
   - cookies
   - samesite
   - csrf
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -34,7 +34,7 @@ Without a proper `SameSite` value, the browser happily sends your session cookie
 
 ## Main Security Requirement
 
-> Verify that each cookie SameSite attribute value is set according to the purpose of the cookie, to limit exposure to user interface redress attacks and browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).
+> Verify that each cookie's 'SameSite' attribute value is set according to the purpose of the cookie, to limit exposure to user interface redress attacks and browser-based request forgery attacks, commonly known as cross-site request forgery (CSRF).
 
 In practice this means every `Set-Cookie` carries an explicit `SameSite` that matches intent — no silent defaults.
 

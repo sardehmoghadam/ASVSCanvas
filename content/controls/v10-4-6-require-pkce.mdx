@@ -12,14 +12,14 @@ chapter:
 section:
   id: V10.4
   title: OAuth Authorization Server
-level: 1
+level: 2
 tags:
   - oauth
   - authorization-server
   - pkce
   - code-interception
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Authorization codes can be intercepted mid-flight (via stolen redirects, leaked 
 
 ## Main Security Requirement
 
-> Verify that, if the code grant is used, the authorization server mitigates authorization code interception attacks by requiring proof key for code exchange (PKCE). For authorization requests, the authorization server must require a valid code_challenge value and must not accept a code_challenge_method value of plain. For a token request, it must require validation of the code_verifier parameter.
+> Verify that, if the code grant is used, the authorization server mitigates authorization code interception attacks by requiring proof key for code exchange (PKCE). For authorization requests, the authorization server must require a valid 'code_challenge' value and must not accept a 'code_challenge_method' value of 'plain'. For a token request, it must require validation of the 'code_verifier' parameter.
 
 In practice this means mandating `S256` PKCE on every code-flow authorization and token exchange.
 

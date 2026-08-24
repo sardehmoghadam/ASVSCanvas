@@ -12,14 +12,14 @@ chapter:
 section:
   id: V6.8
   title: Authentication with an Identity Provider
-level: 1
+level: 2
 tags:
   - identity-provider
   - oidc
   - claims
   - auth-strength
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ An IdP might vouch that the user is authenticated without saying *how*. If the a
 
 ## Main Security Requirement
 
-> Verify that, if an application uses a separate Identity Provider (IdP) and expects specific authentication strength, methods, or recentness for specific functions, the application verifies this using the information returned by the IdP. For example, if OIDC is used, this might be achieved by validating ID Token claims such as acr, amr, and auth_time (if present). If the IdP does not provide this information, the application must have a documented fallback approach that assumes that the minimum strength authentication mechanism was used (for example, single-factor authentication using username and password).
+> Verify that, if an application uses a separate Identity Provider (IdP) and expects specific authentication strength, methods, or recentness for specific functions, the application verifies this using the information returned by the IdP. For example, if OIDC is used, this might be achieved by validating ID Token claims such as 'acr', 'amr', and 'auth_time' (if present). If the IdP does not provide this information, the application must have a documented fallback approach that assumes that the minimum strength authentication mechanism was used (for example, single-factor authentication using username and password).
 
 In practice this means mapping requirement → required claims and defaulting to minimum when absent.
 

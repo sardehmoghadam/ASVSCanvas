@@ -12,14 +12,14 @@ chapter:
 section:
   id: V12.1
   title: General TLS Security Guidance
-level: 1
+level: 3
 tags:
   - tls
   - ech
   - sni
   - metadata
 difficulty: advanced
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Even with TLS, the initial ClientHello is traditionally sent in cleartext, leaki
 
 ## Main Security Requirement
 
-> Verify that Encrypted Client Hello (ECH) is enabled in the application TLS settings to prevent exposure of sensitive metadata, such as the Server Name Indication (SNI), during TLS handshake processes.
+> Verify that Encrypted Client Hello (ECH) is enabled in the application's TLS settings to prevent exposure of sensitive metadata, such as the Server Name Indication (SNI), during TLS handshake processes.
 
 In practice this means enabling and configuring ECH on both client and server.
 

@@ -12,14 +12,14 @@ chapter:
 section:
   id: V6.2
   title: Password Security
-level: 1
+level: 2
 tags:
   - password
   - rotation
   - policy
   - nist
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Forced periodic rotation is recognized as harmful: it makes users choose weaker 
 
 ## Main Security Requirement
 
-> Verify that a user password stays valid until it is discovered to be compromised or the user rotates it. The application must not require periodic credential rotation.
+> Verify that a user's password stays valid until it is discovered to be compromised or the user rotates it. The application must not require periodic credential rotation.
 
 In practice this means no `password_expiry_date` enforcement and no rotation nagging.
 

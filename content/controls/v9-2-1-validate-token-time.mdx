@@ -19,7 +19,7 @@ tags:
   - expiration
   - nbf
 difficulty: foundational
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ Expiry and not-before claims limit how long a stolen or leaked token can be repl
 
 ## Main Security Requirement
 
-> Verify that, if a validity time span is present in the token data, the token and its content are accepted only if the verification time is within this validity time span. For example, for JWTs, the claims nbf and exp must be verified.
+> Verify that, if a validity time span is present in the token data, the token and its content are accepted only if the verification time is within this validity time span. For example, for JWTs, the claims 'nbf' and 'exp' must be verified.
 
 ## Common Failure Patterns
 

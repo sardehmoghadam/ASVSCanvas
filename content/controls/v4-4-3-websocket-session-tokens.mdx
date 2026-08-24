@@ -12,14 +12,14 @@ chapter:
 section:
   id: V4.4
   title: WebSocket
-level: 1
+level: 2
 tags:
   - websocket
   - session
   - tokens
   - authentication
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ WebSocket clients frequently run outside the browser cookie context (native apps
 
 ## Main Security Requirement
 
-> Verify that, if the application standard session management cannot be used, dedicated tokens are being used for this, which comply with the relevant Session Management security requirements.
+> Verify that, if the application's standard session management cannot be used, dedicated tokens are being used for this, which comply with the relevant Session Management security requirements.
 
 In practice this means a server-issued token with equivalent strength and lifecycle to the application's session token.
 

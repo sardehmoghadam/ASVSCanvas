@@ -19,7 +19,7 @@ tags:
   - storage
   - clear-site-data
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -35,7 +35,7 @@ A terminated session leaves authenticated content behind if the client doesn't s
 
 ## Main Security Requirement
 
-> Verify that authenticated data is cleared from client storage, such as the browser DOM, after the client or session is terminated. The Clear-Site-Data HTTP response header field may be able to help with this but the client-side should also be able to clear up if the server connection is not available when the session is terminated.
+> Verify that authenticated data is cleared from client storage, such as the browser DOM, after the client or session is terminated. The 'Clear-Site-Data' HTTP response header field may be able to help with this but the client-side should also be able to clear up if the server connection is not available when the session is terminated.
 
 In practice this means local cleanup on logout that doesn't depend on the server.
 

@@ -12,13 +12,13 @@ chapter:
 section:
   id: V1.2
   title: Injection Prevention
-level: 1
+level: 2
 tags:
   - xpath
   - injection
   - xml
 difficulty: intermediate
-reviewStatus: draft
+reviewStatus: reviewed
 references:
   - label: OWASP ASVS 5.0.0
     url: https://owasp.org/www-project-application-security-verification-standard/
@@ -50,14 +50,21 @@ Use an XPath engine that supports variables. Java with `javax.xml.xpath`:
 
 ```java
 import javax.xml.xpath.*;
+import javax.xml.namespace.QName;
 
-// Precompile the query with an argument placeholder.
+// Precompile the query with a value placeholder.
+XPath xpath = XPathFactory.newInstance().newXPath();
 XPathExpression expr = xpath.compile("//user[username = $u and password = $p]");
 
 // Bind values as variables, never by string concatenation.
-NamedElement context = new BasicXPathVariableResolver()
-    .bind("u", username)
-    .bind("p", password);
+xpath.setXPathVariableResolver(name -> {
+    switch (name.getLocalPart()) {
+        case "u": return username;
+        case "p": return password;
+        default:
+            throw new IllegalArgumentException("Unknown variable: " + name);
+    }
+});
 ```
 
 Frameworks such as Saxon and XSLT processors expose native parameter binding; prefer those over the raw JAXP API. Restrict the query as much as possible (single node set, exact match) and treat the XML store as read-only where feasible.
