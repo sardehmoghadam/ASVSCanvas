@@ -24,6 +24,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that TLS clients validate certificates received before communicating with a TLS server.
+When the application acts as a TLS client (calling APIs, databases, or partner systems over TLS), it must validate the server's certificate — chain, signature, hostname, and validity — before sending any data.
+
+## Why This Matters
+
+Encryption without authentication is just a private line to an attacker: a client that skips certificate validation will happily hand secrets to a man-in-the-middle using a self-signed cert. Client-side validation ensures the peer actually is who it claims to be before a single credential or payload is transmitted.
+
+## Main Security Requirement
+
+> Verify that TLS clients validate certificates received before communicating with a TLS server.
+
+In practice this means full server certificate verification on every outbound TLS call.
+
+## Common Failure Patterns
+
+- **Verification disabled** — `rejectUnauthorized: false` or equivalent.
+- **Hostname not checked** — right cert, wrong host accepted.
+- **Blind trust of any CA** — no restriction to expected CAs.
+- **Global insecure flag** — verification turned off app-wide.
+
+## Secure Implementation
+
+Validate chain, hostname, and CA by default:
+
+```javascript
+const https = require("node:https");
+
+const req = https.request({
+  hostname: "api.example.com",
+  rejectUnauthorized: true,     // never set false
+  ca: [expectedRootCA],         // optionally pin to known CAs
+}, (res) => { /* handle response */ });
+```
+
+## Key Rules
+
+- Validate the server certificate on every TLS client call.
+- Verify the chain, signature, and validity period.
+- Check hostname against the certificate.
+- Never disable verification (even for testing, use a test CA).
+- Restrict trust to expected CAs where possible.
+
+## Checklist for Code Review
+
+- Is server certificate validation enabled on outbound TLS?
+- Is the certificate chain and signature verified?
+- Is the hostname checked?
+- Is verification ever disabled globally or per-call?
+- Is trust restricted to expected CAs?

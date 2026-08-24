@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that TLS is used for all connectivity between a client and external facing, HTTP-based services, and does not fall back to insecure or unencrypted communications.
+Every connection between a client and an external-facing HTTP-based service must use TLS, and must never downgrade to plaintext HTTP or another unencrypted channel when negotiation fails.
+
+## Why This Matters
+
+External-facing services are reachable from untrusted networks, so any plaintext hop exposes credentials, session tokens, and payloads to interception. A hard TLS-only posture — with no HTTP fallback — ensures traffic is always confidential and tamper-evident from the client's first byte to the server.
+
+## Main Security Requirement
+
+> Verify that TLS is used for all connectivity between a client and external facing, HTTP-based services, and does not fall back to insecure or unencrypted communications.
+
+In practice this means HTTPS-only with no cleartext fallback.
+
+## Common Failure Patterns
+
+- **Plain HTTP allowed** — service listens without TLS.
+- **Mixed content** — page HTTPS, subresources HTTP.
+- **Redirect to HTTP** — HSTS or redirect downgrades a request.
+- **Silent fallback** — failed TLS negotiation retries in cleartext.
+
+## Secure Implementation
+
+Force HTTPS and block downgrade:
+
+```javascript
+app.use((req, res, next) => {
+  if (!req.secure) {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
+app.use(helmet({
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+}));
+```
+
+## Key Rules
+
+- Serve external-facing HTTP services over TLS only.
+- Never fall back to HTTP or cleartext.
+- Redirect plain HTTP to HTTPS at the edge.
+- Emit HSTS to prevent downgrade.
+- Avoid mixed content on TLS pages.
+
+## Checklist for Code Review
+
+- Is every external HTTP connection using TLS?
+- Is plaintext HTTP disabled (no fallback)?
+- Are HTTP requests redirected to HTTPS?
+- Is HSTS set with a long max-age?
+- Is any mixed (cleartext) content present?

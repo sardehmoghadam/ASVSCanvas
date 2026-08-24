@@ -24,6 +24,54 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that external facing services use publicly trusted TLS certificates.
+External-facing services must present TLS certificates from a publicly trusted certificate authority — not self-signed, internal-CA, or otherwise untrusted certs — so that standard clients (browsers, mobile apps, partners) consider the connection valid by default.
+
+## Why This Matters
+
+A self-signed or internal-CA certificate triggers warnings, trains users to click through errors, and breaks automated consumers that pin to the public trust store. Publicly trusted certificates let every client verify the server's identity without special trust configuration, which is the whole point of an externally reachable service.
+
+## Main Security Requirement
+
+> Verify that external facing services use publicly trusted TLS certificates.
+
+In practice this means certs from a CA in mainstream trust stores.
+
+## Common Failure Patterns
+
+- **Self-signed certs** — clients can't validate the chain.
+- **Internal CA for public** — partners/browsers don't trust it.
+- **Expired public cert** — validity lapses unnoticed.
+- **Mismatched names** — cert not valid for the served hostname.
+
+## Secure Implementation
+
+Provision a publicly trusted certificate (e.g., via ACME):
+
+```javascript
+// Auto-issue and renew a publicly trusted certificate
+const options = {
+  domains: ["api.example.com"],
+  email: "security@example.com",   // ACME account contact
+};
+
+const certs = await acmeClient.issue(options); // Let's Encrypt / public CA
+const tlsOptions = { cert: certs.cert, key: certs.key };
+```
+
+## Key Rules
+
+- Use a publicly trusted CA for external services.
+- Never use self-signed certs on public endpoints.
+- Verify the cert covers the served hostnames (incl. wildcards).
+- Automate issuance and renewal to avoid expiry.
+- Keep the private key protected and off static assets.
+
+## Checklist for Code Review
+
+- Is the certificate from a publicly trusted CA?
+- Are self-signed or internal-CA certs absent on public endpoints?
+- Does the cert cover all served hostnames?
+- Is renewal automated and monitored for expiry?
+- Is the private key stored securely?

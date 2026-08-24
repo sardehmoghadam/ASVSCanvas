@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that an encrypted protocol such as TLS is used for all inbound and outbound connections to and from the application, including monitoring systems, management tools, remote access and SSH, middleware, databases, mainframes, partner systems, or external APIs. The server must not fall back to insecure or unencrypted protocols.
+Every inbound and outbound connection — not just user-facing HTTP — must use an encrypted protocol such as TLS: monitoring systems, management tools, remote access/SSH, middleware, databases, mainframes, partner systems, and external APIs. No connection may fall back to cleartext.
+
+## Why This Matters
+
+Attackers target the weakest link, and the least-visible channel is usually unencrypted: a plaintext database connection, an unencrypted management port, a legacy telnet session. Encrypting all paths closes those side doors so secrets and commands never traverse the network in the clear, regardless of which system is talking.
+
+## Main Security Requirement
+
+> Verify that an encrypted protocol such as TLS is used for all inbound and outbound connections to and from the application, including monitoring systems, management tools, remote access and SSH, middleware, databases, mainframes, partner systems, or external APIs. The server must not fall back to insecure or unencrypted protocols.
+
+In practice this means end-to-end encryption on every connected system.
+
+## Common Failure Patterns
+
+- **Plain DB connections** — no TLS to the database.
+- **Cleartext middleware** — message/queue links unencrypted.
+- **Legacy remote access** — telnet/FTP instead of SSH/SFTP.
+- **Management ports open** — admin access without encryption.
+- **Fallback allowed** — server retries in cleartext.
+
+## Secure Implementation
+
+Enforce TLS on every outbound dependency and forbid fallback:
+
+```javascript
+const config = {
+  database: { ssl: { require: true, rejectUnauthorized: true } },
+  messageBus: { tls: true },
+  metrics: { https: true },
+  partnerApi: { baseUrl: "https://partner.example.com", rejectCerts: true },
+};
+
+function connect(service, opts) {
+  if (!opts.ssl && !opts.tls && !opts.https) {
+    throw new Error("unencrypted connection refused");
+  }
+  return openConnection(service, opts);
+}
+```
+
+## Key Rules
+
+- Encrypt all inbound and outbound connections.
+- Apply TLS to databases, middleware, monitoring, and APIs.
+- Use SSH/SFTP instead of telnet/FTP for remote access.
+- Refuse to fall back to cleartext protocols.
+- Inventory every connection to confirm none is plaintext.
+
+## Checklist for Code Review
+
+- Are all inbound/outbound connections encrypted?
+- Are database and middleware links using TLS?
+- Is remote access via SSH/SFTP, not telnet/FTP?
+- Are monitoring and management channels encrypted?
+- Is any fallback to cleartext possible?

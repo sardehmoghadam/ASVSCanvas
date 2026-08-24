@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application validates that mTLS client certificates are trusted before using the certificate identity for authentication or authorization.
+Before a client certificate's identity is used for authentication or authorization, the application must validate that the certificate itself is trusted — correct chain, signature, validity period, and purpose — not merely that a certificate was presented.
+
+## Why This Matters
+
+Mutual TLS only helps if the server actually verifies what the client sent. Accepting an untrusted, expired, or wrong-purpose certificate lets an attacker mint a self-signed cert and impersonate any client identity. Validation must happen before identity claims are trusted, or mTLS becomes a false sense of security.
+
+## Main Security Requirement
+
+> Verify that the application validates that mTLS client certificates are trusted before using the certificate identity for authentication or authorization.
+
+In practice this means full chain validation before identity extraction.
+
+## Common Failure Patterns
+
+- **No client cert verification** — presentation alone accepted.
+- **Chain/signature skipped** — self-signed certs trusted.
+- **Validity ignored** — expired or not-yet-valid certs accepted.
+- **Identity used first** — authorization before validation.
+
+## Secure Implementation
+
+Validate the chain, then authorize from a validated identity:
+
+```javascript
+import tls from "node:tls";
+
+const server = tls.createServer({
+  requestCert: true,
+  rejectUnauthorized: true,           // enforce chain + signature validation
+  ca: [trustedClientCA],
+}, (socket) => {
+  const cert = socket.getPeerCertificate();
+  if (!cert || socket.authorized !== true) {
+    return socket.destroy();           // untrusted certificate rejected
+  }
+  authorize(cert.subject.CN);          // identity trusted only after validation
+});
+```
+
+## Key Rules
+
+- Verify the client certificate chain and signature.
+- Check validity period and key usage purpose.
+- Validate before using the identity for authn/authz.
+- Reject any certificate that is not explicitly trusted.
+- Bind the CA trust store to a specific internal CA.
+
+## Checklist for Code Review
+
+- Is the client certificate chain fully validated?
+- Are signature and trust path verified?
+- Are validity and purpose constraints checked?
+- Is identity used only after validation succeeds?
+- Are untrusted or self-signed certs rejected?

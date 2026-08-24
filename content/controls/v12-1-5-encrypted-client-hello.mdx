@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that Encrypted Client Hello (ECH) is enabled in the application TLS settings to prevent exposure of sensitive metadata, such as the Server Name Indication (SNI), during TLS handshake processes.
+Encrypted Client Hello (ECH) must be enabled in the TLS configuration so that sensitive handshake metadata — most importantly the Server Name Indication (SNI), which reveals which site a client is visiting — is encrypted and not observable on the wire.
+
+## Why This Matters
+
+Even with TLS, the initial ClientHello is traditionally sent in cleartext, leaking SNI and letting eavesdroppers fingerprint and censor traffic by destination. ECH encrypts that hello, closing one of the last plaintext leaks in TLS and restoring metadata confidentiality alongside session content.
+
+## Main Security Requirement
+
+> Verify that Encrypted Client Hello (ECH) is enabled in the application TLS settings to prevent exposure of sensitive metadata, such as the Server Name Indication (SNI), during TLS handshake processes.
+
+In practice this means enabling and configuring ECH on both client and server.
+
+## Common Failure Patterns
+
+- **ECH disabled** — ClientHello still sent in cleartext.
+- **SNI leaked** — destination name visible on the wire.
+- **Server side not configured** — ECH offered but not terminated.
+- **Fallback to cleartext** — ECH not retried when it fails.
+
+## Secure Implementation
+
+Enable ECH in the client TLS settings:
+
+```javascript
+const tlsOptions = {
+  ecdhCurve: "x25519",
+  // ECH encrypts the ClientHello, hiding SNI from observers
+  ech: {
+    enabled: true,
+    configId: "public-config-id",
+    publicName: "example.com",     // visible only; real SNI stays encrypted
+  },
+};
+```
+
+## Key Rules
+
+- Enable ECH on both client and server where supported.
+- Ensure SNI is not observable during the handshake.
+- Configure a public name distinct from the real SNI.
+- Don't silently fall back to cleartext ClientHello.
+- Verify ECH is active via handshake inspection.
+
+## Checklist for Code Review
+
+- Is ECH enabled in TLS settings?
+- Is SNI protected from observation?
+- Is a public name configured for ECH?
+- Does a failure ever fall back to cleartext hello?
+- Has ECH been verified in a live handshake?

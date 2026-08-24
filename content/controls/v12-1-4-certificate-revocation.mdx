@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that proper certification revocation, such as Online Certificate Status Protocol (OCSP) Stapling, is enabled and configured.
+Certificate revocation checking — such as OCSP stapling — must be enabled and configured, so a certificate that has been revoked (compromised key, deprovisioned service) is rejected rather than trusted until expiry.
+
+## Why This Matters
+
+A certificate that's still within its validity window isn't necessarily trustworthy: it may have been revoked after a key compromise. Without revocation checking, that compromised certificate keeps authenticating until it expires. OCSP stapling lets the server hand over a fresh revocation status during the handshake, without per-connection latency or privacy leaks.
+
+## Main Security Requirement
+
+> Verify that proper certification revocation, such as Online Certificate Status Protocol (OCSP) Stapling, is enabled and configured.
+
+In practice this means stapled OCSP responses verified during the handshake.
+
+## Common Failure Patterns
+
+- **Revocation not checked** — only validity dates examined.
+- **Soft-fail on OCSP** — errors treated as "still valid."
+- **No stapling** — revocation skipped to avoid latency.
+- **Stale OCSP responses** — cached status accepted beyond its lifetime.
+
+## Secure Implementation
+
+Require and verify stapled OCSP responses:
+
+```javascript
+const tlsOptions = {
+  ca: [rootCA],
+  requestOCSP: true,
+  // Reject when the stapled OCSP response indicates revocation
+  checkServerIdentity: (host, cert) => {
+    const status = getOcspStatus(cert);
+    if (status === "revoked") throw new Error("certificate revoked");
+    return verifyHostname(host, cert);
+  },
+};
+```
+
+## Key Rules
+
+- Enable certificate revocation checking.
+- Use OCSP stapling to deliver revocation status efficiently.
+- Treat revoked status as a hard failure.
+- Verify the freshness and signature of OCSP responses.
+- Fall back safely (fail closed) when revocation status is unknown.
+
+## Checklist for Code Review
+
+- Is revocation checking enabled?
+- Is OCSP stapling configured?
+- Are revoked certificates rejected?
+- Are OCSP responses validated for freshness/signature?
+- Is unknown revocation status handled fail-closed?

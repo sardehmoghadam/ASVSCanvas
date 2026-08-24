@@ -25,6 +25,52 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that TLS connections between internal services use trusted certificates. Where internally generated or self-signed certificates are used, the consuming service must be configured to only trust specific internal CAs and specific self-signed certificates.
+Internal TLS connections must use trusted certificates. If a private CA or self-signed certificates are used internally, each consuming service must be explicitly configured to trust only that specific internal CA and those specific certificates — never "any CA."
+
+## Why This Matters
+
+"Just use a self-signed cert and trust everything" is the most common internal-TLS shortcut, and it defeats the purpose: any cert from any party then passes validation. Restricting each service's trust store to the precise internal CA (or exact self-signed certs) preserves authentication so a rogue certificate can't silently impersonate an internal peer.
+
+## Main Security Requirement
+
+> Verify that TLS connections between internal services use trusted certificates. Where internally generated or self-signed certificates are used, the consuming service must be configured to only trust specific internal CAs and specific self-signed certificates.
+
+In practice this means a pinned, scoped trust store per service.
+
+## Common Failure Patterns
+
+- **Trust-anything fallback** — self-signed + verify disabled.
+- **Shared public CA trust** — internal trust in any public CA.
+- **Wrong CA scoping** — one service trusts unrelated CAs.
+- **Self-signed not pinned** — cert accepted without exact match.
+
+## Secure Implementation
+
+Pin the consuming service's trust to the specific internal CA:
+
+```javascript
+const tlsOptions = {
+  ca: [internalRootCA],        // only this internal CA is trusted
+  minVersion: "TLSv1.2",
+  // For self-signed: pin to that exact certificate fingerprint
+  checkServerIdentity: matchPinnedCertificateFingerprint,
+};
+```
+
+## Key Rules
+
+- Use trusted certificates for internal TLS.
+- Configure each service to trust only its specific internal CA.
+- Pin self-signed certs to exact fingerprints.
+- Never disable verification as a workaround.
+- Rotate internal CAs and re-scope trust on change.
+
+## Checklist for Code Review
+
+- Are internal TLS connections using trusted certificates?
+- Is each service's trust scoped to a specific internal CA?
+- Are self-signed certs pinned to exact certificates?
+- Is "trust any CA" or verification-disabled present anywhere?
+- Is trust re-scoped when internal CAs rotate?

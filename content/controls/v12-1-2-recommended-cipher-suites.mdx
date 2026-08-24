@@ -24,6 +24,53 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that only recommended cipher suites are enabled, with the strongest cipher suites set as preferred. L3 applications must only support cipher suites which provide forward secrecy.
+Only recommended cipher suites may be enabled, ordered so the strongest is preferred. At Level 3, every supported cipher suite must provide forward secrecy (ephemeral key exchange) so past traffic can't be decrypted if a long-term key later leaks.
+
+## Why This Matters
+
+Weak cipher suites (RC4, 3DES, CBC without AEAD) are crackable, and non-forward-secret suites (RSA key exchange) let a stolen server key decrypt all recorded history. An allowlist of strong AEAD suites, with forward secrecy mandated at L3, keeps confidentiality intact both now and retroactively.
+
+## Main Security Requirement
+
+> Verify that only recommended cipher suites are enabled, with the strongest cipher suites set as preferred. L3 applications must only support cipher suites which provide forward secrecy.
+
+In practice this means an ordered allowlist of AEAD, forward-secret suites.
+
+## Common Failure Patterns
+
+- **Legacy suites enabled** — RC4, 3DES, CBC-only suites.
+- **RSA key exchange** — no forward secrecy.
+- **Weak suite preferred** — ordering puts an old suite first.
+- **No suite allowlist** — any suite the library supports.
+
+## Secure Implementation
+
+Enforce an ordered allowlist of forward-secret AEAD suites:
+
+```javascript
+const CIPHER_SUITES = [
+  "TLS_AES_256_GCM_SHA384",        // TLS 1.3 (AEAD, forward secret)
+  "TLS_CHACHA20_POLY1305_SHA256",
+  "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384", // TLS 1.2 forward secrecy
+].join(":");
+
+const tlsOptions = { ciphers: CIPHER_SUITES, honorCipherOrder: true };
+```
+
+## Key Rules
+
+- Enable only recommended cipher suites.
+- Order suites so the strongest is negotiated first.
+- Prefer AEAD suites (GCM, ChaCha20-Poly1305).
+- Require forward secrecy (ephemeral ECDHE) at L3.
+- Disallow RC4, 3DES, and non-AEAD CBC suites.
+
+## Checklist for Code Review
+
+- Is a recommended-suite allowlist enforced?
+- Is the strongest suite ordered first?
+- Do L3 suites all provide forward secrecy?
+- Are RC4, 3DES, or CBC-only suites present?
+- Is client cipher order overridden (server preference)?

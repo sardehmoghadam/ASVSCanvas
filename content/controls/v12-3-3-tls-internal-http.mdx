@@ -24,6 +24,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that TLS or another appropriate transport encryption mechanism used for all connectivity between internal, HTTP-based services within the application, and does not fall back to insecure or unencrypted communications.
+Internal HTTP-based services must use TLS (or an equivalent transport layer encryption such as mTLS via a service mesh) for all service-to-service connectivity, with no fallback to plaintext — even though the traffic never leaves the data center.
+
+## Why This Matters
+
+"Inside the network" is no longer a trust boundary: one compromised pod or host can sniff all east-west traffic. Encrypting internal HTTP links prevents lateral-movement sniffing and credential theft between services, and stops an attacker who breaches one component from reading every downstream call.
+
+## Main Security Requirement
+
+> Verify that TLS or another appropriate transport encryption mechanism used for all connectivity between internal, HTTP-based services within the application, and does not fall back to insecure or unencrypted communications.
+
+In practice this means mTLS or equivalent between services, with no plaintext path.
+
+## Common Failure Patterns
+
+- **Plaintext east-west traffic** — internal HTTP between microservices.
+- **Encryption only at edge** — north-south TLS, internal clear.
+- **Fallback allowed** — TLS failure retries in cleartext.
+- **Shared secrets over HTTP** — tokens/keys sent unencrypted.
+
+## Secure Implementation
+
+Terminate mTLS at every service (here via a mesh sidecar):
+
+```yaml
+# service mesh mTLS policy encrypts all service-to-service traffic
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: prod
+spec:
+  mtls:
+    mode: STRICT          # every internal connection is mTLS-encrypted
+```
+
+## Key Rules
+
+- Encrypt all internal HTTP service-to-service traffic.
+- Use mTLS or equivalent, not just server-only TLS.
+- Enforce STRICT mode — no plaintext fallback.
+- Encrypt east-west traffic, not only edge ingress.
+- Verify all internal routes are covered by the policy.
+
+## Checklist for Code Review
+
+- Are all internal HTTP links encrypted?
+- Is mTLS used for service identity as well as encryption?
+- Is plaintext fallback disabled (STRICT)?
+- Is any internal service still listening on plain HTTP?
+- Are service-to-service credentials protected in transit?

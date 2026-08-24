@@ -25,6 +25,67 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that services communicating internally within a system (intra-service communications) use strong authentication to ensure that each endpoint is verified. Strong authentication methods, such as TLS client authentication, must be employed to ensure identity, using public-key infrastructure and mechanisms that are resistant to replay attacks. For microservice architectures, consider using a service mesh to simplify certificate management and enhance security.
+Intra-service communication must use strong authentication so every endpoint's identity is verified. This means public-key-infrastructure-backed authentication such as TLS client authentication (mTLS), resistant to replay, so a service proves who it is on every call — not just that the connection is encrypted.
+
+## Why This Matters
+
+Encryption hides traffic from eavesdroppers but doesn't say who's on the other end. Strong, replay-resistant intra-service auth (typically mTLS with PKI) ensures an attacker who reaches the internal network can't just call a sensitive service and claim to be the billing backend. A service mesh makes this certificate-based mutual auth practical at scale.
+
+## Main Security Requirement
+
+> Verify that services communicating internally within a system (intra-service communications) use strong authentication to ensure that each endpoint is verified. Strong authentication methods, such as TLS client authentication, must be employed to ensure identity, using public-key infrastructure and mechanisms that are resistant to replay attacks. For microservice architectures, consider using a service mesh to simplify certificate management and enhance security.
+
+In practice this means PKI-based mTLS for service identity, ideally via a mesh.
+
+## Common Failure Patterns
+
+- **Encryption without auth** — server-only TLS, no client cert.
+- **Shared static secrets** — one API key reused by all services.
+- **Replay-prone tokens** — nonce-less tokens reused across calls.
+- **No service identity** — unauthenticated internal endpoints.
+
+## Secure Implementation
+
+Require mTLS (client identity) between services, here via a mesh:
+
+```yaml
+# mTLS authenticates both peers with PKI-issued workload identity
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: prod
+spec:
+  mtls:
+    mode: STRICT       # client cert required, replay-resistant, PKI-based
+---
+# Authorize which service may call which endpoint
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: payments-only
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/billing/sa/payments"]
+```
+
+## Key Rules
+
+- Authenticate every intra-service endpoint.
+- Use PKI-based TLS client authentication (mTLS).
+- Ensure authentication resists replay attacks.
+- Prefer a service mesh for certificate lifecycle at scale.
+- Authorize by verified workload identity, not shared secrets.
+
+## Checklist for Code Review
+
+- Is every internal endpoint's identity verified?
+- Is mTLS (client certificate auth) used for intra-service calls?
+- Is authentication replay-resistant?
+- Are shared static secrets avoided?
+- Is authorization tied to verified PKI identity?
