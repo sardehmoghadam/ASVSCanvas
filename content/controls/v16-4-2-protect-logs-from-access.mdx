@@ -24,6 +24,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that logs are protected from unauthorized access and cannot be modified.
+Logs must be protected from unauthorized read access and from modification — read-only to the right roles, tamper-proof to everyone else (including attackers).
+
+## Why This Matters
+
+Logs are the evidence of an attack, so they're the first thing a skilled attacker edits — deleting the entries that show their entry, or reading them to harvest the credentials that leaked into them. If the attacker (or any unauthorized insider) can read or alter logs, incident response is working with a corrupted or stolen record. Strict access control plus write-once/appended integrity makes the audit trail something you can actually trust.
+
+## Main Security Requirement
+
+> Verify that logs are protected from unauthorized access and cannot be modified.
+
+In practice this means least-privilege access plus append-only/integrity-protected storage.
+
+## Common Failure Patterns
+
+- **World-readable logs** — any process/user reads them.
+- **Writable by the app user** — attacker with app access edits logs.
+- **No integrity checks** — tampering undetectable.
+- **Logs on the same host** — delete/encrypt alongside the compromise.
+
+## Secure Implementation
+
+Restrict permissions and make logs append-only:
+
+```dockerfile
+# write logs as a dedicated, unprivileged user; others get read-only or nothing
+RUN useradd --system --no-create-home logwriter
+USER logwriter
+```
+
+```bash
+# append-only + immutable on the log file blocks tampering even by root
+chattr +a /var/log/app/security.log    # append-only
+chattr +i /var/log/app/security.log    # immutable (after rotation settles)
+```
+
+## Key Rules
+
+- Restrict log access by least privilege.
+- Run the app as an unprivileged, separate log writer.
+- Make logs append-only and integrity-protected.
+- Store logs on a system separate from the app.
+- Detect tampering (hashes/append-only attributes).
+
+## Checklist for Code Review
+
+- Are logs readable only by authorized roles?
+- Is the app user prevented from modifying logs?
+- Are logs append-only / tamper-evident?
+- Are logs stored separately from the app?
+- Is tampering detectable after an incident?

@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application continues to operate securely when external resource access fails, for example, by using patterns such as circuit breakers or graceful degradation.
+When an external resource (database, third-party API, message queue) fails, the application must keep operating *securely* — degrading gracefully or tripping a circuit breaker rather than crashing or silently misbehaving.
+
+## Why This Matters
+
+External failures are inevitable, and the failure path is where security slips: a timeout leaves a half-written transaction, a fallback returns stale/unauthorized data, or the app retries in a loop that exhausts its own resources. A circuit breaker stops hammering a dead dependency, and a defined degradation keeps the app in a safe, consistent state — no fail-open, no data corruption, no cascading outage.
+
+## Main Security Requirement
+
+> Verify that the application continues to operate securely when external resource access fails, for example, by using patterns such as circuit breakers or graceful degradation.
+
+In practice this means circuit breakers, timeouts, and safe fallbacks.
+
+## Common Failure Patterns
+
+- **Unbounded retries** — hammering a dead dependency.
+- **Unsafe fallback** — degraded path returns unauthorized data.
+- **Half-written state** — failure leaves a transaction dangling.
+- **Crash on dependency failure** — whole app dies with one service.
+
+## Secure Implementation
+
+Use a circuit breaker with a safe fallback:
+
+```python
+from pybreaker import CircuitBreaker
+
+inventory_breaker = CircuitBreaker(
+    fail_max=5, reset_timeout=30,
+    exclude=[UnavailableError],
+)
+
+@inventory_breaker
+def get_inventory():
+    return inventory_service.fetch()
+
+def order_total(user):
+    try:
+        return compute(get_inventory())
+    except CircuitBreakerError:
+        return "temporarily unavailable"   # safe degradation, not stale data
+```
+
+## Key Rules
+
+- Timeout and bound all external calls.
+- Use circuit breakers to stop cascading failures.
+- Define safe, secure degradation paths.
+- Avoid fail-open or stale-data fallbacks.
+- Keep the app in a consistent state on failure.
+
+## Checklist for Code Review
+
+- Are external calls bounded by timeouts?
+- Is a circuit breaker in place for each dependency?
+- Does degradation avoid returning unauthorized/stale data?
+- Can a dependency failure corrupt state?
+- Does one service's failure cascade?

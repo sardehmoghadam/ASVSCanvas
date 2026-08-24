@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that resource allocation policies prevent thread starvation by ensuring fair access to resources, such as by leveraging thread pools, allowing lower-priority threads to proceed within a reasonable timeframe.
+Resource allocation must guarantee fair access so no thread starves — lower-priority threads must still make progress in a reasonable timeframe, achieved through thread pools, fair queues, or bounded resource scheduling.
+
+## Why This Matters
+
+An unfair scheduler or lock can starve low-priority threads indefinitely: high-priority work keeps seizing the CPU or the lock, and the starved thread never runs — a subtle denial-of-service that holds a connection open forever and silently degrades the app. Fair scheduling (thread pools, fair locks, FIFO queues) makes forward progress a guarantee, not luck.
+
+## Main Security Requirement
+
+> Verify that resource allocation policies prevent thread starvation by ensuring fair access to resources, such as by leveraging thread pools, allowing lower-priority threads to proceed within a reasonable timeframe.
+
+In practice this means fair locks/queues and bounded thread pools.
+
+## Common Failure Patterns
+
+- **Unfair lock** — high-priority thread always wins.
+- **Priority inversion** — low-priority blocks high-priority.
+- **Unbounded pool** — threads created without limits.
+- **Busy-wait** — threads spin instead of waiting fairly.
+
+## Secure Implementation
+
+Use a bounded thread pool with a fair, FIFO queue:
+
+```java
+// fixed-size pool + FIFO queue => every task gets a turn
+ExecutorService pool = new ThreadPoolExecutor(
+    8, 8, 0L, TimeUnit.MILLISECONDS,
+    new ArrayBlockingQueue<>(200, /* fair = */ true)  // fair admission order
+);
+```
+
+```java
+// fair lock lets the longest-waiting thread proceed first
+private final ReentrantLock lock = new ReentrantLock(true); // fair=true
+
+public void run() {
+    lock.lock();
+    try { /* protected work */ } finally { lock.unlock(); }
+}
+```
+
+## Key Rules
+
+- Ensure fair access to shared resources and locks.
+- Use bounded thread pools with FIFO queues.
+- Prefer fair locks for contended resources.
+- Avoid busy-wait and priority inversion.
+- Guarantee lower-priority threads make progress.
+
+## Checklist for Code Review
+
+- Are locks/queues configured for fairness?
+- Are thread pools bounded?
+- Can a low-priority thread be starved indefinitely?
+- Is there busy-waiting or priority inversion?
+- Is forward progress guaranteed for all threads?

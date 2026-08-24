@@ -25,6 +25,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that application documentation highlights third-party libraries which are considered to be risky components.
+Application documentation must explicitly call out which third-party libraries are considered risky — those with weak maintenance, poor security track records, or dangerous capabilities — so everyone knows where to apply extra scrutiny.
+
+## Why This Matters
+
+Not all dependencies are equal. A well-maintained utility and an abandoned parser with an unpatched RCE deserve different treatment, but they look identical in a dependency list. Flagging risky components in documentation makes the elevated risk visible, so reviewers, incident responders, and future maintainers know where to look first and where isolation is warranted.
+
+## Main Security Requirement
+
+> Verify that application documentation highlights third-party libraries which are considered to be risky components.
+
+In practice this means an explicit risky-component list with reasons.
+
+## Common Failure Patterns
+
+- **No risk annotations** — all libraries treated equal.
+- **Risky deps invisible** — known-bad library unflagged.
+- **No rationale** — "risky" with no reason recorded.
+- **Stale list** — new risky deps never added.
+
+## Secure Implementation
+
+Record risky components and why they're flagged:
+
+```yaml
+risky_components:
+  - name: legacy-soap-client
+    reason: unmaintained since 2021, known XXE history
+    mitigations: [isolated service, allowlist parsing]
+  - name: pdf-renderer-x
+    reason: frequent memory-safety CVEs
+    mitigations: [input sandbox, containerization]
+  - name: template-engine-y
+    reason: allows arbitrary code execution
+    mitigations: [sandbox env, restricted context]
+```
+
+## Key Rules
+
+- Highlight risky third-party components in documentation.
+- Record the reason each is considered risky.
+- Note planned mitigations alongside each risk.
+- Keep the list current as dependencies change.
+- Ensure reviewers consult the list during changes.
+
+## Checklist for Code Review
+
+- Are risky libraries explicitly documented?
+- Is a reason recorded for each risk?
+- Are mitigations listed with each risky component?
+- Is the list maintained as dependencies evolve?
+- Do code changes account for flagged components?

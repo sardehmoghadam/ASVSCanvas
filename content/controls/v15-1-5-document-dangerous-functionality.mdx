@@ -24,6 +24,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that application documentation highlights parts of the application where dangerous functionality is being used.
+Application documentation must highlight the parts of the application that use dangerous functionality — command execution, deserialization, file handling, native code, anything with high abuse potential.
+
+## Why This Matters
+
+Dangerous functionality is the thin line between a bug and an RCE: shell execution, unsafe deserialization, and path traversal are where small mistakes turn catastrophic. Documenting exactly where these live tells security review and incident response where to concentrate, and forces each such location to justify itself and carry compensating controls.
+
+## Main Security Requirement
+
+> Verify that application documentation highlights parts of the application where dangerous functionality is being used.
+
+In practice this means a map of dangerous code locations, not just a vague policy.
+
+## Common Failure Patterns
+
+- **Danger zones undocumented** — exec/deserialization invisible.
+- **No compensating controls** — dangerous use unguarded.
+- **List drifts** — new dangerous code never recorded.
+- **Single giant app** — no mapping of where dangers sit.
+
+## Secure Implementation
+
+Record dangerous functionality locations and their controls:
+
+```yaml
+dangerous_functionality:
+  - location: app/services/video/processor.py
+    danger: shell_exec for ffmpeg calls
+    controls: [strict arg allowlist, no shell metacharacters,
+               non-root container, output size cap]
+  - location: app/imports/deserialize.py
+    danger: native object deserialization
+    controls: [data format allowlist, sandbox process,
+               no auto-typing]
+```
+
+## Key Rules
+
+- Document every use of dangerous functionality and where it lives.
+- Record compensating controls for each location.
+- Keep the map current as code changes.
+- Require review sign-off for new dangerous code.
+- Use the map during threat modeling and incident response.
+
+## Checklist for Code Review
+
+- Is dangerous functionality identified and located?
+- Are compensating controls documented per location?
+- Is the map updated with new dangerous code?
+- Is new dangerous functionality gated by review?
+- Is the map used in threat modeling?

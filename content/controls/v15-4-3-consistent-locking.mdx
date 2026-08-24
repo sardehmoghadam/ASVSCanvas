@@ -25,6 +25,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that locks are used consistently to avoid threads getting stuck, whether by waiting on each other or retrying endlessly, and that locking logic stays within the code responsible for managing the resource to ensure locks cannot be inadvertently or maliciously modified by external classes or code.
+Locks must be used consistently — the same order, the same lock object — to avoid deadlocks and livelocks, and locking logic must stay encapsulated inside the code that owns the resource so external code can't tamper with or alter the lock.
+
+## Why This Matters
+
+Inconsistent lock order is the classic deadlock: thread A locks X then waits on Y while thread B locks Y then waits on X — both stuck forever. Exposing lock objects or letting callers alter locking lets a bug (or an attacker) wedge the system. Keeping locks private, ordered, and owned by the resource manager prevents threads from waiting on each other or retrying endlessly.
+
+## Main Security Requirement
+
+> Verify that locks are used consistently to avoid threads getting stuck, whether by waiting on each other or retrying endlessly, and that locking logic stays within the code responsible for managing the resource to ensure locks cannot be inadvertently or maliciously modified by external classes or code.
+
+In practice this means private locks, fixed lock ordering, and encapsulated locking.
+
+## Common Failure Patterns
+
+- **Inconsistent order** — A→B in one path, B→A in another.
+- **Public locks** — lock objects exposed/modifiable externally.
+- **Endless retry** — livelock with no backoff/limit.
+- **Locking scattered** — acquisition outside the resource class.
+
+## Secure Implementation
+
+Keep locks private and acquire them in a fixed, consistent order:
+
+```java
+public class AccountService {
+    private final Object lock = new Object();   // private — external code can't touch it
+
+    // all paths acquire locks in a single fixed order (id order) to avoid deadlock
+    public void transfer(Account from, Account to, long amount) {
+        Account first = from.id() < to.id() ? from : to;
+        Account second = from.id() < to.id() ? to : from;
+
+        synchronized (first.lock()) {
+            synchronized (second.lock()) {      // always same order, no cross-wait
+                from.debit(amount);
+                to.credit(amount);
+            }
+        }
+    }
+}
+```
+
+## Key Rules
+
+- Acquire multiple locks in one consistent, documented order.
+- Keep lock objects private and owned by the resource manager.
+- Encapsulate locking logic inside the owning class.
+- Avoid unbounded retry loops (backoff or limit them).
+- Ensure external code can't modify or bypass the lock.
+
+## Checklist for Code Review
+
+- Are multiple locks acquired in a fixed order?
+- Are lock objects private, not exposed?
+- Does locking live inside the resource-owning code?
+- Are retry loops bounded to avoid livelock?
+- Can external code alter or bypass locking?

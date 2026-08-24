@@ -24,6 +24,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the production environment only includes functionality that is required for the application to function, and does not expose extraneous functionality such as test code, sample snippets, and development functionality.
+The production environment must contain only what the application needs to run — no test code, sample snippets, or development functionality shipped or exposed.
+
+## Why This Matters
+
+Anything shipped to production becomes an attack surface, and development extras are the least-defended surface of all: test routes that bypass auth, sample pages with hardcoded credentials, debug endpoints, demo data. Every one of these is a gift to an attacker. Shipping a clean, production-only artifact removes a whole category of trivial entry points.
+
+## Main Security Requirement
+
+> Verify that the production environment only includes functionality that is required for the application to function, and does not expose extraneous functionality such as test code, sample snippets, and development functionality.
+
+In practice this means production builds exclude dev/test code and endpoints.
+
+## Common Failure Patterns
+
+- **Dev routes in prod** — `/test`, `/debug`, reset endpoints live.
+- **Sample code deployed** — demo endpoints with seeded creds.
+- **Test fixtures shipped** — tests and mocks in the artifact.
+- **Debug tools enabled** — profilers, consoles, hot reload present.
+
+## Secure Implementation
+
+Build production artifacts without dev/test code, gated by environment:
+
+```javascript
+const isProduction = process.env.NODE_ENV === "production";
+
+if (!isProduction) {
+  app.use("/test", testRouter);       // test routes never mounted in prod
+  app.use("/debug", debugRouter);
+}
+
+// any dev/debug functionality is excluded from the production bundle
+export { productionRoutes } from "./prod";
+```
+
+```dockerfile
+FROM node:20-alpine
+ENV NODE_ENV=production
+COPY dist ./dist            # built artifact only — no tests/samples/dev tools
+CMD ["node", "dist/app.js"]
+```
+
+## Key Rules
+
+- Ship only production-required functionality.
+- Exclude test code, samples, and dev tools from artifacts.
+- Never mount dev/debug routes in production.
+- Gate non-prod functionality behind environment flags.
+- Audit prod for any dev/test residue.
+
+## Checklist for Code Review
+
+- Does the artifact exclude test code and samples?
+- Are dev/debug routes absent in production?
+- Are non-prod features environment-gated?
+- Are debug tools disabled or unshipped?
+- Has production been scanned for dev residue?

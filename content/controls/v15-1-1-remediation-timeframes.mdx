@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that application documentation defines risk based remediation time frames for 3rd party component versions with vulnerabilities and for updating libraries in general, to minimize the risk from these components.
+Application documentation must define risk-based remediation timeframes: how quickly vulnerable third-party component versions must be remediated, and how often libraries are generally updated to minimize risk from those components.
+
+## Why This Matters
+
+Without a defined window, a vulnerable dependency can sit exploitable for months while "we'll update it soon" competes with feature work. A risk-based timeframe — critical CVEs patched in days, routine library bumps on a schedule — makes remediation an automatic, accountable obligation tied to severity, not to whoever finally gets around to it.
+
+## Main Security Requirement
+
+> Verify that application documentation defines risk based remediation time frames for 3rd party component versions with vulnerabilities and for updating libraries in general, to minimize the risk from these components.
+
+In practice this means a written, severity-graded remediation SLA.
+
+## Common Failure Patterns
+
+- **No timeframes** — remediation is ad hoc.
+- **Flat deadline** — one date regardless of severity.
+- **Libraries never updated** — no routine update schedule.
+- **Window undocumented** — nobody can be held to a timeline.
+
+## Secure Implementation
+
+Document remediation windows graded by severity:
+
+```yaml
+remediation_timeframes:
+  critical: patch within 24 hours
+  high:     patch within 7 days
+  medium:   patch within 30 days
+  low:      patch within 90 days
+  routine:  update all libraries monthly      # general library refresh
+enforcement:
+  owner: security-team
+  tracking: vulnerability management system
+```
+
+## Key Rules
+
+- Define remediation timeframes graded by risk/severity.
+- Set a routine cadence for general library updates.
+- Assign ownership and tracking for each timeframe.
+- Publish the timeframes in application documentation.
+- Re-evaluate windows as the dependency landscape changes.
+
+## Checklist for Code Review
+
+- Are remediation timeframes documented per severity?
+- Is there a routine library-update schedule?
+- Are owners and tracking defined?
+- Can a breeched component be identified against the window?
+- Are timeframes reviewed periodically?

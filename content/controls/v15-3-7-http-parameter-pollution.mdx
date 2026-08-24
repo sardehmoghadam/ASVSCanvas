@@ -24,6 +24,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application has defenses against HTTP parameter pollution attacks, particularly if the application framework makes no distinction about the source of request parameters (query string, body parameters, cookies, or header fields).
+The app must defend against HTTP parameter pollution — attackers sending the same parameter more than once (or from different sources like query, body, cookie, header) to override or confuse how the app and downstream systems read a value.
+
+## Why This Matters
+
+When a parameter appears twice (`?role=user&role=admin`), different layers disagree: the app's framework may read the first while a WAF or a legacy backend reads the last — or an attacker overrides a safely-set value with a malicious duplicate. Unchecked, this lets attackers bypass input validation or smuggling-based checks. Deciding and enforcing a deterministic parsing rule removes the ambiguity.
+
+## Main Security Requirement
+
+> Verify that the application has defenses against HTTP parameter pollution attacks, particularly if the application framework makes no distinction about the source of request parameters (query string, body parameters, cookies, or header fields).
+
+In practice this means single-source, reject-on-duplicate, or explicit precedence.
+
+## Common Failure Patterns
+
+- **Duplicates silently merged** — first/last wins unpredictably.
+- **Mixed sources** — query and body params combined blindly.
+- **Implicit precedence** — framework picks a source without declaring.
+- **Downstream mismatch** — WAF and app parse differently.
+
+## Secure Implementation
+
+Reject duplicate parameters or use a single source explicitly:
+
+```python
+@app.post("/login")
+def login():
+    # reject ambiguous duplicates rather than guess which value is "real"
+    if any(len(req.args.getlist(k)) > 1 for k in req.args):
+        return "ambiguous parameters", 400
+
+    username = req.form.get("username")   # body only, explicit source
+    # never combine query + body for the same field
+    if "username" in req.args and "username" in req.form:
+        return "parameter supplied twice", 400
+    ...
+```
+
+## Key Rules
+
+- Reject duplicate parameters, or define a strict precedence.
+- Read each parameter from exactly one named source.
+- Never silently merge query/body/cookie for one field.
+- Ensure the parse rule matches what downstream components do.
+- Validate the final value on the server regardless of source.
+
+## Checklist for Code Review
+
+- Are duplicate parameters rejected or deterministically resolved?
+- Is each field bound to a single source?
+- Are query/body/cookie params kept distinct?
+- Does parsing match downstream components?
+- Is server-side validation applied to the resolved value?

@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application fails gracefully and securely, including when an exception occurs, preventing fail-open conditions such as processing a transaction despite errors resulting from validation logic.
+The application must fail *securely* — on exception, it stops the operation and denies it, never fails open (e.g. processing a transaction despite a validation error).
+
+## Why This Matters
+
+Fail-open is the dangerous default: when a check throws, naive code skips the check and proceeds — the attacker sends malformed input that breaks validation, and the transaction processes anyway with attacker-controlled fields. Failing secure means the exception aborts the action and returns denied, so an error can only *reduce* what happens, never expand it. A skipped validation must never become an approval.
+
+## Main Security Requirement
+
+> Verify that the application fails gracefully and securely, including when an exception occurs, preventing fail-open conditions such as processing a transaction despite errors resulting from validation logic.
+
+In practice this means default-deny on error, with explicit commit only on success.
+
+## Common Failure Patterns
+
+- **Exception skips the check** — caught broadly, then proceeds.
+- **Fail-open authz** — error treated as "allowed".
+- **Transaction proceeds** — validation throw ignored.
+- **Bare catch-all** — `except: pass` swallows and continues.
+
+## Secure Implementation
+
+Default to deny and only commit on fully-validated success:
+
+```python
+def process_transaction(req):
+    try:
+        order = validate_and_build(req)     # any error raises
+        if not authorized(current_user(), order):
+            raise AuthorizationError()
+        execute(order)                       # reached only if validation passed
+        return {"status": "ok"}
+    except Exception:
+        # fail secure: nothing proceeds, nothing commits
+        return {"status": "denied"}, 400
+```
+
+## Key Rules
+
+- Fail secure: errors abort, never proceed.
+- Default to deny when a check throws.
+- Only commit on fully-validated success.
+- Never treat an exception as an authorization grant.
+- Roll back partial writes on failure.
+
+## Checklist for Code Review
+
+- Does an error stop the operation, not skip it?
+- Is a validation exception ever ignored?
+- Could a check failure result in an allow?
+- Are transactions rolled back on failure?
+- Is the default path deny rather than allow?

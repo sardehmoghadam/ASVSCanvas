@@ -25,6 +25,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all proxying and middleware components transfer the user original IP address correctly using trusted data fields that cannot be manipulated by the end user, and the application and web server use this correct value for logging and security decisions such as rate limiting, taking into account that even the original IP address may not be reliable due to dynamic IPs, VPNs, or corporate firewalls.
+Proxies and middleware must pass the user's original IP address through trusted fields that the end user can't set, and the app/web server must use that value (not a spoofable one) for logging and rate-limiting — while remembering that even the true IP can be unreliable (VPNs, NAT, shared NAT).
+
+## Why This Matters
+
+If the app trusts `X-Forwarded-For` (or any client-set header) blindly, an attacker sends `X-Forwarded-For: 1.2.3.4` and resets their rate-limit counter at will, or frames someone else in logs. Only accepting the IP from trusted hops — and stripping client-supplied forwarding fields at the edge — makes rate limiting and audit logs trustworthy.
+
+## Main Security Requirement
+
+> Verify that all proxying and middleware components transfer the user original IP address correctly using trusted data fields that cannot be manipulated by the end user, and the application and web server use this correct value for logging and security decisions such as rate limiting, taking into account that even the original IP address may not be reliable due to dynamic IPs, VPNs, or corporate firewalls.
+
+In practice this means trusted proxy configuration and overwriting client-set forwarding headers.
+
+## Common Failure Patterns
+
+- **Client-set XFF trusted** — spoofed IP resets rate limits.
+- **No trusted-proxy config** — app reads header from anyone.
+- **Edge doesn't strip XFF** — attacker forwards a fake value.
+- **IP treated as identity** — NAT/VPN assumed unique.
+
+## Secure Implementation
+
+Accept the forwarded IP only from trusted hops and set it yourself:
+
+```nginx
+# edge proxy: overwrite, never inherit, client-supplied forwarding headers
+proxy_set_header X-Forwarded-For $remote_addr;
+# (only the immediate peer's IP — built from trusted hops)
+```
+
+```python
+# app: only trust the header because the proxy overwrote it
+def client_ip(request):
+    if request.headers.get("X-Forwarded-For"):
+        # value was set by our trusted proxy, not the client
+        return request.headers["X-Forwarded-For"].split(",")[0].strip()
+    return request.remote_addr
+```
+
+## Key Rules
+
+- Transfer original IP via fields only trusted hops can set.
+- Overwrite/strip client-supplied forwarding headers at the edge.
+- Configure the app to trust only known proxy IPs.
+- Use the correct IP for logging and rate limiting.
+- Treat even the true IP as unreliable (VPN/NAT).
+
+## Checklist for Code Review
+
+- Are client-set XFF/X-Real-IP headers stripped?
+- Does the edge overwrite forwarding headers itself?
+- Does the app trust only known proxies?
+- Is rate limiting based on a spoof-proof IP?
+- Is NAT/VPN unreliability accounted for?

@@ -24,6 +24,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all logging components appropriately encode data to prevent log injection.
+Every logging component must encode log data so attacker-controlled input can't inject forged entries or forge newlines/control characters into the log stream.
+
+## Why This Matters
+
+Logs are read by humans and parsed by tools, and they often contain attacker-supplied strings (a username, a URL). If that input is written verbatim, an attacker submits a value containing a newline and a fake entry — `admin login success` — to plant false trails, or CRLF to smuggle control characters that corrupt parsers or drive log-based dashboards. Encoding/stripping control characters keeps the log a faithful, tamper-evident record.
+
+## Main Security Requirement
+
+> Verify that all logging components appropriately encode data to prevent log injection.
+
+In practice this means stripping/escaping control characters and newlines from logged values.
+
+## Common Failure Patterns
+
+- **Raw user input logged** — newlines and control chars pass through.
+- **Newline injection** — forged log entries planted.
+- **No CR/LF sanitization** — parser corruption/log spoofing.
+- **Unescaped formatting** — printf-style injection.
+
+## Secure Implementation
+
+Sanitize control characters in everything that reaches the log:
+
+```python
+import re
+
+# strip all C0 control characters, including newline, CR, and tab
+_ILLEGAL = re.compile(r"[\x00-\x1f\x7f]")
+
+def sanitize(value) -> str:
+    if not isinstance(value, str):
+        value = str(value)
+    # any control byte (newline, CR, tab, NUL) is replaced with "_",
+    # so no forged log entries can be planted
+    return _ILLEGAL.sub("_", value)
+
+logger.info(
+    "login_failed",
+    extra={"user": sanitize(user_input), "ip": sanitize(client_ip())},
+)
+```
+
+## Key Rules
+
+- Encode/sanitize all data before writing to logs.
+- Strip or escape newlines and control characters.
+- Never trust raw user input in a log line.
+- Apply sanitization centrally at the logging boundary.
+- Encode structured fields consistently.
+
+## Checklist for Code Review
+
+- Is log data sanitized against newline/control characters?
+- Is raw user input logged verbatim anywhere?
+- Is sanitization applied centrally?
+- Could an attacker forge a log entry?
+- Are structured fields safely encoded?

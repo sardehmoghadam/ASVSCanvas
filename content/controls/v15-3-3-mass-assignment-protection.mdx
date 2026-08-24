@@ -24,6 +24,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application has countermeasures to protect against mass assignment attacks by limiting allowed fields per controller and action, e.g., it is not possible to insert or update a field value when it was not intended to be part of that action.
+Each controller/action must limit which fields it accepts, so an attacker can't set a field that wasn't meant to be part of that request — e.g. an "update profile" endpoint silently overwriting `role=admin` or `is_active`.
+
+## Why This Matters
+
+Mass assignment happens when a framework binds incoming request data straight onto a model. An attacker adds `role=admin` (or `balance`, `subscription_tier`) to an otherwise innocent request, and the framework writes it. Explicit per-action field allowlists mean only the fields the endpoint *intends* to change can ever be changed — everything else is ignored.
+
+## Main Security Requirement
+
+> Verify that the application has countermeasures to protect against mass assignment attacks by limiting allowed fields per controller and action, e.g., it is not possible to insert or update a field value when it was not intended to be part of that action.
+
+In practice this means explicit allowlists per action, not whole-object binding.
+
+## Common Failure Patterns
+
+- **Whole-model binding** — request mapped to entity directly.
+- **No per-action allowlist** — every field writable.
+- **Privilege fields writable** — role/balance/is_active settable.
+- **Nested binding** — relation fields accepted blindly.
+
+## Secure Implementation
+
+Bind only explicitly allowed fields per action:
+
+```java
+// only these fields may ever be updated via this endpoint
+public record UpdateProfileRequest(String displayName, String bio) {}
+
+@PutMapping("/users/{id}")
+public User update(@PathVariable Long id,
+                   @Valid @RequestBody UpdateProfileRequest req) {
+    User u = userRepo.findById(id).orElseThrow();
+    u.setDisplayName(req.displayName());
+    u.setBio(req.bio());
+    // role, isActive, balance are untouched — not in the request type
+    return userRepo.save(u);
+}
+```
+
+## Key Rules
+
+- Define an explicit field allowlist per controller/action.
+- Never bind request data straight to the entity.
+- Exclude privilege fields from user-writable schemas.
+- Validate nested/relation fields the same way.
+- Review every write endpoint for over-broad binding.
+
+## Checklist for Code Review
+
+- Does each action limit which fields it accepts?
+- Are privilege fields (role/balance/active) non-writable?
+- Is whole-object binding absent from write paths?
+- Are nested objects also restricted?
+- Can an attacker set an unintended field anywhere?

@@ -24,6 +24,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application logs the security events that are defined in the documentation and also logs attempts to bypass the security controls, such as input validation, business logic, and anti-automation.
+The application must log the security events defined in its documentation, plus attempts to bypass security controls — input validation, business logic, and anti-automation in particular.
+
+## Why This Matters
+
+Attackers rarely break controls cleanly; they probe them. A payload that trips input validation, a request that skips a business-logic step, a burst of signups that trips anti-automation — each is an early warning that a real attack may be forming, even if the control successfully blocked it. Logging these rejection events turns your defenses into sensors, giving you evidence of *attempted* abuse, not just successful abuse.
+
+## Main Security Requirement
+
+> Verify that the application logs the security events that are defined in the documentation and also logs attempts to bypass the security controls, such as input validation, business logic, and anti-automation.
+
+In practice this means every defined security event and every control trip is logged.
+
+## Common Failure Patterns
+
+- **Bypass attempts silent** — rejected input unlogged.
+- **Docs say, code doesn't** — events defined but never emitted.
+- **No anti-automation signal** — throttle trips unlogged.
+- **Validation failures swallowed** — 400 returned, no record.
+
+## Secure Implementation
+
+Log every security control trip as an event:
+
+```python
+def submit_form(req):
+    if not validate_input(req.data):
+        logger.info("security_event",
+            extra={"event": "input_validation_failed",
+                   "user": current_user(), "ip": client_ip()})
+        return bad_request()
+    if not business_rule_ok(req.data):
+        logger.info("security_event",
+            extra={"event": "business_logic_bypass_attempt",
+                   "user": current_user()})
+        return forbidden()
+    if rate_limited(current_user()):
+        logger.info("security_event",
+            extra={"event": "anti_automation_triggered",
+                   "user": current_user()})
+        return too_many_requests()
+    ...
+```
+
+## Key Rules
+
+- Emit every security event listed in documentation.
+- Log input-validation rejects.
+- Log business-logic bypass attempts.
+- Log anti-automation triggers (throttles, captchas).
+- Correlate each event with user/IP.
+
+## Checklist for Code Review
+
+- Are all documented security events emitted?
+- Are validation failures logged?
+- Are business-logic bypass attempts logged?
+- Are anti-automation triggers logged?
+- Do the docs and code agree on the event list?

@@ -24,6 +24,69 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application has implemented defenses against loss of availability due to functionality which is time-consuming or resource-demanding, based on the documented security decisions and strategies for this.
+The documented strategies for defending heavy functionality must actually be implemented: async processing, queues, concurrency limits — whatever the documentation committed to for preventing availability loss.
+
+## Why This Matters
+
+Documenting that a report endpoint needs a queue protects nothing if the endpoint still runs synchronously in the request thread. This control closes the loop from V15.1.3: the live system must behave as the decisions say, so one user hammering an export job can't starve the app of threads, memory, or DB connections.
+
+## Main Security Requirement
+
+> Verify that the application has implemented defenses against loss of availability due to functionality which is time-consuming or resource-demanding, based on the documented security decisions and strategies for this.
+
+In practice this means code that enforces the documented DoS defenses.
+
+## Common Failure Patterns
+
+- **Paper defense** — strategy documented, never built.
+- **Synchronous heavy work** — export/report blocks the thread.
+- **Unbounded jobs** — no queue, cap, or throttle.
+- **Timeout ignored** — slow responses still returned inline.
+
+## Secure Implementation
+
+Implement queueing and per-user limits for heavy work:
+
+```python
+import asyncio
+from asyncio import Queue, Semaphore
+
+jobs = Queue()
+per_user = defaultdict(lambda: Semaphore(2))   # 2 concurrent per user
+
+@app.post("/api/reports")
+async def create_report(user: str, params: dict):
+    await per_user[user].acquire()             # bounded per-user concurrency
+    try:
+        job_id = enqueue(jobs, params)         # async, not blocking
+        return {"status": "accepted", "job_id": job_id}
+    finally:
+        per_user[user].release()
+
+# a fixed pool of workers drains the queue without exhausting the app
+async def worker():
+    while True:
+        job = await jobs.get()
+        try:
+            await process(job)
+        finally:
+            jobs.task_done()
+```
+
+## Key Rules
+
+- Implement the documented DoS defenses in code.
+- Queue or async-process heavy operations.
+- Enforce per-user and per-app concurrency limits.
+- Return early (202) rather than holding slow responses.
+- Bound worker pools and resource usage.
+
+## Checklist for Code Review
+
+- Are heavy operations queued or asynchronous?
+- Are per-user/per-app concurrency limits enforced?
+- Do slow paths avoid blocking request threads?
+- Are worker pools bounded?
+- Does implementation match the documented strategy?

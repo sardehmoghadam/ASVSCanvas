@@ -25,6 +25,55 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that an inventory catalog, such as software bill of materials (SBOM), is maintained of all third-party libraries in use, including verifying that components come from pre-defined, trusted, and continually maintained repositories.
+A software bill of materials (SBOM) — a catalog of every third-party library in use, including transitive dependencies — must be maintained, with every component verified to come from pre-defined, trusted, and actively maintained repositories.
+
+## Why This Matters
+
+You can't secure what you can't enumerate. When a CVE drops (libraries like Log4Shell, OpenSSL), teams without an SBOM scramble to figure out whether they're affected; teams with one find the vulnerable version in seconds. Trusting only pre-approved repositories also cuts the risk of pulling in a typosquatted or backdoored package.
+
+## Main Security Requirement
+
+> Verify that an inventory catalog, such as software bill of materials (SBOM), is maintained of all third-party libraries in use, including verifying that components come from pre-defined, trusted, and continually maintained repositories.
+
+In practice this means a generated, tracked SBOM plus repository allowlisting.
+
+## Common Failure Patterns
+
+- **No SBOM** — dependencies undocumented.
+- **Direct deps only** — transitive dependencies invisible.
+- **Any repository allowed** — untrusted sources possible.
+- **Stale inventory** — SBOM not regenerated on change.
+
+## Secure Implementation
+
+Generate an SBOM in CI and pin to trusted registries:
+
+```yaml
+# .github/workflows/deps.yml
+steps:
+  - uses: actions/checkout@v4
+  - run: npm ci --registry https://npm.internal.example.com
+        # only the internal, trusted registry is allowed
+  - name: Generate SBOM
+    run: syft dir:. -o spdx-json > sbom.spdx.json
+  - uses: actions/upload-artifact@v4
+    with: { path: sbom.spdx.json }
+```
+
+## Key Rules
+
+- Maintain an SBOM of all libs including transitive deps.
+- Generate the SBOM automatically on every build/change.
+- Allow components only from trusted, pre-defined repositories.
+- Track each component's version and provenance.
+- Keep the inventory current, not a one-time snapshot.
+
+## Checklist for Code Review
+
+- Is an SBOM maintained for all third-party libraries?
+- Are transitive dependencies included?
+- Are components restricted to trusted repositories?
+- Is the SBOM regenerated automatically in CI?
+- Is provenance and version tracked per component?

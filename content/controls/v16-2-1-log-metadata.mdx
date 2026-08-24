@@ -24,6 +24,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that each log entry includes necessary metadata (such as when, where, who, what) that would allow for a detailed investigation of the timeline when an event happens.
+Every log entry must carry the metadata an investigator needs to reconstruct a timeline — when (timestamp), where (host/service/source), who (user/IP/session), and what (event/result).
+
+## Why This Matters
+
+A log line that just says "login failed" is nearly useless during an incident: *when* did it happen, *which user*, *from which IP*, *on which host*? Without those fields you can't correlate events, trace an attacker's path, or even tell one failure from another. Rich, consistent metadata turns raw noise into a reconstructable timeline — the difference between days of forensics and minutes.
+
+## Main Security Requirement
+
+> Verify that each log entry includes necessary metadata (such as when, where, who, what) that would allow for a detailed investigation of the timeline when an event happens.
+
+In practice this means structured entries with timestamp, source, subject, and event.
+
+## Common Failure Patterns
+
+- **Bare message only** — no timestamp/subject/source.
+- **No user/IP** — can't attribute the event.
+- **Inconsistent fields** — every component logs differently.
+- **No correlation ID** — one request scattered across entries.
+
+## Secure Implementation
+
+Emit structured metadata on every log entry:
+
+```python
+import logging, time
+
+logger = logging.getLogger("app.security")
+
+def log_event(event: str, user: str, ip: str, **extra):
+    logger.info(
+        event,
+        extra={
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),  # when
+            "service": "auth-service",       # where
+            "user": user,                    # who
+            "source_ip": ip,                 # who/where
+            "event": event,                  # what
+            **extra,
+        },
+    )
+```
+
+## Key Rules
+
+- Include when/where/who/what in every entry.
+- Add a correlation/trace ID across a request's entries.
+- Use structured (JSON) logging for consistent fields.
+- Identify the subject (user/IP/session) where applicable.
+- Standardize field names across components.
+
+## Checklist for Code Review
+
+- Does each entry include a timestamp?
+- Are source/service and user/IP recorded?
+- Is the event/result clearly described?
+- Is there a correlation ID for tracing?
+- Are field names consistent across the stack?

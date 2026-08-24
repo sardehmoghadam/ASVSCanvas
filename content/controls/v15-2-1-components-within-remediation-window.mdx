@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application only contains components which have not breached the documented update and remediation time frames.
+The running application must only contain third-party components whose vulnerability and update state is within the documented remediation and update timeframes — nothing sitting past its deadline.
+
+## Why This Matters
+
+Documented timeframes mean nothing if they aren't enforced. A build that still ships a library whose critical CVE patch window closed weeks ago turns the SLA into paper. Making the deployment itself reject breached components converts "we should update" into "we can't ship until it's updated," keeping the live system perpetually inside its own risk windows.
+
+## Main Security Requirement
+
+> Verify that the application only contains components which have not breached the documented update and remediation time frames.
+
+In practice this means CI/build gates that fail when a dependency is past-due.
+
+## Common Failure Patterns
+
+- **Windows enforced nowhere** — policy dutifully ignored in builds.
+- **Breached deps shipped** — outdated vulnerable libraries deployed.
+- **No automation** — manual checks missed.
+- **Silent warn** — alerts raised but builds still pass.
+
+## Secure Implementation
+
+Fail the build when any dependency breaches its remediation window:
+
+```yaml
+# CI step: a dependency checker breaks the build on breached components
+steps:
+  - run: npm ci
+  - name: Enforce remediation timeframes
+    run: |
+      npm audit --audit-level=moderate
+      owasp-dependency-check --failOnCVSS 7 --project app
+      # build fails if a component is past its documented window
+  - name: Fail on outdated direct deps
+    run: npm outdated --long | awk '$4 != "" { exit 1 }'
+```
+
+## Key Rules
+
+- Enforce remediation timeframes in the build/release pipeline.
+- Fail builds that would ship breached components.
+- Automate dependency-auditing against the policy.
+- Track and gate both vulnerabilities and general staleness.
+- Never defer enforcement to a manual checklist.
+
+## Checklist for Code Review
+
+- Are remediation windows enforced automatically?
+- Does the build fail on breached dependencies?
+- Are CVE and staleness checks gated in CI?
+- Is any breached component present in the current build?
+- Is enforcement continuous, not one-off?

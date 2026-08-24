@@ -24,6 +24,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that where the application backend makes calls to external URLs, it is configured to not follow redirects unless it is intended functionality.
+When the backend makes outbound calls to external URLs, it must be configured to *not* follow HTTP redirects unless following them is an intended, designed behavior.
+
+## Why This Matters
+
+Following redirects blindly turns a SSRF-adjacent call into a pivot: a supposedly-safe URL can 302 to internal metadata endpoints (`169.254.169.254`), localhost admin ports, or other internal services — and the HTTP client cheerfully follows. Disabling auto-redirect (or only permitting it to approved destinations) keeps a forwarded URL from silently jumping somewhere the caller never authorized.
+
+## Main Security Requirement
+
+> Verify that where the application backend makes calls to external URLs, it is configured to not follow redirects unless it is intended functionality.
+
+In practice this means redirect-following disabled by default in HTTP clients.
+
+## Common Failure Patterns
+
+- **Redirects followed** — client auto-follows any redirect.
+- **SSRF via redirect** — URL 302s to internal service.
+- **No destination limit** — redirect endpoints unlimited.
+- **Follow-on default** — library default left enabled.
+
+## Secure Implementation
+
+Disable redirect-following by default, and only allow explicitly:
+
+```python
+import requests
+
+# default: never follow redirects
+resp = requests.get(external_url, allow_redirects=False, timeout=5)
+
+# intended redirect support, only to an allowlisted host
+if resp.status_code in (301, 302, 307, 308):
+    next_url = resp.headers["Location"]
+    if urlparse(next_url).hostname not in ALLOWED_REDIRECT_HOSTS:
+        raise ValueError("redirect to non-allowlisted host blocked")
+    resp = requests.get(next_url, allow_redirects=False, timeout=5)
+```
+
+## Key Rules
+
+- Disable redirect-following in outbound HTTP clients by default.
+- Only follow redirects when it's designed functionality.
+- Allow redirects only to an allowlist of destinations.
+- Re-validate the final URL's scheme/host before use.
+- Keep SSRF-style restrictions in mind on every hop.
+
+## Checklist for Code Review
+
+- Do outbound clients disable auto-redirect?
+- Are redirects followed only when intended?
+- Is redirect destination allowlisted?
+- Is the final target re-validated per hop?
+- Could a redirect reach internal services?

@@ -24,6 +24,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that failed authorization attempts are logged. For L3, this must include logging all authorization decisions, including logging when sensitive data is accessed (without logging the sensitive data itself).
+Failed authorization attempts must be logged. At Level 3, *all* authorization decisions are logged, including when sensitive data is accessed — while never logging the sensitive data itself.
+
+## Why This Matters
+
+A failed authorization is the first sign someone is probing beyond their privileges — an authenticated user enumerating other users' resources, or a horizontal/vertical privilege-escalation attempt. Failed-only logging misses *successful* over-privileged access, which is why L3 requires recording every sensitive-data access. That gives auditors and responders who-touched-what-when, without writing the sensitive payload into the log.
+
+## Main Security Requirement
+
+> Verify that failed authorization attempts are logged. For L3, this must include logging all authorization decisions, including logging when sensitive data is accessed (without logging the sensitive data itself).
+
+In practice this means logging denials (always) and L3 logging of sensitive-access grants.
+
+## Common Failure Patterns
+
+- **Denials silent** — failed authz unlogged.
+- **No subject/target** — can't tell who/what was denied.
+- **Sensitive access unlogged** — who read what unknown.
+- **Data logged with the access** — the payload leaked into logs.
+
+## Secure Implementation
+
+Log authorization decisions without the protected data:
+
+```python
+def access_resource(user, resource_id, resource_type):
+    allowed = policy.allows(user, resource_id, resource_type)
+    logger.info(
+        "authorization_decision",
+        extra={
+            "user": user.id,
+            "resource_type": resource_type,
+            "resource_id": resource_id,     # identifier only — never the data
+            "decision": "allow" if allowed else "deny",
+        },
+    )
+    return load_resource(resource_id) if allowed else deny()
+```
+
+## Key Rules
+
+- Log every failed authorization attempt.
+- Include subject, resource, and decision in each entry.
+- At L3, log all authorization decisions.
+- Log sensitive-data access by identifier only.
+- Never write the protected data into the log.
+
+## Checklist for Code Review
+
+- Are failed authorization attempts logged?
+- Does each entry capture subject/resource/decision?
+- At L3, are all authorization decisions logged?
+- Is sensitive-data access logged by identifier?
+- Is the sensitive data itself kept out of logs?

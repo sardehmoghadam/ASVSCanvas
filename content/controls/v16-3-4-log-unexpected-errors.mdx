@@ -25,6 +25,63 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application logs unexpected errors and security control failures such as backend TLS failures.
+Unexpected errors and security-control failures — like a backend TLS handshake failure — must be logged so the anomaly is captured for investigation.
+
+## Why This Matters
+
+A TLS failure to a backend can mean misconfiguration, an expired cert, or an active man-in-the-middle — three very different situations that all look like "connection failed." Unlogged, the security-relevant cause stays invisible until it causes an outage (or a breach). Logging unexpected errors and control failures gives responders the signal to distinguish routine glitches from security incidents before they escalate.
+
+## Main Security Requirement
+
+> Verify that the application logs unexpected errors and security control failures such as backend TLS failures.
+
+In practice this means logging exceptions and control-failure paths with context.
+
+## Common Failure Patterns
+
+- **Errors swallowed** — bare `except: pass`.
+- **No context** — error logged without source/operation.
+- **Security failures generic** — TLS failure logged like any 500.
+- **Console-only errors** — not sent to the log pipeline.
+
+## Secure Implementation
+
+Log unexpected errors and security-control failures with context:
+
+```python
+import logging
+
+def call_backend():
+    try:
+        return backend.fetch()
+    except TLSHandshakeError as e:
+        logger.error(                       # security-control failure
+            "tls_handshake_failed",
+            extra={"backend": "payments.internal", "error": str(e)},
+        )
+        raise
+    except Exception as e:
+        logger.error(                       # unexpected error
+            "unexpected_error",
+            extra={"operation": "call_backend", "error": str(e)},
+        )
+        raise
+```
+
+## Key Rules
+
+- Log unexpected errors with source and operation.
+- Log security-control failures (TLS, auth, encryption) distinctly.
+- Never swallow exceptions silently.
+- Include enough context to triage the failure.
+- Route error logs through the approved pipeline.
+
+## Checklist for Code Review
+
+- Are unexpected errors logged with context?
+- Are TLS/security-control failures logged distinctly?
+- Is any exception swallowed silently?
+- Do error entries include operation/source?
+- Are error logs sent to the central pipeline?

@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that when logging sensitive data, the application enforces logging based on the data protection level. For example, it may not be allowed to log certain data, such as credentials or payment details. Other data, such as session tokens, may only be logged by being hashed or masked, either in full or partially.
+Logging sensitive data must follow the data's protection level: credentials and payment details are never logged; session tokens are only logged hashed or masked (fully or partially).
+
+## Why This Matters
+
+Log files are a honeypot for attackers — credentials, tokens, PANs, and PII written to disk or shipped to a SIEM are readable by anyone with log access (or anyone who compromises the log). A password accidentally logged from a debug statement is a full account compromise. Enforcing per-field rules — drop it, hash it, or mask it — keeps logs useful for investigation without becoming a data breach themselves.
+
+## Main Security Requirement
+
+> Verify that when logging sensitive data, the application enforces logging based on the data protection level. For example, it may not be allowed to log certain data, such as credentials or payment details. Other data, such as session tokens, may only be logged by being hashed or masked, either in full or partially.
+
+In practice this means a redaction/masking policy applied at the logging boundary.
+
+## Common Failure Patterns
+
+- **Credentials logged** — password/debug dumps include secrets.
+- **Full tokens logged** — session tokens written in clear.
+- **PAN/PII unredacted** — payment data reaches logs.
+- **No central redaction** — masking left to each caller.
+
+## Secure Implementation
+
+Redact and mask sensitive data centrally before it's logged:
+
+```python
+import re, hashlib
+
+# drop outright
+NEVER = ["password", "secret", "card_number", "cvv", "pin"]
+
+# mask: first half revealed as Xs, keep structure
+def mask_token(token: str) -> str:
+    return token[:4] + "…" + hashlib.sha256(token.encode()).hexdigest()[:8]
+
+def scrub(record: dict) -> dict:
+    out = {}
+    for k, v in record.items():
+        if k in NEVER:
+            continue                      # never logged at all
+        if k in ("session_token", "token"):
+            v = mask_token(v)             # hashed/masked only
+        out[k] = v
+    return out
+
+logger.info(json.dumps(scrub(event)))
+```
+
+## Key Rules
+
+- Classify data by protection level, and log accordingly.
+- Never log credentials or payment details.
+- Only log tokens hashed or masked.
+- Apply redaction centrally, not per call site.
+- Mask PII per the data protection policy.
+
+## Checklist for Code Review
+
+- Are credentials/payment data excluded from logs?
+- Are session tokens hashed or masked?
+- Is redaction applied centrally at the logging boundary?
+- Is PII masked per policy?
+- Are debug/dump statements scrubbed too?

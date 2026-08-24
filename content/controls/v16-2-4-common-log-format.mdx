@@ -24,6 +24,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that logs can be read and correlated by the log processor that is in use, preferably by using a common logging format.
+Logs must be parsable and correlatable by the team's log processor — ideally by adopting a common, structured format (e.g. JSON, syslog) across components rather than free-form prose each service invents.
+
+## Why This Matters
+
+A SIEM can't join a login event with a firewall alert when one says `login failed for bob at ...` as free text and another emits JSON with `user=bob`. Inconsistent formats turn correlation into guesswork and leave attacks undetected in the gap between sources. A common machine-readable format lets the processor index every field and correlate events across the stack automatically.
+
+## Main Security Requirement
+
+> Verify that logs can be read and correlated by the log processor that is in use, preferably by using a common logging format.
+
+In practice this means a single structured schema consumed by the processor.
+
+## Common Failure Patterns
+
+- **Free-form text** — unparseable by the SIEM.
+- **Per-service formats** — no two look alike.
+- **Processor can't parse** — fields dropped or wrong.
+- **Schema drift** — new services diverge.
+
+## Secure Implementation
+
+Emit a common JSON schema consumed by the log processor:
+
+```json
+{
+  "timestamp": "2026-08-24T07:12:33Z",
+  "level": "info",
+  "service": "auth-service",
+  "event": "auth_failed",
+  "user": "bob@example.com",
+  "source_ip": "203.0.113.7",
+  "correlation_id": "c9e2f0a1"
+}
+```
+
+```python
+def log(event: str, **fields):
+    # one schema, every component — the processor indexes every field
+    record = {"timestamp": now_utc(), "event": event, **fields}
+    logger.info(json.dumps(record))
+```
+
+## Key Rules
+
+- Use one common, machine-readable format.
+- Define a shared schema/field naming convention.
+- Ensure the processor parses every emitted field.
+- Enforce the format via shared logging libraries.
+- Validate that all components actually use it.
+
+## Checklist for Code Review
+
+- Is a common structured format used?
+- Does the log processor parse the format?
+- Are field names standardized?
+- Is the format enforced by shared libraries?
+- Any components emitting incompatible logs?

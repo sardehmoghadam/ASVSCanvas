@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that JavaScript code is written in a way that prevents prototype pollution, for example, by using Set() or Map() instead of object literals.
+JavaScript code must avoid prototype pollution — where attacker-controlled keys like `__proto__`, `constructor`, or `prototype` walk up to and mutate `Object.prototype`. The mitigation includes using `Map`/`Set` (which have no prototype-chain keys) instead of plain object literals for untrusted keys.
+
+## Why This Matters
+
+Prototype pollution lets an attacker pollute `Object.prototype` with a property that then appears on *every* object in the application — a gadget that can force auth bypasses, enable code execution in templating engines, or redefine `is_admin=true`. Because the attack slips through object literals and recursive merge helpers, key-safety (or `Map`) is the durable fix.
+
+## Main Security Requirement
+
+> Verify that JavaScript code is written in a way that prevents prototype pollution, for example, by using Set() or Map() instead of object literals.
+
+In practice this means key-safety on merge/copy and `Map` for untrusted keys.
+
+## Common Failure Patterns
+
+- **Recursive merge** — naive deep-merge copies `__proto__`.
+- **Object literal with untrusted keys** — `obj[key] = value`.
+- **No key blocklist** — `__proto__`/`constructor` accepted.
+- **Old/dep merge libs** — `extend`/`merge` without guards.
+
+## Secure Implementation
+
+Use `Map` for untrusted keys and block dangerous properties:
+
+```javascript
+// store untrusted key/value data in a Map — no prototype chain to pollute
+const data = new Map(Object.entries(payload));
+data.set("__proto__", { pollute: true });
+// Object.prototype is untouched — Map keys don't traverse the chain
+
+// when merging, reject dangerous keys
+const DANGEROUS = new Set(["__proto__", "constructor", "prototype"]);
+function safeMerge(target, source) {
+  for (const key of Object.keys(source)) {
+    if (DANGEROUS.has(key)) continue;      // skip pollution keys
+    target[key] = source[key];
+  }
+  return target;
+}
+```
+
+## Key Rules
+
+- Use `Map`/`Set` for data with untrusted keys.
+- Block `__proto__`, `constructor`, and `prototype` in merges.
+- Avoid naive recursive deep-merge of user input.
+- Freeze/seal prototypes or use `Object.create(null)` where needed.
+- Keep merge/utility libraries patched.
+
+## Checklist for Code Review
+
+- Are untrusted keys stored in `Map`/`Set`?
+- Are `__proto__`/`constructor`/`prototype` keys rejected?
+- Is deep-merge of user input key-safe?
+- Are merge libraries up to date?
+- Could any code mutate `Object.prototype`?

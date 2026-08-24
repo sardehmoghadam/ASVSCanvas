@@ -24,6 +24,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that an inventory exists documenting the logging performed at each layer of the application technology stack, what events are being logged, log formats, where that logging is stored, how it is used, how access to it is controlled, and for how long logs are kept.
+An inventory must document, per technology-stack layer: what events are logged, what format, where logs are stored, how they're used, who can access them, and how long they're retained.
+
+## Why This Matters
+
+Logging that nobody can account for is logging that fails exactly when needed. During an incident you need to know, per layer, what was captured, where it lives, and whether it survived. Without an inventory, you discover gaps mid-forensics — or worse, find the logs you assumed existed were never written. The inventory is the map that makes logging auditable and retention/law enforcement-compliant.
+
+## Main Security Requirement
+
+> Verify that an inventory exists documenting the logging performed at each layer of the application technology stack, what events are being logged, log formats, where that logging is stored, how it is used, how access to it is controlled, and for how long logs are kept.
+
+In practice this means a per-layer logging inventory document.
+
+## Common Failure Patterns
+
+- **No inventory** — logging happens but is undocumented.
+- **Some layers missing** — proxies/app/db gaps uncovered later.
+- **No retention policy** — logs deleted or kept indefinitely.
+- **Access control undefined** — who reads logs unclear.
+
+## Secure Implementation
+
+Document logging per layer in machine-readable form:
+
+```yaml
+logging_inventory:
+  layers:
+    - layer: web-proxy
+      events: [request, response-status, client-ip]
+      format: combined NCSA
+      destination: /var/log/nginx/access.log
+      access: [sre, soc]            # read-only
+      retention: 90 days
+    - layer: application
+      events: [auth, authorization, errors]
+      format: JSON
+      destination: log-shipper -> central-siem
+      access: [soc, incident-response]
+      retention: 12 months
+    - layer: database
+      events: [failed-login, schema-change]
+      format: syslog
+      destination: central-siem
+      access: [dba, soc]
+      retention: 12 months
+```
+
+## Key Rules
+
+- Document logging for every layer of the stack.
+- Record events, format, destination per layer.
+- Define access control for logs.
+- Define a retention period for each log.
+- Keep the inventory current as logging changes.
+
+## Checklist for Code Review
+
+- Does the inventory cover every stack layer?
+- Are events/format/destination listed per layer?
+- Is log access control documented?
+- Is retention defined per log?
+- Is the inventory kept up to date?

@@ -24,6 +24,58 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application only returns the required subset of fields from a data object. For example, it should not return an entire data object, as some individual fields should not be accessible to users.
+APIs must return only the fields a caller is meant to see, not entire data objects — never dumping internal fields (password hashes, roles, flags, IDs of other users) that an individual user shouldn't access.
+
+## Why This Matters
+
+Returning a whole database row "because it's easier" is the classic over-exposure bug: the frontend only needed a name, but the response quietly included the password hash, `is_admin`, or a billing tier. Every extra field is free data an attacker harvests. Explicitly selecting the allowed subset keeps secrets invisible even when the serialization layer slips.
+
+## Main Security Requirement
+
+> Verify that the application only returns the required subset of fields from a data object. For example, it should not return an entire data object, as some individual fields should not be accessible to users.
+
+In practice this means explicit field allowlists per endpoint/role.
+
+## Common Failure Patterns
+
+- **Whole-object return** — model serialized directly.
+- **Internal fields leaked** — hashes, roles, tokens in responses.
+- **No per-role filtering** — admin fields sent to all users.
+- **DTO drift** — new sensitive field added but not excluded.
+
+## Secure Implementation
+
+Return only an explicit subset via a view/DTO:
+
+```python
+def user_to_public(user: User) -> dict:
+    # explicit allowlist — internal fields never reach the client
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        # user.password_hash, user.role, user.is_admin omitted
+    }
+
+@app.get("/api/users/<int:user_id>")
+def get_user(user_id: int):
+    return jsonify(user_to_public(User.query.get(user_id)))
+```
+
+## Key Rules
+
+- Return only the required subset of fields.
+- Use explicit allowlists/DTOs, never whole objects.
+- Exclude hashes, roles, tokens, and flags by default.
+- Apply per-role field filtering where needed.
+- Review DTOs whenever models gain new fields.
+
+## Checklist for Code Review
+
+- Are responses built from explicit field allowlists?
+- Are internal fields (hashes/roles/tokens) excluded?
+- Is field visibility filtered by role?
+- Do any endpoints still return whole objects?
+- Are DTOs reviewed when models change?

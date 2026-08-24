@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application explicitly ensures that variables are of the correct type and performs strict equality and comparator operations. This is to avoid type juggling or type confusion vulnerabilities caused by the application code making an assumption about a variable type.
+Code must explicitly verify variables are the expected type and use strict equality/comparison operators (`===`, `!==`, strict types), so no type-juggling or type-confusion flaw arises from assuming a variable's type.
+
+## Why This Matters
+
+Loose comparison is full of traps: in PHP `"0e123456" == "0e999999"` is true (both look like zero-exponent), in JS `"0" == false` and `[] == false`, in Python a `str` and `int` miscompared. An attacker can exploit these to bypass checks — a hashed value compared with `==` instead of `===` can be spoofed by a crafted string. Strict typing removes the interpreter's silent coercion, the root of the confusion.
+
+## Main Security Requirement
+
+> Verify that the application explicitly ensures that variables are of the correct type and performs strict equality and comparator operations. This is to avoid type juggling or type confusion vulnerabilities caused by the application code making an assumption about a variable type.
+
+In practice this means strict comparison plus explicit type checking/declarations.
+
+## Common Failure Patterns
+
+- **Loose equality** — `==` where `===` is needed.
+- **Magic-string coercion** — `"0e..."` compared to hashes.
+- **No type checks** — input assumed to be the expected type.
+- **Weak typing** — mixed-type parameters propagating.
+
+## Secure Implementation
+
+Use strict comparison and explicit type validation:
+
+```javascript
+function verifyHash(expected, supplied) {
+  if (typeof expected !== "string" || typeof supplied !== "string") {
+    return false;                       // explicit type check first
+  }
+  return crypto.timingSafeEqual(        // constant-time, no coercion
+    Buffer.from(expected),
+    Buffer.from(supplied)
+  );
+}
+```
+
+```php
+// PHP: identical operator — no magic-hash string juggling
+if (hash_equals($expectedHash, $suppliedHash)) { /* ... */ }
+```
+
+## Key Rules
+
+- Check variable types explicitly before use.
+- Use `===`/`!==` (or equivalent strict forms).
+- Use constant-time comparison for secrets/hashes.
+- Declare/validate parameter types where the language allows.
+- Avoid relying on implicit coercion in security logic.
+
+## Checklist for Code Review
+
+- Are security comparisons strict (`===`, `hash_equals`)?
+- Are types validated before comparison?
+- Is constant-time comparison used for secrets?
+- Are types declared where the language supports it?
+- Any loose `==` in security-critical paths?

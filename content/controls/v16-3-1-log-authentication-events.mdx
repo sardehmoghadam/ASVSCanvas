@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that all authentication operations are logged, including successful and unsuccessful attempts. Additional metadata, such as the type of authentication or factors used, should also be collected.
+Every authentication operation must be logged — both successes and failures — with metadata such as the authentication type and which factors were used.
+
+## Why This Matters
+
+Authentication logs are the tripwire for account attacks. Successes let you trace an attacker logging in as a victim; failures (and the ratio between them) expose credential stuffing, brute force, and MFA-bypass patterns. Recording the method and factors used distinguishes "logged in with password + TOTP" from "logged in with a remembered session" — the detail that reveals which defense held and which never fired.
+
+## Main Security Requirement
+
+> Verify that all authentication operations are logged, including successful and unsuccessful attempts. Additional metadata, such as the type of authentication or factors used, should also be collected.
+
+In practice this means a dedicated auth event on every attempt, with method/factor metadata.
+
+## Common Failure Patterns
+
+- **Failures only** — successes never logged.
+- **No method/factor** — can't tell MFA state.
+- **Unattributed** — no user/IP on the attempt.
+- **Auth events dropped** — provider callbacks unlogged.
+
+## Secure Implementation
+
+Log every auth attempt with method and factor metadata:
+
+```python
+def authenticate(user, secret, factors_used):
+    ok = verify_credentials(user, secret)
+    logger.info(
+        "authentication_attempt",
+        extra={
+            "timestamp": now_utc(),
+            "user": user,
+            "source_ip": client_ip(),
+            "result": "success" if ok else "failure",
+            "auth_type": "password",
+            "factors_used": factors_used,   # e.g. ["password", "totp"]
+        },
+    )
+    return ok
+```
+
+## Key Rules
+
+- Log every authentication attempt, success and failure.
+- Record the authentication type and factors used.
+- Include user/IP and result on each entry.
+- Log MFA and single-factor outcomes distinctly.
+- Keep auth events inside the approved pipeline.
+
+## Checklist for Code Review
+
+- Are all auth successes and failures logged?
+- Is authentication type recorded?
+- Are factors used captured?
+- Is user/IP present on each attempt?
+- Are failed vs successful attempts distinguishable?

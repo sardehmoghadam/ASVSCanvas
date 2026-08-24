@@ -26,6 +26,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application documentation identifies functionality which is time-consuming or resource-demanding. This must include how to prevent a loss of availability due to overusing this functionality and how to avoid a situation where building a response takes longer than the consumer timeout. Potential defenses may include asynchronous processing, using queues, and limiting parallel processes per user and per application.
+Documentation must identify which functionality is time-consuming or resource-demanding, and describe how to prevent availability loss from its overuse and how to avoid responses that outlive the consumer timeout (e.g. async processing, queues, per-user/per-app concurrency limits).
+
+## Why This Matters
+
+A heavy operation — export, report, image processing — is a denial-of-service lever: enough concurrent requests exhaust CPU, memory, or DB connections, and a slow synchronous response trips client timeouts. Naming these paths up front forces the design to queue, throttle, and bound work instead of discovering the bottleneck under attack.
+
+## Main Security Requirement
+
+> Verify that the application documentation identifies functionality which is time-consuming or resource-demanding. This must include how to prevent a loss of availability due to overusing this functionality and how to avoid a situation where building a response takes longer than the consumer timeout. Potential defenses may include asynchronous processing, using queues, and limiting parallel processes per user and per application.
+
+In practice this means documented heavy paths plus their availability defenses.
+
+## Common Failure Patterns
+
+- **Heavy paths unnamed** — no one knows what's expensive.
+- **Synchronous blocking** — slow work blocks the request thread.
+- **No concurrency caps** — one user can spawn many expensive jobs.
+- **Timeout mismatch** — response slower than client timeout.
+
+## Secure Implementation
+
+Document heavy functionality and its defenses:
+
+```yaml
+resource_intensive_functionality:
+  - endpoint: /api/reports/generate
+    risk: renders a large PDF; CPU-bound
+    defenses:
+      - asynchronous job + status poll (not a blocking request)
+      - job queue with bounded workers
+      - max 2 concurrent reports per user, 20 per application
+    timeout_handling: immediate 202 Accepted, no long-held response
+  - endpoint: /api/export
+    risk: large dataset read; DB-bound
+    defenses: [queued worker, streamed response, per-user throttle]
+```
+
+## Key Rules
+
+- Document every time/resource-heavy function.
+- Describe defenses against overuse for each.
+- Prefer async processing and queues over blocking responses.
+- Cap parallel processes per user and per application.
+- Ensure responses don't outlive consumer timeouts.
+
+## Checklist for Code Review
+
+- Are heavy/time-consuming functions documented?
+- Are per-function availability defenses described?
+- Is async/queueing specified for slow paths?
+- Are per-user/per-app concurrency limits defined?
+- Are consumer-timeout risks addressed?

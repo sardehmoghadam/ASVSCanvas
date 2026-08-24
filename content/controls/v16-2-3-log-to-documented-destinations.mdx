@@ -24,6 +24,64 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application only stores or broadcasts logs to the files and services that are documented in the log inventory.
+The application must write/broadcast logs only to the files and services listed in the logging inventory — no stray destinations, no undocumented side-channel logging.
+
+## Why This Matters
+
+An undocumented log destination is a blind spot: a developer's leftover `console.log` of credentials, or a debugging hook that streams logs to an unknown third party. Undocumented sinks break retention, access-control, and data-protection promises because no one is watching them. Restricting output to inventory-listed sinks keeps every byte of log data inside the governed pipeline.
+
+## Main Security Requirement
+
+> Verify that the application only stores or broadcasts logs to the files and services that are documented in the log inventory.
+
+In practice this means a centralized logger bound to approved destinations only.
+
+## Common Failure Patterns
+
+- **Stray console/print** — logs written outside the pipeline.
+- **Undocumented sink** — debug output to an unknown service.
+- **Multiple ad-hoc loggers** — destinations proliferate.
+- **Logs in temp files** — ungoverned local writes.
+
+## Secure Implementation
+
+Route all logging through one configured logger bound to approved sinks:
+
+```python
+import logging.config
+from logging.handlers import SysLogHandler
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        # only destinations listed in the logging inventory
+        "syslog": {
+            "class": "logging.handlers.SysLogHandler",
+            "address": ("log-collector.internal", 514),
+        },
+    },
+    "root": {"handlers": ["syslog"], "level": "INFO"},
+}
+logging.config.dictConfig(LOGGING)
+
+# application code never writes to its own files — only via the root logger
+```
+
+## Key Rules
+
+- Log only to inventory-documented destinations.
+- Centralize logging through one configured pipeline.
+- Remove ad-hoc console/print logging in production.
+- Prevent logging to ungoverned files/services.
+- Reconcile actual destinations against the inventory.
+
+## Checklist for Code Review
+
+- Are all log sinks present in the inventory?
+- Is any stray console/print logging present?
+- Are ad-hoc loggers eliminated?
+- Does the app write outside the approved pipeline?
+- Are destinations reconciled with the inventory regularly?

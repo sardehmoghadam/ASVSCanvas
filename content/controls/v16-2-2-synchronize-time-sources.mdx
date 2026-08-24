@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that time sources for all logging components are synchronized, and that timestamps in security event metadata use UTC or include an explicit time zone offset. UTC is recommended to ensure consistency across distributed systems and to prevent confusion during daylight saving time transitions.
+All logging components must have synchronized clocks, and security-event timestamps must use UTC or carry an explicit timezone offset — UTC is recommended to avoid ambiguity across distributed systems and daylight-saving transitions.
+
+## Why This Matters
+
+Incident correlation depends on ordering events across servers, containers, and services. If one host is 10 minutes off (or logging local time during a DST shift), an attacker's actions appear out of order or duplicated, derailing the timeline. Universally UTC timestamps from NTP-synced clocks make "which happened first" answerable with confidence across the whole stack.
+
+## Main Security Requirement
+
+> Verify that time sources for all logging components are synchronized, and that timestamps in security event metadata use UTC or include an explicit time zone offset. UTC is recommended to ensure consistency across distributed systems and to prevent confusion during daylight saving time transitions.
+
+In practice this means NTP everywhere plus UTC-only timestamps.
+
+## Common Failure Patterns
+
+- **Local-time logging** — ambiguous across zones/DST.
+- **Unsynced clocks** — hosts drift, timeline breaks.
+- **No offset recorded** — timestamp uninterpretable.
+- **Mixed formats** — some UTC, some local.
+
+## Secure Implementation
+
+Synchronize clocks via NTP and log in UTC only:
+
+```dockerfile
+# ensure the container/host clock stays synchronized
+RUN apt-get update && apt-get install -y tzdata ntp \
+    && timedatectl set-timezone UTC 2>/dev/null || true
+```
+
+```python
+from datetime import datetime, timezone
+
+def now_utc() -> str:
+    # always UTC — no local-time or DST ambiguity
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+logger.info("auth_failed", extra={"timestamp": now_utc(), ...})
+```
+
+## Key Rules
+
+- Synchronize all logging components via NTP.
+- Emit timestamps in UTC (or with an explicit offset).
+- Avoid local-time-only timestamps in security events.
+- Apply the same format across the stack.
+- Monitor clock drift on hosts/containers.
+
+## Checklist for Code Review
+
+- Are all components NTP-synchronized?
+- Are security timestamps UTC or offset-qualified?
+- Is local time avoided in security metadata?
+- Is the timestamp format consistent everywhere?
+- Is clock drift monitored?

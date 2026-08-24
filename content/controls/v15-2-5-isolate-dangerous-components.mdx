@@ -25,6 +25,59 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that the application implements additional protections around parts of the application which are documented as containing dangerous functionality or using third-party libraries considered to be risky components. This could include techniques such as sandboxing, encapsulation, containerization or network level isolation to delay and deter attackers who compromise one part of an application from pivoting elsewhere in the application.
+The risky components and dangerous functionality documented in V15.1.4/V15.1.5 must be wrapped in additional protections — sandboxing, encapsulation, containerization, or network isolation — so a compromise in one doesn't let an attacker pivot to the rest of the app.
+
+## Why This Matters
+
+A risky parser or a shell-exec path is where compromise is most likely to happen. If it runs with full access to the app's data, secrets, and network, one exploit = total takeover. Isolation draws a boundary around the danger: even when the risky component is breached, the attacker lands in a constrained box with nothing reachable, which delays and deters lateral movement.
+
+## Main Security Requirement
+
+> Verify that the application implements additional protections around parts of the application which are documented as containing dangerous functionality or using third-party libraries considered to be risky components. This could include techniques such as sandboxing, encapsulation, containerization or network level isolation to delay and deter attackers who compromise one part of an application from pivoting elsewhere in the application.
+
+In practice this means isolating the documented danger zones.
+
+## Common Failure Patterns
+
+- **Risky code un-isolated** — runs in-process with full privileges.
+- **No network boundary** — compromised component reaches DB/files.
+- **Monolith** — nothing segments dangerous parts.
+- **Isolation on paper only** — container with unlimited privileges.
+
+## Secure Implementation
+
+Run risky functionality in a constrained, network-isolated container:
+
+```yaml
+# pdf-renderer service: isolated, least-privilege, no outbound net
+services:
+  renderer:
+    image: renderer:1.0
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    networks:
+      - renderer-net          # no access to db-network
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+```
+
+## Key Rules
+
+- Apply isolation around every documented danger zone.
+- Use sandboxing/containerization for risky components.
+- Segment networks so dangerous parts can't reach core data.
+- Run isolated processes with least privilege.
+- Verify isolation is real, not just declared.
+
+## Checklist for Code Review
+
+- Is each risky component/danger zone isolated?
+- Are they sandboxed or containerized?
+- Is network access from danger zones restricted?
+- Do isolated processes run least-privilege?
+- Can a compromise pivot to the rest of the app?

@@ -24,6 +24,56 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a generic message is returned to the consumer when an unexpected or security-sensitive error occurs, ensuring no exposure of sensitive internal system data such as stack traces, queries, secret keys, and tokens.
+When an unexpected or security-sensitive error occurs, the consumer gets a generic message — never the internal details: no stack traces, SQL, secret keys, or tokens.
+
+## Why This Matters
+
+Error details are a roadmap: a stack trace reveals framework/version and file paths, a leaked SQL error reveals schema, a token in an error bounces back secrets. Attackers deliberately trigger errors to harvest this. Returning a bland "request failed, please retry" (while the detail goes to the server-side log) gives the user nothing to weaponize and preserves the diagnostic value where it belongs — in the protected logs, not the response.
+
+## Main Security Requirement
+
+> Verify that a generic message is returned to the consumer when an unexpected or security-sensitive error occurs, ensuring no exposure of sensitive internal system data such as stack traces, queries, secret keys, and tokens.
+
+In practice this means generic client responses while details go to server logs only.
+
+## Common Failure Patterns
+
+- **Stack trace to client** — debug mode left on in prod.
+- **SQL error surfaced** — query and schema leaked.
+- **Secrets in messages** — keys/tokens echoed in errors.
+- **Verbose 500s** — internal detail in the response body.
+
+## Secure Implementation
+
+Return a generic response and log the detail server-side:
+
+```python
+@app.errorhandler(Exception)
+def handle_unexpected(e):
+    logger.error("unexpected_error", extra={"error": repr(e)})  # detail -> logs
+    return jsonify({"error": "An unexpected error occurred."}), 500
+    # no stack trace, no SQL, no internal paths in the response
+```
+
+```javascript
+// never send internal detail to the client
+res.status(500).json({ error: "An unexpected error occurred." });
+```
+
+## Key Rules
+
+- Return a generic message for unexpected/security errors.
+- Send stack traces, SQL, and secrets to logs, not clients.
+- Disable debug/detailed error pages in production.
+- Keep error messages free of internal paths and keys.
+- Log the full detail server-side for investigation.
+
+## Checklist for Code Review
+
+- Are client error messages generic?
+- Are stack traces absent from responses?
+- Is SQL/schema detail kept out of errors?
+- Are secrets/tokens excluded from messages?
+- Is full detail logged server-side instead?

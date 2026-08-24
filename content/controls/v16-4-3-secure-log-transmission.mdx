@@ -24,6 +24,60 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that logs are securely transmitted to a logically separate system for analysis, detection, alerting, and escalation. The aim is to ensure that if the application is breached, the logs are not compromised.
+Logs must be transmitted securely to a logically separate system for analysis, detection, alerting, and escalation — so that if the application is breached, its logs survive uncompromised.
+
+## Why This Matters
+
+Logs sitting on the same machine as the app are logs the attacker destroys or edits on the way in. Forwarding them over an encrypted channel to a separate, hardened collector means the evidence exists *outside* the blast radius: even a full app compromise leaves a copy of the attacker's footsteps that they can't reach from the app's box. Secure transmission (TLS) also stops the logs themselves from being read or altered in flight.
+
+## Main Security Requirement
+
+> Verify that logs are securely transmitted to a logically separate system for analysis, detection, alerting, and escalation. The aim is to ensure that if the application is breached, the logs are not compromised.
+
+In practice this means TLS-encrypted shipping to a separate collector/SIEM.
+
+## Common Failure Patterns
+
+- **Same-host logs** — deleted with the compromise.
+- **Plaintext shipping** — logs readable in transit.
+- **No separate collector** — analysis runs on the app host.
+- **Lossy/unreliable ship** — logs dropped under load.
+
+## Secure Implementation
+
+Ship logs over TLS to a separate collector:
+
+```python
+from logging.handlers import SysLogHandler
+import ssl
+
+handler = SysLogHandler(
+    address=("log-collector.internal", 6514),   # RFC 5424 over TLS
+    socktype=ssl.SOCK_STREAM,
+)
+handler.createSocket = lambda: ssl.wrap_socket(
+    handler.socket,
+    ssl_version=ssl.PROTOCOL_TLS_CLIENT,
+    cert_reqs=ssl.CERT_REQUIRED,
+    ca_certs="/etc/ssl/log-ca.pem",             # verify the collector
+)
+logger.addHandler(handler)
+```
+
+## Key Rules
+
+- Transmit logs over TLS to a separate collector.
+- Keep the collector logically separate from the app.
+- Verify the collector (TLS cert) before shipping.
+- Ensure reliable, buffered delivery under load.
+- Use the separate system for detection/alerting.
+
+## Checklist for Code Review
+
+- Are logs shipped to a separate system?
+- Is transmission encrypted (TLS/Stunnel)?
+- Is the collector certificate verified?
+- Would logs survive a full app compromise?
+- Is shipping reliable under load?

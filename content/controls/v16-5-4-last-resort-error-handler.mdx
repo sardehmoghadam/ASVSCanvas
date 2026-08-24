@@ -24,6 +24,62 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that a last resort error handler is defined which will catch all unhandled exceptions. This is both to avoid losing error details that must go to log files and to ensure that an error does not take down the entire application process, leading to a loss of availability.
+A last-resort error handler must catch every unhandled exception, so error details reach the logs and a single error can't crash the whole application process.
+
+## Why This Matters
+
+Any exception that escapes every handler either kills the process (availability loss) or vanishes silently (forensics loss). A global catch-all is the backstop: it logs the full stack trace for investigation and returns a controlled response, so one bad input can't terminate the whole app and no crash goes unrecorded. It's the difference between a single failed request and a service-wide outage.
+
+## Main Security Requirement
+
+> Verify that a last resort error handler is defined which will catch all unhandled exceptions. This is both to avoid losing error details that must go to log files and to ensure that an error does not take down the entire application process, leading to a loss of availability.
+
+In practice this means a global exception handler plus a supervisor to restart on crash.
+
+## Common Failure Patterns
+
+- **No global handler** — exception escapes and crashes.
+- **Handler loses detail** — caught but not logged.
+- **Process dies on error** — one request kills the app.
+- **Partial handling** — some layers lack a catch-all.
+
+## Secure Implementation
+
+Install a global catch-all that logs and returns a controlled response:
+
+```python
+@app.errorhandler(Exception)
+def last_resort(e):
+    logger.exception(                  # full stack trace -> logs, not lost
+        "unhandled_exception",
+        extra={"route": request.path},
+    )
+    return jsonify({"error": "Internal server error"}), 500
+    # the process stays up; only this request is affected
+```
+
+```javascript
+// Node: a top-level catch prevents the process from exiting on one error
+process.on("uncaughtException", (err) => {
+  logger.error("uncaught_exception", { error: err.stack });
+  // graceful shutdown/restart by the supervisor rather than silent death
+});
+```
+
+## Key Rules
+
+- Install a global catch-all for unhandled exceptions.
+- Log the full stack trace; never let it vanish.
+- Return a controlled response and keep the process up.
+- Run under a supervisor that restarts on real crashes.
+- Cover every layer (app, workers, background jobs).
+
+## Checklist for Code Review
+
+- Is a last-resort handler defined everywhere?
+- Are unhandled exceptions logged with full detail?
+- Can one error crash the whole process?
+- Is a supervisor/restart strategy in place?
+- Do background jobs have a catch-all too?

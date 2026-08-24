@@ -25,6 +25,57 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that third-party components and all of their transitive dependencies are included from the expected repository, whether internally owned or an external source, and that there is no risk of a dependency confusion attack.
+Every third-party component and transitive dependency must be fetched from the expected repository — the internal registry for internal packages, the intended external source for public ones — so a dependency confusion attack has no opening.
+
+## Why This Matters
+
+Dependency confusion happens when a private, internal package name (say `company-core`) also exists on a public registry, and the resolver pulls the public one — attacker-controlled, possibly backdoored. If components aren't pinned to the right repository, an attacker who publishes a same-named package on the public registry can inject their code into your build. Forcing every fetch to the intended source removes that substitution.
+
+## Main Security Requirement
+
+> Verify that third-party components and all of their transitive dependencies are included from the expected repository, whether internally owned or an external source, and that there is no risk of a dependency confusion attack.
+
+In practice this means scoped registries and per-package repository pinning.
+
+## Common Failure Patterns
+
+- **Public registry only** — internal names resolvable publicly.
+- **Internal names unregistered** — attacker squats the public name.
+- **No scope mapping** — no per-scope registry config.
+- **Transitive deps unpinned** — resolved from the wrong source.
+
+## Secure Implementation
+
+Scope internal packages to the internal registry:
+
+```ini
+# .npmrc — route internal scope to the private registry, keep public elsewhere
+@company:registry=https://npm.internal.example.com/
+registry=https://registry.npmjs.org/
+always-auth=true
+```
+
+```bash
+# Python: constrain the index so only expected sources are used
+pip install --index-url https://pypi.internal.example.com/simple \
+            --extra-index-url https://pypi.org/simple \
+            --require-hashes
+```
+
+## Key Rules
+
+- Fetch every component from its expected repository.
+- Route internal package scopes to the internal registry.
+- Pre-register internal names to deny public squatting.
+- Pin transitive dependencies to their intended source.
+- Audit the installed tree for unexpected sources.
+
+## Checklist for Code Review
+
+- Are internal packages scoped to the internal registry?
+- Are internal names pre-registered to block squatting?
+- Are transitive deps resolved from expected sources?
+- Is mixed internal/public resolution correctly scoped?
+- Is the lockfile free of unexpected registries?

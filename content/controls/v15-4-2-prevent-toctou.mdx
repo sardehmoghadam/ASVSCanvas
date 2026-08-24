@@ -25,6 +25,61 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that checks on a resource state, such as its existence or permissions, and the actions that depend on them are performed as a single atomic operation to prevent time-of-check to time-of-use (TOCTOU) race conditions. For example, checking if a file exists before opening it, or verifying a user access before granting it.
+A resource state check and the action that depends on it — "does this file exist / is this user authorized" followed by "open it / grant access" — must happen as one atomic operation, so no other party can change the state in between (TOCTOU).
+
+## Why This Matters
+
+Between "check" and "use" there's a gap an attacker can exploit: the file you verified gets swapped for a symlink to `/etc/passwd`, or the user you authorized gets replaced by another principal. If the check and the action aren't atomic, the answer you validated no longer describes the thing you act on. Atomic operations (open-then-`fstat` on the open handle, or a single privilege-check that returns the object) close that window.
+
+## Main Security Requirement
+
+> Verify that checks on a resource state, such as its existence or permissions, and the actions that depend on them are performed as a single atomic operation to prevent time-of-check to time-of-use (TOCTOU) race conditions. For example, checking if a file exists before opening it, or verifying a user access before granting it.
+
+In practice this means operating on an already-opened handle or doing check+use in one locked step.
+
+## Common Failure Patterns
+
+- **Check-then-use** — `exists()` then `open()` separately.
+- **Symlink swap** — file replaced between check and use.
+- **Re-auth gap** — user verified, then swapped by name.
+- **Stat before open** — path re-resolved after validation.
+
+## Secure Implementation
+
+Open first, then verify the open handle — not the path:
+
+```python
+import os
+
+def secure_open(path):
+    fd = os.open(path, os.O_RDONLY)        # open a concrete handle
+    try:
+        st = os.fstat(fd)                  # verify the *open* file, not the path
+        if not (st.st_mode & os.O_NOFOLLOW or not os.path.islink(path)):
+            raise OSError("symlink not allowed")
+        return os.fdopen(fd)
+
+        # future reads use this fd — even if the path is swapped,
+        # the handle keeps pointing at the file that was checked
+    except Exception:
+        os.close(fd)
+        raise
+```
+
+## Key Rules
+
+- Perform state check and action as one atomic operation.
+- Open a handle first, then verify the handle (never the path).
+- Use `O_NOFOLLOW`/no-symlink flags when opening.
+- Validate once and use that same handle/object throughout.
+- Avoid re-resolving a path/principal after validation.
+
+## Checklist for Code Review
+
+- Are check and use performed atomically?
+- Is the file verified via its open handle, not its path?
+- Are symlink-following flags used?
+- Is a validated object reused rather than re-looked-up?
+- Can state change between any check and its dependent action?

@@ -25,6 +25,66 @@ references:
     url: https://owasp.org/www-project-application-security-verification-standard/
 ---
 
-## Requirement
+## What This Control Means
 
-Verify that shared objects in multi-threaded code (such as caches, files, or in-memory objects accessed by multiple threads) are accessed safely by using thread-safe types and synchronization mechanisms like locks or semaphores to avoid race conditions and data corruption.
+Shared objects accessed by multiple threads — caches, files, in-memory state — must be accessed through thread-safe types or synchronization (locks, semaphores) so concurrent access can't corrupt data or trigger race conditions.
+
+## Why This Matters
+
+Two threads updating the same map or counter without synchronization interleave their reads and writes: a balance update reads a value, another thread overwrites it, and the first writes back a stale figure — money lost, state corrupted. Using thread-safe collections or locks guarantees only one thread mutates a shared object at a time, so the invariants hold.
+
+## Main Security Requirement
+
+> Verify that shared objects in multi-threaded code (such as caches, files, or in-memory objects accessed by multiple threads) are accessed safely by using thread-safe types and synchronization mechanisms like locks or semaphores to avoid race conditions and data corruption.
+
+In practice this means thread-safe collections or explicit synchronization for shared state.
+
+## Common Failure Patterns
+
+- **Plain HashMap shared** — concurrent mutation corrupts it.
+- **No synchronization** — lost updates on counters/balances.
+- **Read-modify-write races** — check-then-act unsynchronized.
+- **Unsafe singleton** — lazy init raced by threads.
+
+## Secure Implementation
+
+Use thread-safe types or explicit locking for shared state:
+
+```java
+// thread-safe collection — no external locking needed
+import java.util.concurrent.ConcurrentHashMap;
+
+private final Map<String, Session> sessions = new ConcurrentHashMap<>();
+
+public void addSession(String id, Session s) {
+    sessions.put(id, s);            // safe under concurrent access
+}
+```
+
+```java
+// explicit lock for a compound read-modify-write
+private final Object lock = new Object();
+private long balance;
+
+public void credit(long amount) {
+    synchronized (lock) {           // atomic check-and-update
+        balance += amount;
+    }
+}
+```
+
+## Key Rules
+
+- Access shared objects only via thread-safe types or locks.
+- Synchronize compound read-modify-write sequences.
+- Prefer concurrent collections over manual locking.
+- Keep lock scope small and well-defined.
+- Document which objects are shared and how they're protected.
+
+## Checklist for Code Review
+
+- Are shared caches/maps thread-safe?
+- Are counters/balances updated under synchronization?
+- Are compound operations made atomic?
+- Is lazy/static initialization thread-safe?
+- Is locking scope minimal and correct?
