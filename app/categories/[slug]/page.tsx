@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { SectionCard } from "@/components/cards";
@@ -7,9 +8,30 @@ import { categories, getCategoryBySlug } from "@/content/categories";
 import { getControlsBySectionId } from "@/content/controls";
 import { getSectionsByChapter } from "@/content/sections";
 import { getControlsBySection } from "@/lib/content/loader";
+import { SITE_URL, buildOpenGraph } from "@/lib/site-config";
 
 export function generateStaticParams() {
   return categories.map((category) => ({ slug: category.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const category = getCategoryBySlug(slug);
+  if (!category) return {};
+
+  const title = `${category.id} ${category.title}`;
+  const url = `${SITE_URL}/categories/${category.slug}/`;
+
+  return {
+    title,
+    description: category.description,
+    alternates: { canonical: url },
+    openGraph: buildOpenGraph({
+      title,
+      description: category.description,
+      url,
+    }),
+  };
 }
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -8,9 +9,30 @@ import { categories } from "@/content/categories";
 import { getControlsBySectionId } from "@/content/controls";
 import { sections, getSectionBySlug } from "@/content/sections";
 import { getControlsBySection } from "@/lib/content/loader";
+import { SITE_URL, buildOpenGraph } from "@/lib/site-config";
 
 export function generateStaticParams() {
   return sections.map((section) => ({ slug: section.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const section = getSectionBySlug(slug);
+  if (!section) return {};
+
+  const title = `${section.id} ${section.title}`;
+  const url = `${SITE_URL}/sections/${section.slug}/`;
+
+  return {
+    title,
+    description: section.description,
+    alternates: { canonical: url },
+    openGraph: buildOpenGraph({
+      title,
+      description: section.description,
+      url,
+    }),
+  };
 }
 
 /** Card-safe adapter used by the render loop for MDX + legacy controls. */

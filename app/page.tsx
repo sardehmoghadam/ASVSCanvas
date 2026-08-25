@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BookOpenText, CheckCircle2, Code2, HeartHandshake, LockKeyhole, SearchCheck, ShieldCheck, Sparkles } from "lucide-react";
 import { CategoryCard } from "@/components/cards";
@@ -5,6 +6,19 @@ import { SearchBox } from "@/components/search-box";
 import { Button } from "@/components/ui/button";
 import { categories } from "@/content/categories";
 import { getAllControls } from "@/lib/content/loader";
+import { absoluteUrl, buildOpenGraph } from "@/lib/site-config";
+
+export const metadata: Metadata = {
+  title: "OWASP ASVS 5.0.0 Security Training",
+  description:
+    "Master secure software development with OWASP ASVS 5.0.0 — 345 controls across 17 chapters, with clear explanations, secure and insecure code examples, and review checklists.",
+  openGraph: buildOpenGraph({
+    title: "ASVS Academy — OWASP ASVS 5.0.0 Security Training",
+    description:
+      "Master secure software development with OWASP ASVS 5.0.0 — 345 controls, clear explanations, secure and insecure code examples, and review checklists.",
+    url: absoluteUrl("/"),
+  }),
+};
 
 const learningFeatures = [
   {

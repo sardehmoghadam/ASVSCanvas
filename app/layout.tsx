@@ -3,13 +3,42 @@ import "./globals.css";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SITE_URL, absoluteUrl, buildOpenGraph } from "@/lib/site-config";
+
+const description =
+  "Free, open-source OWASP ASVS 5.0.0 training — 345 security controls with plain-English explanations, secure and insecure code examples, and review checklists.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "ASVS Academy",
     template: "%s | ASVS Academy",
   },
-  description: "Static-first OWASP ASVS training portal for secure coding teams.",
+  description,
+  applicationName: "ASVS Academy",
+  keywords: [
+    "OWASP ASVS",
+    "application security",
+    "secure coding",
+    "ASVS 5.0.0",
+    "security controls",
+    "AppSec training",
+  ],
+  creator: "ASVS Academy",
+  alternates: {
+    canonical: absoluteUrl("/"),
+  },
+  openGraph: buildOpenGraph({
+    title: "ASVS Academy",
+    description,
+    url: absoluteUrl("/"),
+  }),
+  twitter: {
+    card: "summary_large_image",
+    title: "ASVS Academy",
+    description,
+    images: [absoluteUrl("/opengraph-image.png")],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

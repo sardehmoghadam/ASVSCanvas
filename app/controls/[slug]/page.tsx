@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Callout } from "@/components/callout";
@@ -16,6 +17,7 @@ import {
   type ControlEntry,
 } from "@/lib/content/loader";
 import { extractHeadings } from "@/lib/content/headings";
+import { SITE_URL, buildOpenGraph } from "@/lib/site-config";
 
 const toc = ["Explanation", "Why It Matters", "Examples", "Testing Notes", "References", "Related Controls"];
 
@@ -24,6 +26,43 @@ export function generateStaticParams() {
   const legacySlugs = legacyControls.map((control) => control.slug);
   const allSlugs = [...new Set([...mdxSlugs, ...legacySlugs])];
   return allSlugs.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+
+  const mdxEntry = getMdxControl(slug);
+  if (mdxEntry) {
+    const { frontmatter } = mdxEntry;
+    const url = `${SITE_URL}/controls/${slug}/`;
+    return {
+      title: frontmatter.title,
+      description: `OWASP ASVS ${frontmatter.asvsVersion} control ${frontmatter.controlId}: ${frontmatter.summary}`,
+      alternates: { canonical: url },
+      openGraph: buildOpenGraph({
+        title: frontmatter.title,
+        description: frontmatter.summary,
+        url,
+      }),
+    };
+  }
+
+  const control = getLegacyControl(slug);
+  if (control) {
+    const url = `${SITE_URL}/controls/${slug}/`;
+    return {
+      title: control.title,
+      description: `OWASP ASVS ${control.asvsVersion} control ${control.controlId}: ${control.summary}`,
+      alternates: { canonical: url },
+      openGraph: buildOpenGraph({
+        title: control.title,
+        description: control.summary,
+        url,
+      }),
+    };
+  }
+
+  return {};
 }
 
 /**

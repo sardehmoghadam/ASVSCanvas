@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SearchClient } from "@/components/search-client";
 import { buildSearchIndex } from "@/lib/search";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Search",
+  description:
+    "Search the full OWASP ASVS 5.0.0 catalog across titles, summaries, tags, chapters, sections, levels, and references.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function SearchPage() {

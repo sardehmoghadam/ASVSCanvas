@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   BadgeCheck,
@@ -16,6 +17,12 @@ import {
 import { Callout } from "@/components/callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Contribute",
+  description:
+    "Help grow ASVS Academy — author new controls, enrich stub requirements, and review submissions in this open-source OWASP ASVS training portal.",
+};
 
 const contributionTypes = [
   {
