@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { SectionCard } from "@/components/cards";
 import { DocsLayout } from "@/components/docs-layout";
+import { JsonLd } from "@/components/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { categories, getCategoryBySlug } from "@/content/categories";
 import { getControlsBySectionId } from "@/content/controls";
 import { getSectionsByChapter } from "@/content/sections";
 import { getControlsBySection } from "@/lib/content/loader";
-import { SITE_URL, buildOpenGraph } from "@/lib/site-config";
+import { absoluteUrl, SITE_URL, buildOpenGraph } from "@/lib/site-config";
+import { breadcrumbListJsonLd } from "@/lib/structured-data";
 
 export function generateStaticParams() {
   return categories.map((category) => ({ slug: category.slug }));
@@ -52,8 +54,14 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
   const totalControls = sectionsWithCounts.reduce((sum, s) => sum + s.count, 0);
 
+  const breadcrumbs = breadcrumbListJsonLd([
+    { name: "Home", url: absoluteUrl("/") },
+    { name: `${category.id} ${category.title}`, url: absoluteUrl(`/categories/${category.slug}/`) },
+  ]);
+
   return (
     <DocsLayout>
+      <JsonLd data={breadcrumbs} />
       <main className="px-4 py-10 sm:px-6 lg:px-0 lg:py-12">
         <Breadcrumbs
           items={[
@@ -94,4 +102,3 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     </DocsLayout>
   );
 }
-

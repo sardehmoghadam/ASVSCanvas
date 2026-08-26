@@ -27,6 +27,18 @@ See `CONTRIBUTING.md` or the in-app Contribute page (`/contribute/`) for the ful
 - Run `npm run build` to generate the static export.
 - Deploy the generated output to GitHub Pages or any static file host.
 
+## SEO
+- Per-page metadata (title, description, Open Graph/Twitter, canonical) is generated from `lib/site-config.ts`.
+- `app/robots.ts` and `app/sitemap.ts` emit `robots.txt` and `sitemap.xml` on the static export.
+- Icons are served from `app/icon.svg`, `app/icon.png` (512px), and `app/apple-icon.png` (180px).
+  Regenerate the raster icons with `node scripts/generate-icons.mjs`.
+- Structured data (JSON-LD): site-wide `WebSite`/`Organization` (root layout), `BreadcrumbList`
+  (category/section/control pages), and `TechArticle` + `LearningResource` per control.
+- Search Console: add your Google verification token as a repository variable named
+  `GOOGLE_SITE_VERIFICATION` (Settings > Secrets and variables > Actions > Variables), then
+  redeploy. CI injects it into the `google-site-verification` meta tag. Afterwards submit
+  `https://sardehmoghadam.github.io/ASVSCanvas/sitemap.xml` in Search Console.
+
 ## Notes
 - Search is currently a UI placeholder and can later be wired to a static index.
 - The design system is intentionally small and reusable so content can scale without redesigning page templates.

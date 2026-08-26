@@ -3,13 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { DocsLayout } from "@/components/docs-layout";
+import { JsonLd } from "@/components/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { categories } from "@/content/categories";
 import { getControlsBySectionId } from "@/content/controls";
 import { sections, getSectionBySlug } from "@/content/sections";
 import { getControlsBySection } from "@/lib/content/loader";
-import { SITE_URL, buildOpenGraph } from "@/lib/site-config";
+import { absoluteUrl, SITE_URL, buildOpenGraph } from "@/lib/site-config";
+import { breadcrumbListJsonLd } from "@/lib/structured-data";
 
 export function generateStaticParams() {
   return sections.map((section) => ({ slug: section.slug }));
@@ -56,6 +58,12 @@ export default async function SectionPage({ params }: { params: Promise<{ slug: 
   const chapter = categories.find((cat) => cat.id === section.chapterId);
   if (!chapter) notFound();
 
+  const breadcrumbs = breadcrumbListJsonLd([
+    { name: "Home", url: absoluteUrl("/") },
+    { name: `${chapter.id} ${chapter.title}`, url: absoluteUrl(`/categories/${chapter.slug}/`) },
+    { name: `${section.id} ${section.title}`, url: absoluteUrl(`/sections/${section.slug}/`) },
+  ]);
+
   // ── Collect controls (MDX + legacy) that belong to this section ────────
   const mdxControls = getControlsBySection(section.id);
   const legacyControls = getControlsBySectionId(section.id);
@@ -88,8 +96,9 @@ export default async function SectionPage({ params }: { params: Promise<{ slug: 
     seen.add(card.slug);
     return true;
   });
-return (
+  return (
     <DocsLayout>
+      <JsonLd data={breadcrumbs} />
       <main className="px-4 py-10 sm:px-6 lg:px-0 lg:py-12">
         <Breadcrumbs
           items={[

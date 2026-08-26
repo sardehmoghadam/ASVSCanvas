@@ -75,6 +75,11 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
+        env:
+          # Injected into app/layout.tsx as the google-site-verification meta tag.
+          # Set GOOGLE_SITE_VERIFICATION as a repository variable (Settings > Secrets
+          # and variables > Actions > Variables) with your Search Console token.
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

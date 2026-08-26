@@ -1,12 +1,13 @@
 {
   "name": "asvs-training-portal",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "serve out",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "generate-icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.20",

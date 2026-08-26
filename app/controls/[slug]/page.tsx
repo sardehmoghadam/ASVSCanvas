@@ -4,6 +4,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Callout } from "@/components/callout";
 import { CodeTabs } from "@/components/code-tabs";
 import { DocsLayout } from "@/components/docs-layout";
+import { JsonLd } from "@/components/json-ld";
 import { ReferencesList } from "@/components/references-list";
 import { RelatedControls } from "@/components/related-controls";
 import { TableOfContents } from "@/components/table-of-contents";
@@ -17,7 +18,8 @@ import {
   type ControlEntry,
 } from "@/lib/content/loader";
 import { extractHeadings } from "@/lib/content/headings";
-import { SITE_URL, buildOpenGraph } from "@/lib/site-config";
+import { absoluteUrl, SITE_URL, buildOpenGraph } from "@/lib/site-config";
+import { breadcrumbListJsonLd, controlJsonLd } from "@/lib/structured-data";
 
 const toc = ["Explanation", "Why It Matters", "Examples", "Testing Notes", "References", "Related Controls"];
 
@@ -79,8 +81,30 @@ async function renderMdxControl(entry: ControlEntry) {
     .slice(0, 2);
   const headings = extractHeadings(entry.body);
 
+  const controlUrl = absoluteUrl(`/controls/${frontmatter.slug}/`);
+  const chapterTitle = category?.title ?? frontmatter.chapter.title;
+  const breadcrumbs = breadcrumbListJsonLd([
+    { name: "Home", url: absoluteUrl("/") },
+    ...(category
+      ? [{ name: chapterTitle, url: absoluteUrl(`/categories/${category.slug}/`) }]
+      : []),
+    { name: frontmatter.controlId, url: controlUrl },
+  ]);
+  const structuredData = controlJsonLd({
+    url: controlUrl,
+    title: frontmatter.title,
+    summary: frontmatter.summary,
+    controlId: frontmatter.controlId,
+    asvsVersion: frontmatter.asvsVersion,
+    level: frontmatter.level,
+    tags: frontmatter.tags,
+    chapterTitle,
+  });
+
   return (
     <DocsLayout>
+      <JsonLd data={breadcrumbs} />
+      <JsonLd data={structuredData} />
       <div className="grid gap-8 px-4 py-10 sm:px-6 lg:px-0 xl:grid-cols-[minmax(0,1fr)_240px]">
         <article className="min-w-0 max-w-4xl">
           <Breadcrumbs
@@ -166,8 +190,29 @@ export default async function ControlPage({ params }: { params: Promise<{ slug: 
     )
     .slice(0, 2);
 
+  const controlUrl = absoluteUrl(`/controls/${control.slug}/`);
+  const chapterTitle = category?.title ?? control.categoryId;
+  const breadcrumbs = breadcrumbListJsonLd([
+    { name: "Home", url: absoluteUrl("/") },
+    ...(category
+      ? [{ name: chapterTitle, url: absoluteUrl(`/categories/${category.slug}/`) }]
+      : []),
+    { name: control.controlId, url: controlUrl },
+  ]);
+  const structuredData = controlJsonLd({
+    url: controlUrl,
+    title: control.title,
+    summary: control.summary,
+    controlId: control.controlId,
+    asvsVersion: control.asvsVersion,
+    tags: control.tags,
+    chapterTitle,
+  });
+
   return (
     <DocsLayout>
+      <JsonLd data={breadcrumbs} />
+      <JsonLd data={structuredData} />
       <div className="grid gap-8 px-4 py-10 sm:px-6 lg:px-0 xl:grid-cols-[minmax(0,1fr)_240px]">
         <article className="min-w-0 max-w-4xl">
           <Breadcrumbs
@@ -232,4 +277,3 @@ export default async function ControlPage({ params }: { params: Promise<{ slug: 
     </DocsLayout>
   );
 }
-
