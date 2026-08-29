@@ -40,5 +40,5 @@ See `CONTRIBUTING.md` or the in-app Contribute page (`/contribute/`) for the ful
   `https://sardehmoghadam.github.io/ASVSCanvas/sitemap.xml` in Search Console.
 
 ## Notes
-- Search is currently a UI placeholder and can later be wired to a static index.
+- Search is powered by a build-time static index (`lib/search.ts`) covering every control's id, title, summary, chapter, section, tags, references, and related controls.
 - The design system is intentionally small and reusable so content can scale without redesigning page templates.

@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "serve out",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "generate-icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
@@ -34,6 +36,7 @@
     "postcss": "^8.5.1",
     "serve": "^14.2.4",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.11"
   }
 }
