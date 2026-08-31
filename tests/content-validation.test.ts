@@ -6,7 +6,6 @@ import {
   ControlFrontmatterSchema,
   type ControlFrontmatter,
 } from "../lib/content/schema";
-import { controls as legacyControls } from "../content/controls";
 
 /**
  * Content-integrity tests for the MDX control corpus.
@@ -14,10 +13,6 @@ import { controls as legacyControls } from "../content/controls";
  * The MDX files under `content/controls/` are the source of truth. These tests
  * validate the same frontmatter schema the build uses, plus structural rules
  * that keep the 300+ authored pages consistent as new controls are added.
- *
- * `content/controls.ts` (the legacy array) is imported only to build the set of
- * valid routes for the related-controls link check; it is not validated itself
- * because it is transitional data that is not rendered on the site.
  */
 
 const CONTROLS_DIR = path.join(process.cwd(), "content", "controls");
@@ -145,13 +140,11 @@ describe("ASVS control content integrity", () => {
   });
 
   it("relatedControls hrefs resolve to an existing control route", () => {
-    const mdxSlugs = new Set(
+    const validSlugs = new Set(
       controls
         .map((control) => control.frontmatter?.slug)
         .filter((slug): slug is string => Boolean(slug)),
     );
-    const legacySlugs = new Set(legacyControls.map((control) => control.slug));
-    const validSlugs = new Set([...mdxSlugs, ...legacySlugs]);
 
     const broken: string[] = [];
     for (const control of controls) {

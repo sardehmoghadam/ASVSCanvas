@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { categories } from "@/content/categories";
-import { controls as legacyControls } from "@/content/controls";
 import { sections } from "@/content/sections";
 import { getAllControls } from "@/lib/content/loader";
 import { SITE_URL } from "@/lib/site-config";
@@ -8,11 +7,7 @@ import { SITE_URL } from "@/lib/site-config";
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const controlSlugs = [
-    ...getAllControls().map((entry) => entry.frontmatter.slug),
-    ...legacyControls.map((control) => control.slug),
-  ];
-  const uniqueControlSlugs = [...new Set(controlSlugs)];
+  const uniqueControlSlugs = getAllControls().map((entry) => entry.frontmatter.slug);
 
   const lastModified = new Date();
 

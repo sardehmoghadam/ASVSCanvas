@@ -6,7 +6,6 @@ import { DocsLayout } from "@/components/docs-layout";
 import { JsonLd } from "@/components/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { categories, getCategoryBySlug } from "@/content/categories";
-import { getControlsBySectionId } from "@/content/controls";
 import { getSectionsByChapter } from "@/content/sections";
 import { getControlsBySection } from "@/lib/content/loader";
 import { absoluteUrl, SITE_URL, buildOpenGraph } from "@/lib/site-config";
@@ -46,11 +45,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
   const chapterSections = getSectionsByChapter(category.id);
 
-  const sectionsWithCounts = chapterSections.map((section) => {
-    const mdxCount = getControlsBySection(section.id).length;
-    const legacyCount = getControlsBySectionId(section.id).length;
-    return { section, count: mdxCount + legacyCount };
-  });
+  const sectionsWithCounts = chapterSections.map((section) => ({
+    section,
+    count: getControlsBySection(section.id).length,
+  }));
 
   const totalControls = sectionsWithCounts.reduce((sum, s) => sum + s.count, 0);
 

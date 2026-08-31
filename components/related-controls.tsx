@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Control } from "@/types/content";
-
-export type RelatedControl = Pick<Control, "slug" | "title" | "summary">;
+export type RelatedControl = {
+  slug: string;
+  title: string;
+  summary: string;
+};
 
 export function RelatedControls({ controls }: { controls: RelatedControl[] }) {
   if (controls.length === 0) {

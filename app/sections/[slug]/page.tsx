@@ -7,7 +7,6 @@ import { JsonLd } from "@/components/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { categories } from "@/content/categories";
-import { getControlsBySectionId } from "@/content/controls";
 import { sections, getSectionBySlug } from "@/content/sections";
 import { getControlsBySection } from "@/lib/content/loader";
 import { absoluteUrl, SITE_URL, buildOpenGraph } from "@/lib/site-config";
@@ -37,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-/** Card-safe adapter used by the render loop for MDX + legacy controls. */
+/** Card-safe adapter used by the render loop. */
 type SectionControlCard = {
   controlId: string;
   slug: string;
@@ -64,12 +63,9 @@ export default async function SectionPage({ params }: { params: Promise<{ slug: 
     { name: `${section.id} ${section.title}`, url: absoluteUrl(`/sections/${section.slug}/`) },
   ]);
 
-  // ── Collect controls (MDX + legacy) that belong to this section ────────
-  const mdxControls = getControlsBySection(section.id);
-  const legacyControls = getControlsBySectionId(section.id);
-
-  const cards: SectionControlCard[] = [
-    ...mdxControls.map((entry) => ({
+  // ── Collect controls that belong to this section ───────────────────────
+  const cards: SectionControlCard[] = getControlsBySection(section.id).map(
+    (entry) => ({
       controlId: entry.frontmatter.controlId,
       slug: entry.frontmatter.slug,
       title: entry.frontmatter.title,
@@ -77,25 +73,8 @@ export default async function SectionPage({ params }: { params: Promise<{ slug: 
       difficulty: entry.frontmatter.difficulty,
       reviewStatus: entry.frontmatter.reviewStatus,
       tags: entry.frontmatter.tags,
-    })),
-    ...legacyControls.map((control) => ({
-      controlId: control.controlId,
-      slug: control.slug,
-      title: control.title,
-      summary: control.summary,
-      difficulty: control.difficulty,
-      reviewStatus: control.reviewStatus,
-      tags: control.tags,
-    })),
-  ];
-
-  // Dedup by slug (MDX shadows legacy)
-  const seen = new Set<string>();
-  const uniqueCards = cards.filter((card) => {
-    if (seen.has(card.slug)) return false;
-    seen.add(card.slug);
-    return true;
-  });
+    }),
+  );
   return (
     <DocsLayout>
       <JsonLd data={breadcrumbs} />
@@ -130,9 +109,9 @@ export default async function SectionPage({ params }: { params: Promise<{ slug: 
             Controls in this section
           </h2>
 
-          {uniqueCards.length > 0 ? (
+          {cards.length > 0 ? (
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {uniqueCards.map((card) => (
+              {cards.map((card) => (
                 <Link
                   key={card.slug}
                   href={`/controls/${card.slug}/`}
