@@ -6,7 +6,7 @@ import { buildSearchIndex } from "@/lib/search";
 export const metadata: Metadata = {
   title: "Search",
   description:
-    "Search the full OWASP ASVS 5.0.0 catalog across titles, summaries, tags, chapters, sections, levels, and references.",
+    "Search the full OWASP ASVS 5.0.0 catalog across titles, summaries, keywords, tags, and the full text of every control.",
   robots: {
     index: false,
     follow: false,
@@ -20,8 +20,8 @@ export default function SearchPage() {
     <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="text-4xl font-bold tracking-tight">Search</h1>
       <p className="mt-3 text-muted-foreground">
-        Search the full ASVS 5.0.0 catalog across titles, summaries, tags, chapters, sections,
-        levels, and references.
+        Search the full ASVS 5.0.0 catalog across titles, summaries, keywords, tags, and the full
+        text of every control.
       </p>
       <div className="mt-8">
         <Suspense fallback={<SearchFallback />}>

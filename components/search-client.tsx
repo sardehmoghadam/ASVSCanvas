@@ -47,7 +47,7 @@ export function SearchClient({ entries }: { entries: SearchEntry[] }) {
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search controls, tags, references..."
+          placeholder="Search the full text of every control..."
           className="h-12 w-full rounded-2xl border border-border bg-background px-4 pr-16 text-sm outline-none transition placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
         />
         {trimmed.length > 0 && (
@@ -66,8 +66,8 @@ export function SearchClient({ entries }: { entries: SearchEntry[] }) {
           <Search className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-4 font-medium">Search {entries.length} ASVS 5.0.0 controls.</p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Match on titles, summaries, tags, chapters, sections, levels, difficulty, and
-            references. Try a tag like <span className="text-foreground">output-encoding</span> or a
+            Match on titles, summaries, keywords, tags, chapters, sections, and the full body
+            text. Try a keyword like <span className="text-foreground">output-encoding</span> or a
             chapter like <span className="text-foreground">V1</span>.
           </p>
         </div>

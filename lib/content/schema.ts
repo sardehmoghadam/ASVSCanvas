@@ -78,6 +78,7 @@ export const ControlFrontmatterSchema = z
     }),
     level: AsvsLevelSchema.default(1),
     tags: z.array(nonEmptyString).default([]),
+    keywords: z.array(nonEmptyString).default([]),
     difficulty: DifficultySchema.default("foundational"),
     reviewStatus: ReviewStatusSchema.default("draft"),
     references: z.array(ReferenceSchema).default([]),

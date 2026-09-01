@@ -1,4 +1,5 @@
 import { getAllControls } from "./content/loader";
+import { stripMarkdownToText } from "./content/markdown-text";
 
 /**
  * A lightweight, fully-serializable record for one searchable control.
@@ -20,6 +21,7 @@ export type SearchEntry = {
   difficulty: string;
   reviewStatus: string;
   tags: string[];
+  keywords: string[];
   references: string[];
   searchText: string;
 };
@@ -40,14 +42,16 @@ export function compareControlIds(a: string, b: string): number {
  * Builds the static search index from the MDX control corpus.
  *
  * Runs at build time only (server-side). Every field the user can search —
- * id, slug, title, summary, chapter, section, level, difficulty, status,
- * tags, references and related controls — is folded into `searchText`.
+ * id, slug, title, summary, keywords, tags, chapter, section, level,
+ * difficulty, status, references, related controls, and the rendered body
+ * text — is folded into `searchText`.
  */
 export function buildSearchIndex(): SearchEntry[] {
   return getAllControls()
     .map((entry) => {
       const fm = entry.frontmatter;
       const references = fm.references.map((ref) => ref.label);
+      const bodyText = stripMarkdownToText(entry.body);
 
       const searchText = [
         fm.controlId,
@@ -64,8 +68,10 @@ export function buildSearchIndex(): SearchEntry[] {
         fm.difficulty,
         fm.reviewStatus,
         ...fm.tags,
+        ...fm.keywords,
         ...references,
         ...fm.relatedControls.map((rc) => `${rc.id} ${rc.title}`),
+        bodyText,
       ]
         .join(" ")
         .toLowerCase();
@@ -83,6 +89,7 @@ export function buildSearchIndex(): SearchEntry[] {
         difficulty: fm.difficulty,
         reviewStatus: fm.reviewStatus,
         tags: fm.tags,
+        keywords: fm.keywords,
         references,
         searchText,
       };

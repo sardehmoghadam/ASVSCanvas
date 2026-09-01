@@ -120,6 +120,9 @@ level: 1
 tags:
   - input-validation
   - allowlist
+keywords:
+  - validation strategy
+  - untrusted input
 difficulty: foundational
 reviewStatus: draft
 references:
