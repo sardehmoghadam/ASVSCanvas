@@ -6,6 +6,7 @@ import { DocsLayout } from "@/components/docs-layout";
 import { JsonLd } from "@/components/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { standard } from "@/config/standard";
 import { categories } from "@/content/categories";
 import { sections, getSectionBySlug } from "@/content/sections";
 import { getControlsBySection } from "@/lib/content/loader";
@@ -93,7 +94,7 @@ export default async function SectionPage({ params }: { params: Promise<{ slug: 
         <header className="mt-8 border-b border-border/70 pb-8">
           <div className="flex flex-wrap items-center gap-2">
             <Badge>{section.id}</Badge>
-            <Badge variant="outline">ASVS {section.asvsVersion}</Badge>
+            <Badge variant="outline">{standard.name} {standard.version}</Badge>
             <Badge variant="secondary">{chapter.id}</Badge>
           </div>
           <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
@@ -142,7 +143,7 @@ export default async function SectionPage({ params }: { params: Promise<{ slug: 
                 No controls have been published for {section.id} {section.title} yet.
               </p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                This section is part of the {chapter.id} {chapter.title} chapter.
+                This section is part of the {chapter.id} {chapter.title} {standard.groupLabel}.
                 Individual requirements will appear here as authoring progresses.
               </p>
             </div>

@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Shield } from "lucide-react";
 import { SearchBox } from "@/components/search-box";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { standard } from "@/config/standard";
 
 const navItems = [
-  { href: "/categories/v5-encoding-sanitization/", label: "ASVS 5.0.0" },
+  { href: `/categories/${standard.startCategorySlug}/`, label: `${standard.name} ${standard.version}` },
   { href: "/contribute/", label: "Contribute" },
 ];
 
@@ -16,8 +17,8 @@ export function Header() {
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/15">
             <Shield className="h-5 w-5" />
           </span>
-          <span className="hidden sm:inline">ASVS Academy</span>
-          <span className="sm:hidden">ASVS</span>
+          <span className="hidden sm:inline">{standard.academyName}</span>
+          <span className="sm:hidden">{standard.name}</span>
         </Link>
         <nav aria-label="Primary" className="hidden items-center gap-2 text-sm md:flex">
           {navItems.map((item) => (

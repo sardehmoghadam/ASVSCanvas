@@ -4,18 +4,19 @@ import { ArrowRight, BookOpenText, CheckCircle2, Code2, HeartHandshake, LockKeyh
 import { CategoryCard } from "@/components/cards";
 import { SearchBox } from "@/components/search-box";
 import { Button } from "@/components/ui/button";
+import { standard } from "@/config/standard";
 import { categories } from "@/content/categories";
 import { getAllControls } from "@/lib/content/loader";
 import { absoluteUrl, buildOpenGraph } from "@/lib/site-config";
 
 export const metadata: Metadata = {
-  title: "OWASP ASVS 5.0.0 Security Training",
+  title: `${standard.name} ${standard.version} Security Training`,
   description:
-    "Master secure software development with OWASP ASVS 5.0.0 — 345 controls across 17 chapters, with clear explanations, secure and insecure code examples, and review checklists.",
+    `Master secure software development with ${standard.name} ${standard.version} — clear explanations, secure and insecure code examples, and review checklists.`,
   openGraph: buildOpenGraph({
-    title: "ASVS Academy — OWASP ASVS 5.0.0 Security Training",
+    title: `${standard.academyName} — ${standard.name} ${standard.version} Security Training`,
     description:
-      "Master secure software development with OWASP ASVS 5.0.0 — 345 controls, clear explanations, secure and insecure code examples, and review checklists.",
+      `Master secure software development with ${standard.name} ${standard.version} — clear explanations, secure and insecure code examples, and review checklists.`,
     url: absoluteUrl("/"),
   }),
 };
@@ -24,7 +25,7 @@ const learningFeatures = [
   {
     icon: BookOpenText,
     title: "Understand the requirement",
-    description: "Read concise explanations that connect each ASVS requirement to the engineering decisions it protects.",
+    description: `Read concise explanations that connect each ${standard.name} requirement to the engineering decisions it protects.`,
   },
   {
     icon: Code2,
@@ -58,13 +59,13 @@ export default function Home() {
               <Sparkles className="h-4 w-4" /> Practical secure software development training
             </div>
             <h1 className="mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl">
-              Learn to build secure software with OWASP ASVS 5.0.0.
+              Learn to build secure software with {standard.name} {standard.version}.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
               Master secure development through clear explanations, real code examples, secure and insecure patterns, and focused testing notes you can apply during implementation and review.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/categories/v5-encoding-sanitization/"><Button size="lg">Start learning <ArrowRight className="h-4 w-4" /></Button></Link>
+              <Link href={`/categories/${standard.startCategorySlug}/`}><Button size="lg">Start learning <ArrowRight className="h-4 w-4" /></Button></Link>
               <Link href="/contribute/"><Button size="lg" variant="outline">Contribute <HeartHandshake className="h-4 w-4" /></Button></Link>
             </div>
             <div className="mt-8 max-w-xl"><SearchBox /></div>
@@ -79,8 +80,8 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-border p-5"><ShieldCheck className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">{categories.length}</p><p className="text-sm text-muted-foreground">security chapters</p></div>
-              <div className="rounded-2xl border border-border p-5"><LockKeyhole className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">5.0.0</p><p className="text-sm text-muted-foreground">current ASVS version</p></div>
+              <div className="rounded-2xl border border-border p-5"><ShieldCheck className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">{categories.length}</p><p className="text-sm text-muted-foreground">security {standard.groupLabelPlural}</p></div>
+              <div className="rounded-2xl border border-border p-5"><LockKeyhole className="h-6 w-6 text-primary" /><p className="mt-3 text-2xl font-bold">{standard.version}</p><p className="text-sm text-muted-foreground">current {standard.name} version</p></div>
             </div>
           </div>
         </div>
@@ -110,7 +111,7 @@ export default function Home() {
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Choose a security chapter</h2>
-            <p className="mt-2 max-w-3xl text-muted-foreground">Follow the official ASVS 5.0.0 structure — {totalControls} controls across {categories.length} chapters — and turn each topic into practical secure development skills.</p>
+            <p className="mt-2 max-w-3xl text-muted-foreground">Follow the official {standard.name} {standard.version} structure — {totalControls} controls across {categories.length} {standard.groupLabelPlural} — and turn each topic into practical secure development skills.</p>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

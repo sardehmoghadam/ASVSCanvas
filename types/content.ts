@@ -1,4 +1,4 @@
-export type AsvsVersion = "5.0.0";
+export type StandardVersion = string;
 
 export type CodeExample = {
   language: string;
@@ -14,7 +14,7 @@ export type Section = {
   title: string;
   description: string;
   chapterId: string;
-  asvsVersion: AsvsVersion;
+  standardVersion: StandardVersion;
 };
 
 export type Category = {
@@ -24,5 +24,5 @@ export type Category = {
   description: string;
   icon: string;
   color: string;
-  asvsVersion: AsvsVersion;
+  standardVersion: StandardVersion;
 };

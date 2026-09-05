@@ -8,7 +8,7 @@ export const categories: Category[] = [
     description: "Context-aware output encoding, sanitization, and safe handling of untrusted content.",
     icon: "Braces",
     color: "teal",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V2",
@@ -17,7 +17,7 @@ export const categories: Category[] = [
     description: "Input validation, business rule enforcement, workflow integrity, and anti-abuse controls.",
     icon: "ListChecks",
     color: "cyan",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V3",
@@ -26,7 +26,7 @@ export const categories: Category[] = [
     description: "Browser-facing security controls for client-side code, content, and web platform features.",
     icon: "PanelsTopLeft",
     color: "blue",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V4",
@@ -35,7 +35,7 @@ export const categories: Category[] = [
     description: "Security requirements for APIs, web services, endpoints, and service-to-service interfaces.",
     icon: "Webhook",
     color: "indigo",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V5",
@@ -44,7 +44,7 @@ export const categories: Category[] = [
     description: "Secure upload, storage, processing, download, and deletion of files and related metadata.",
     icon: "Files",
     color: "violet",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V6",
@@ -53,7 +53,7 @@ export const categories: Category[] = [
     description: "Identity proofing, credential handling, authentication factors, and account lifecycle controls.",
     icon: "Fingerprint",
     color: "fuchsia",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V7",
@@ -62,7 +62,7 @@ export const categories: Category[] = [
     description: "Session token generation, binding, renewal, expiration, storage, and invalidation.",
     icon: "KeyRound",
     color: "rose",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V8",
@@ -71,7 +71,7 @@ export const categories: Category[] = [
     description: "Access control design and enforcement for data, functions, resources, and privileges.",
     icon: "ShieldCheck",
     color: "orange",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V9",
@@ -80,7 +80,7 @@ export const categories: Category[] = [
     description: "Secure creation, validation, use, and lifecycle management of self-contained tokens.",
     icon: "TicketCheck",
     color: "amber",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V10",
@@ -89,7 +89,7 @@ export const categories: Category[] = [
     description: "Secure OAuth 2.0 and OpenID Connect roles, flows, tokens, clients, and providers.",
     icon: "BadgeCheck",
     color: "yellow",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V11",
@@ -98,7 +98,7 @@ export const categories: Category[] = [
     description: "Approved cryptographic algorithms, key management, randomness, and secret protection.",
     icon: "Binary",
     color: "lime",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V12",
@@ -107,7 +107,7 @@ export const categories: Category[] = [
     description: "Transport security, trusted connections, certificate validation, and communication integrity.",
     icon: "LockKeyhole",
     color: "emerald",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
 {
     id: "V13",
@@ -116,7 +116,7 @@ export const categories: Category[] = [
     description: "Secure configuration of application components, dependencies, environments, and external services.",
     icon: "Settings",
     color: "sky",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V14",
@@ -125,7 +125,7 @@ export const categories: Category[] = [
     description: "Data-at-rest and data-in-transit protection, privacy controls, and data lifecycle management.",
     icon: "Database",
     color: "red",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V15",
@@ -134,7 +134,7 @@ export const categories: Category[] = [
     description: "Secure development practices, architecture principles, dependency management, and defensive coding.",
     icon: "Code2",
     color: "purple",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V16",
@@ -143,7 +143,7 @@ export const categories: Category[] = [
     description: "Event logging, security monitoring, log protection, and safe error handling practices.",
     icon: "ScrollText",
     color: "gray",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
   {
     id: "V17",
@@ -152,7 +152,7 @@ export const categories: Category[] = [
     description: "Security requirements for WebRTC implementations including TURN servers, media, and signaling.",
     icon: "Video",
     color: "pink",
-    asvsVersion: "5.0.0",
+    standardVersion: "5.0.0",
   },
 ];
 

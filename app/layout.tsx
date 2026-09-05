@@ -7,27 +7,20 @@ import { JsonLd } from "@/components/json-ld";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SITE_URL, absoluteUrl, buildOpenGraph } from "@/lib/site-config";
 import { websiteJsonLd } from "@/lib/structured-data";
+import { standard } from "@/config/standard";
 
-const description =
-  "Free, open-source OWASP ASVS 5.0.0 training — 345 security controls with plain-English explanations, secure and insecure code examples, and review checklists.";
+const description = standard.description;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "ASVS Academy",
-    template: "%s | ASVS Academy",
+    default: standard.academyName,
+    template: `%s | ${standard.academyName}`,
   },
   description,
-  applicationName: "ASVS Academy",
-  keywords: [
-    "OWASP ASVS",
-    "application security",
-    "secure coding",
-    "ASVS 5.0.0",
-    "security controls",
-    "AppSec training",
-  ],
-  creator: "ASVS Academy",
+  applicationName: standard.academyName,
+  keywords: standard.keywords,
+  creator: standard.academyName,
   alternates: {
     canonical: absoluteUrl("/"),
   },
@@ -37,13 +30,13 @@ export const metadata: Metadata = {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || null,
   },
   openGraph: buildOpenGraph({
-    title: "ASVS Academy",
+    title: standard.academyName,
     description,
     url: absoluteUrl("/"),
   }),
   twitter: {
     card: "summary_large_image",
-    title: "ASVS Academy",
+    title: standard.academyName,
     description,
     images: [absoluteUrl("/opengraph-image.png")],
   },

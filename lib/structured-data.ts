@@ -1,4 +1,5 @@
 import { absoluteUrl, SITE_URL } from "./site-config";
+import { standard } from "../config/standard";
 
 export type JsonLdValue = Record<string, unknown>;
 
@@ -13,14 +14,14 @@ export const websiteJsonLd: JsonLdValue = {
     {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
-      name: "ASVS Academy",
+      name: standard.academyName,
       url: absoluteUrl("/"),
       logo: absoluteUrl("/icon.png"),
     },
     {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
-      name: "ASVS Academy",
+      name: standard.academyName,
       url: absoluteUrl("/"),
       publisher: { "@id": `${SITE_URL}/#organization` },
     },
@@ -46,21 +47,26 @@ export function breadcrumbListJsonLd(items: BreadcrumbEntry[]): JsonLdValue {
   };
 }
 
+/** Resolve a level id to its human-readable label (falls back to the id). */
+function levelLabel(id: string): string {
+  return standard.levels.find((level) => level.id === id)?.label ?? id;
+}
+
 export type ControlJsonLdParams = {
   url: string;
   title: string;
   summary: string;
   controlId: string;
-  asvsVersion: string;
-  level?: number;
+  standardVersion: string;
+  levels: string[];
   tags: string[];
-  chapterTitle: string;
+  groupTitle: string;
 };
 
 /**
  * Marks a single control page as both a TechArticle (technical how-to for one
- * ASVS requirement) and a LearningResource (one lesson of the ASVS Academy
- * course). The chapter title supplies articleSection; tags supply about/keywords.
+ * requirement) and a LearningResource (one lesson of the training course). The
+ * group title supplies articleSection; tags supply about/keywords.
  */
 export function controlJsonLd(params: ControlJsonLdParams): JsonLdValue {
   const data: JsonLdValue = {
@@ -73,28 +79,28 @@ export function controlJsonLd(params: ControlJsonLdParams): JsonLdValue {
     url: params.url,
     mainEntityOfPage: { "@type": "WebPage", "@id": params.url },
     inLanguage: "en",
-    articleSection: params.chapterTitle,
+    articleSection: params.groupTitle,
     identifier: {
       "@type": "PropertyValue",
-      propertyID: `ASVS ${params.asvsVersion}`,
+      propertyID: `${standard.name} ${params.standardVersion}`,
       value: params.controlId,
     },
     learningResourceType: "lesson",
     isPartOf: {
       "@type": "Course",
-      name: "ASVS Academy",
+      name: standard.academyName,
       url: absoluteUrl("/"),
     },
     author: {
       "@type": "Organization",
-      name: "ASVS Academy",
+      name: standard.academyName,
       url: absoluteUrl("/"),
     },
     publisher: { "@id": `${SITE_URL}/#organization` },
   };
 
-  if (params.level !== undefined) {
-    data.educationalLevel = `ASVS Level ${params.level}`;
+  if (params.levels.length > 0) {
+    data.educationalLevel = params.levels.map(levelLabel).join(", ");
   }
   if (params.tags.length > 0) {
     data.keywords = params.tags.join(", ");

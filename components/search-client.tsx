@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { SearchEntry } from "@/lib/search";
+import { standard } from "@/config/standard";
 
 function filterEntries(entries: SearchEntry[], query: string): SearchEntry[] {
   const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
@@ -64,19 +65,21 @@ export function SearchClient({ entries }: { entries: SearchEntry[] }) {
       {trimmed.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
           <Search className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-4 font-medium">Search {entries.length} ASVS 5.0.0 controls.</p>
+          <p className="mt-4 font-medium">Search {entries.length} {standard.name} {standard.version} controls.</p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Match on titles, summaries, keywords, tags, chapters, sections, and the full body
-            text. Try a keyword like <span className="text-foreground">output-encoding</span> or a
-            chapter like <span className="text-foreground">V1</span>.
+            Match on titles, summaries, keywords, tags, {standard.groupLabelPlural}, {standard.sectionLabelPlural}, and
+            the full body text. Try a keyword like{" "}
+            <span className="text-foreground">output-encoding</span> or a {standard.groupLabel} like{" "}
+            <span className="text-foreground">{standard.examples.groupId}</span>.
           </p>
         </div>
       ) : results.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-border bg-muted/20 p-6">
           <p className="font-medium">No controls match &ldquo;{trimmed}&rdquo;.</p>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Try a shorter query, or search by chapter id (V1), section id (V1.1), difficulty
-            (foundational / intermediate / advanced), or a tag.
+            Try a shorter query, or search by {standard.groupLabel} id ({standard.examples.groupId}),
+            {standard.sectionLabel} id ({standard.examples.sectionId}), difficulty (foundational / intermediate /
+            advanced), or a tag.
           </p>
         </div>
       ) : (
@@ -99,8 +102,9 @@ export function SearchClient({ entries }: { entries: SearchEntry[] }) {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <p className="text-xs text-muted-foreground">
-                      {entry.chapterId} {entry.chapterTitle} &middot; {entry.sectionId}{" "}
-                      {entry.sectionTitle} &middot; Level {entry.level}
+                      {entry.chapterId} {entry.chapterTitle}
+                      {entry.sectionId ? <> &middot; {entry.sectionId} {entry.sectionTitle}</> : null}{" "}
+                      &middot; {entry.levels.join(" · ")}
                     </p>
                     <div className="flex flex-wrap gap-2 text-xs">
                       {entry.tags.map((tag) => (

@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { standard } from "../config/standard";
 
 /**
  * Central site identity used for SEO metadata, canonical URLs, sitemaps, and
- * robots.txt.
+ * robots.txt. Branding and URLs are sourced from `config/standard.ts` so a new
+ * standard only needs a config swap.
  *
  * Canonical URLs always point at the production GitHub Pages location (which is
- * served under the /ASVSCanvas base path) regardless of whether the site is
- * built locally (no base path) or in CI (base path applied).
+ * served under the /<repo> base path) regardless of whether the site is built
+ * locally (no base path) or in CI (base path applied).
  */
-export const SITE_URL = "https://sardehmoghadam.github.io/ASVSCanvas";
+export const SITE_URL = standard.siteUrl;
 
 /** Build an absolute production URL from an internal path. */
 export function absoluteUrl(path: string): string {
@@ -28,7 +30,7 @@ export function buildOpenGraph(params: {
 }): NonNullable<Metadata["openGraph"]> {
   return {
     type: "website",
-    siteName: "ASVS Academy",
+    siteName: standard.academyName,
     locale: "en_US",
     url: params.url,
     title: params.title,
@@ -38,7 +40,7 @@ export function buildOpenGraph(params: {
         url: absoluteUrl("/opengraph-image.png"),
         width: 1200,
         height: 630,
-        alt: "ASVS Academy",
+        alt: standard.academyName,
       },
     ],
   };

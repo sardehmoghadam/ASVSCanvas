@@ -63,7 +63,7 @@ export function getControlsByChapter(chapterId: string): ControlEntry[] {
 
 export function getControlsBySection(sectionId: string): ControlEntry[] {
   return getAllControls().filter(
-    (entry) => entry.frontmatter.section.id === sectionId,
+    (entry) => entry.frontmatter.section?.id === sectionId,
   );
 }
 

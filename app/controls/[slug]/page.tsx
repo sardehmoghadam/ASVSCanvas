@@ -7,6 +7,7 @@ import { ReferencesList } from "@/components/references-list";
 import { RelatedControls } from "@/components/related-controls";
 import { TableOfContents } from "@/components/table-of-contents";
 import { Badge } from "@/components/ui/badge";
+import { standard } from "@/config/standard";
 import { categories } from "@/content/categories";
 import {
   getAllControls,
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const url = `${SITE_URL}/controls/${slug}/`;
     return {
       title: frontmatter.title,
-      description: `OWASP ASVS ${frontmatter.asvsVersion} control ${frontmatter.controlId}: ${frontmatter.summary}`,
+      description: `OWASP ${standard.name} ${frontmatter.standardVersion} control ${frontmatter.controlId}: ${frontmatter.summary}`,
       alternates: { canonical: url },
       openGraph: buildOpenGraph({
         title: frontmatter.title,
@@ -58,11 +59,11 @@ async function renderMdxControl(entry: ControlEntry) {
   const headings = extractHeadings(entry.body);
 
   const controlUrl = absoluteUrl(`/controls/${frontmatter.slug}/`);
-  const chapterTitle = category?.title ?? frontmatter.chapter.title;
+  const groupTitle = category?.title ?? frontmatter.chapter.title;
   const breadcrumbs = breadcrumbListJsonLd([
     { name: "Home", url: absoluteUrl("/") },
     ...(category
-      ? [{ name: chapterTitle, url: absoluteUrl(`/categories/${category.slug}/`) }]
+      ? [{ name: groupTitle, url: absoluteUrl(`/categories/${category.slug}/`) }]
       : []),
     { name: frontmatter.controlId, url: controlUrl },
   ]);
@@ -71,10 +72,10 @@ async function renderMdxControl(entry: ControlEntry) {
     title: frontmatter.title,
     summary: frontmatter.summary,
     controlId: frontmatter.controlId,
-    asvsVersion: frontmatter.asvsVersion,
-    level: frontmatter.level,
+    standardVersion: frontmatter.standardVersion,
+    levels: frontmatter.levels,
     tags: frontmatter.tags,
-    chapterTitle,
+    groupTitle,
   });
 
   return (
@@ -96,7 +97,7 @@ async function renderMdxControl(entry: ControlEntry) {
           <header className="mt-8 border-b border-border/70 pb-8">
             <div className="flex flex-wrap gap-2">
               <Badge>{frontmatter.controlId}</Badge>
-              <Badge variant="outline">ASVS {frontmatter.asvsVersion}</Badge>
+              <Badge variant="outline">{standard.name} {standard.version}</Badge>
               <Badge variant="secondary">{frontmatter.difficulty}</Badge>
             </div>
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance">{frontmatter.title}</h1>

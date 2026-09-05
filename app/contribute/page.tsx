@@ -17,11 +17,12 @@ import {
 import { Callout } from "@/components/callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { standard } from "@/config/standard";
 
 export const metadata: Metadata = {
   title: "Contribute",
   description:
-    "Help grow ASVS Academy — author new controls, enrich stub requirements, and review submissions in this open-source OWASP ASVS training portal.",
+    `Help grow ${standard.academyName} — author new controls, enrich stub requirements, and review submissions in this open-source OWASP ${standard.name} training portal.`,
 };
 
 const contributionTypes = [
@@ -29,7 +30,7 @@ const contributionTypes = [
     icon: FileCode2,
     title: "Write a new control",
     description:
-      "Turn an ASVS requirement (V2\u2013V17) into a new .mdx file using the seven-section template.",
+      `Turn a ${standard.name} requirement into a new .mdx file using the seven-section template.`,
   },
   {
     icon: Wand2,
@@ -62,7 +63,7 @@ const workflowSteps = [
     icon: ListChecks,
     title: "Pick a requirement",
     description:
-      "Choose an ASVS control ID and check content/controls/ to avoid duplicating an existing slug.",
+      `Choose an ${standard.name} control ID and check content/controls/ to avoid duplicating an existing slug.`,
   },
   {
     icon: Code2,
@@ -87,7 +88,7 @@ const workflowSteps = [
 const bodyTemplate = [
   { heading: "What This Control Means", note: "A short definition of the control and when it applies." },
   { heading: "Why This Matters", note: "The real-world risk the control prevents." },
-  { heading: "Main Security Requirement", note: "The verbatim ASVS requirement as a blockquote." },
+  { heading: "Main Security Requirement", note: `The verbatim ${standard.name} requirement as a blockquote.` },
   { heading: "Common Failure Patterns", note: "Concrete mistakes that introduce the vulnerability." },
   { heading: "Secure Implementation", note: "Idiomatic code across languages showing the fix." },
   { heading: "Key Rules", note: "Durable rules an engineer can apply without memorizing the examples." },
@@ -96,7 +97,7 @@ const bodyTemplate = [
 
 const reviewChecklist = [
   "Control ID, chapter.id, section.id, and canonicalId are consistent (the schema enforces this).",
-  "The ASVS requirement text is preserved verbatim under Main Security Requirement.",
+  `The ${standard.name} requirement text is preserved verbatim under Main Security Requirement.`,
   "Code examples are safe, idiomatic, and labeled with the correct language.",
   "References point to official OWASP or authoritative framework documentation.",
   "npm run build completes without errors.",
@@ -104,7 +105,7 @@ const reviewChecklist = [
 
 const frontmatterSample = `---
 schemaVersion: "1.0.0"
-asvsVersion: "5.0.0"
+standardVersion: "5.0.0"
 controlId: V2.1.3
 canonicalId: v5.0.0-2.1.3
 slug: v2-1-3-input-validation-strategy
@@ -116,7 +117,7 @@ chapter:
 section:
   id: V2.1
   title: Input Validation
-level: 1
+levels: ["1"]
 tags:
   - input-validation
   - allowlist
@@ -146,10 +147,10 @@ export default function ContributePage() {
         <BadgeCheck className="h-4 w-4" /> Open source training content
       </div>
       <h1 className="mt-5 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
-        Contribute to ASVS Academy
+        Contribute to {standard.academyName}
       </h1>
       <p className="mt-5 max-w-3xl text-lg leading-8 text-muted-foreground">
-        ASVS Academy turns the OWASP Application Security Verification Standard into practical,
+        {standard.academyName} turns the OWASP {standard.fullName} into practical,
         reviewable training. Every control is a single Markdown (MDX) file, so contributing is as
         simple as editing text — no framework knowledge required.
       </p>
@@ -213,7 +214,7 @@ export default function ContributePage() {
           Required: <code>controlId</code> (V#.#.#), <code>slug</code> (kebab-case), <code>title</code>,{" "}
           <code>summary</code>, <code>chapter</code> (<code>id: V#</code>, <code>title</code>), and{" "}
           <code>section</code> (<code>id: V#.#</code>, <code>title</code>). Optional or defaulted:{" "}
-          <code>canonicalId</code>, <code>level</code> (1–3), <code>tags</code>, <code>difficulty</code>{" "}
+          <code>canonicalId</code>, <code>levels</code> (1–3), <code>tags</code>, <code>difficulty</code>{" "}
           (foundational | intermediate | advanced), <code>reviewStatus</code> (draft | reviewed | needs-update),{" "}
           <code>references</code>, and <code>relatedControls</code>. The chapter and section IDs are derived from the
           control ID, so any mismatch fails the build.
@@ -269,20 +270,20 @@ export default function ContributePage() {
         <div>
           <h2 className="text-xl font-semibold">Ready to get started?</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Browse the catalog to see the current ASVS 5.0.0 coverage and pick a control to work on.
+            Browse the catalog to see the current {standard.name} {standard.version} coverage and pick a control to work on.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link href="/categories/v5-encoding-sanitization/">
+          <Link href={`/categories/${standard.startCategorySlug}/`}>
             <Button size="lg">Browse the catalog</Button>
           </Link>
           <a
-            href="https://owasp.org/www-project-application-security-verification-standard/"
+            href={standard.standardUrl}
             target="_blank"
             rel="noreferrer"
           >
             <Button size="lg" variant="outline">
-              ASVS 5.0.0 <ExternalLink className="ml-1 h-4 w-4" />
+              {standard.name} {standard.version} <ExternalLink className="ml-1 h-4 w-4" />
             </Button>
           </a>
         </div>

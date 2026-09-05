@@ -6,6 +6,7 @@ Static-first OWASP ASVS training portal built with Next.js, TypeScript, Tailwind
 - `app/` contains the static export pages, layouts, and route-level UI.
 - `components/` contains reusable presentation components and accessible building blocks.
 - `content/` contains structured training data separate from presentation.
+- `config/standard.ts` is the single source of truth for standard identity, id shapes, hierarchy, and levels.
 - `types/` defines the content schema for future AI-assisted control generation.
 - The project uses Next.js static export so it can be deployed to GitHub Pages or any static host.
 

@@ -22,7 +22,7 @@ Create practical, reviewable ASVS training controls that are easy to extend with
 Use `ControlFrontmatterSchema` in `lib/content/schema.ts`. Every control should include:
 
 - `schemaVersion` (default `"1.0.0"`)
-- `asvsVersion` (default `"5.0.0"`)
+- `standardVersion` (defaults to the configured standard version)
 - `controlId` (e.g. `V2.1.3`)
 - `canonicalId` (optional, e.g. `v5.0.0-2.1.3`)
 - `slug` (kebab-case)
@@ -30,7 +30,7 @@ Use `ControlFrontmatterSchema` in `lib/content/schema.ts`. Every control should 
 - `summary`
 - `chapter` (`id: V2`, `title`)
 - `section` (`id: V2.1`, `title`)
-- `level` (1–3)
+- `levels` (array of level ids, e.g. `["1"]`)
 - `tags`
 - `difficulty` (`foundational` | `intermediate` | `advanced`)
 - `reviewStatus` (`draft` | `reviewed` | `needs-update`)

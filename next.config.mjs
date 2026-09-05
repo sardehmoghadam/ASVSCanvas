@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 
 const isGitHubPages = process.env.GITHUB_ACTIONS === 'true';
-const repoName = 'ASVSCanvas';
+// The deployed base path matches the repository name. In CI the repo name is read
+// from GITHUB_REPOSITORY (owner/repo); the fallback is only used outside CI.
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'ASVSCanvas';
 
 const nextConfig = {
   // Generates a fully static site in the /out directory.
