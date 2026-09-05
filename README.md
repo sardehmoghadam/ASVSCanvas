@@ -38,6 +38,10 @@ See `CONTRIBUTING.md` or the in-app Contribute page (`/contribute/`) for the ful
   `GOOGLE_SITE_VERIFICATION` (Settings > Secrets and variables > Actions > Variables), then
   redeploy. CI injects it into the `google-site-verification` meta tag. Afterwards submit
   `https://sardehmoghadam.github.io/ASVSCanvas/sitemap.xml` in Search Console.
+- Analytics: add your GA4 Measurement ID (`G-XXXXXXXXXX`) as a repository variable named
+  `GA_MEASUREMENT_ID` (Settings > Secrets and variables > Actions > Variables), then redeploy.
+  CI injects it into the gtag.js loader in `components/analytics.tsx`; when the variable is
+  absent no analytics script is emitted.
 
 ## Notes
 - Search is powered by a build-time static index (`lib/search.ts`) covering every control's id, title, summary, chapter, section, tags, references, and related controls.

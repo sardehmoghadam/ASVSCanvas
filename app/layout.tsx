@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@/components/analytics";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { JsonLd } from "@/components/json-ld";
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen antialiased text-foreground">
         <JsonLd data={websiteJsonLd} />
+        <Analytics />
         <ThemeProvider>
           <div className="flex min-h-screen flex-col">
             <Header />

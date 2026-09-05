@@ -80,6 +80,10 @@ jobs:
           # Set GOOGLE_SITE_VERIFICATION as a repository variable (Settings > Secrets
           # and variables > Actions > Variables) with your Search Console token.
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          # Injected into components/analytics.tsx as the GA4 Measurement ID.
+          # Set GA_MEASUREMENT_ID as a repository variable (Settings > Secrets
+          # and variables > Actions > Variables) with your GA4 Measurement ID (G-...).
+          NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
